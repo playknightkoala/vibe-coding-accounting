@@ -1,0 +1,171 @@
+<template>
+  <div class="container">
+    <div class="card" style="max-width: 400px; margin: 100px auto;">
+      <h2>註冊</h2>
+      <form @submit.prevent="handleRegister">
+        <div class="form-group">
+          <label for="username">使用者名稱</label>
+          <input
+            type="text"
+            id="username"
+            v-model="form.username"
+            @blur="validateUsername"
+            required
+          />
+          <p v-if="usernameError" style="margin-top: 5px; font-size: 12px; color: #ff6b6b;">
+            {{ usernameError }}
+          </p>
+        </div>
+        <div class="form-group">
+          <label for="password">密碼</label>
+          <input
+            type="password"
+            id="password"
+            v-model="form.password"
+            @input="validatePassword"
+            required
+          />
+          <div style="margin-top: 8px;">
+            <p style="font-size: 12px; margin-bottom: 5px; color: #a0aec0;">密碼要求：</p>
+            <p :style="{ fontSize: '12px', color: passwordRules.length ? '#51cf66' : '#ff6b6b', marginBottom: '3px' }">
+              {{ passwordRules.length ? '✓' : '✗' }} 至少 8 個字元
+            </p>
+            <p :style="{ fontSize: '12px', color: passwordRules.uppercase ? '#51cf66' : '#ff6b6b', marginBottom: '3px' }">
+              {{ passwordRules.uppercase ? '✓' : '✗' }} 至少 1 個大寫字母
+            </p>
+            <p :style="{ fontSize: '12px', color: passwordRules.lowercase ? '#51cf66' : '#ff6b6b', marginBottom: '3px' }">
+              {{ passwordRules.lowercase ? '✓' : '✗' }} 至少 1 個小寫字母
+            </p>
+            <p :style="{ fontSize: '12px', color: passwordRules.number ? '#51cf66' : '#ff6b6b', marginBottom: '3px' }">
+              {{ passwordRules.number ? '✓' : '✗' }} 至少 1 個數字
+            </p>
+            <p :style="{ fontSize: '12px', color: passwordRules.special ? '#51cf66' : '#ff6b6b', marginBottom: '3px' }">
+              {{ passwordRules.special ? '✓' : '✗' }} 至少 1 個特殊字元 (!@#$%^&*(),.?":{}|&lt;&gt;)
+            </p>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;" :disabled="!isFormValid">
+          註冊
+        </button>
+      </form>
+      <p style="margin-top: 20px; text-align: center; color: #a0aec0;">
+        已經有帳號了？ <router-link to="/login" style="color: #00d4ff; text-decoration: none; font-weight: 500; transition: all 0.3s ease;">登入</router-link>
+      </p>
+    </div>
+
+    <div v-if="showSuccessModal" class="modal">
+      <div class="modal-content">
+        <h2 style="color: #51cf66;">註冊成功！</h2>
+        <p style="margin: 20px 0; color: #a0aec0;">您的帳號已經成功建立，點擊下方按鈕前往登入頁面。</p>
+        <button @click="goToLogin" class="btn btn-primary" style="width: 100%;">
+          前往登入
+        </button>
+      </div>
+    </div>
+
+    <div v-if="showErrorModal" class="modal">
+      <div class="modal-content">
+        <h2 style="color: #ff6b6b;">註冊失敗</h2>
+        <p style="margin: 20px 0; color: #a0aec0;">{{ errorMessage }}</p>
+        <button @click="showErrorModal = false" class="btn btn-primary" style="width: 100%;">
+          確定
+        </button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+
+const router = useRouter()
+const authStore = useAuthStore()
+
+const form = ref({
+  username: '',
+  password: ''
+})
+
+const usernameError = ref('')
+const showSuccessModal = ref(false)
+const showErrorModal = ref(false)
+const errorMessage = ref('')
+
+const passwordRules = ref({
+  length: false,
+  uppercase: false,
+  lowercase: false,
+  number: false,
+  special: false
+})
+
+const validateUsername = () => {
+  if (form.value.username.length < 3) {
+    usernameError.value = '使用者名稱至少需要 3 個字元'
+    return false
+  }
+  if (form.value.username.length > 20) {
+    usernameError.value = '使用者名稱不能超過 20 個字元'
+    return false
+  }
+  if (!/^[a-zA-Z0-9_]+$/.test(form.value.username)) {
+    usernameError.value = '使用者名稱只能包含英文字母、數字和底線'
+    return false
+  }
+  usernameError.value = ''
+  return true
+}
+
+const validatePassword = () => {
+  const password = form.value.password
+  passwordRules.value = {
+    length: password.length >= 8,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number: /[0-9]/.test(password),
+    special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+  }
+}
+
+const isFormValid = computed(() => {
+  return form.value.username.length >= 3 &&
+    passwordRules.value.length &&
+    passwordRules.value.uppercase &&
+    passwordRules.value.lowercase &&
+    passwordRules.value.number &&
+    passwordRules.value.special
+})
+
+const handleRegister = async () => {
+  if (!validateUsername()) {
+    return
+  }
+
+  if (!isFormValid.value) {
+    errorMessage.value = '請確保所有密碼要求都已滿足'
+    showErrorModal.value = true
+    return
+  }
+
+  try {
+    await authStore.register(form.value)
+    showSuccessModal.value = true
+  } catch (err: any) {
+    const detail = err.response?.data?.detail
+    if (typeof detail === 'string') {
+      errorMessage.value = detail
+    } else if (Array.isArray(detail)) {
+      errorMessage.value = detail.map((e: any) => e.msg).join('\n')
+    } else {
+      errorMessage.value = '註冊失敗，請稍後再試'
+    }
+    showErrorModal.value = true
+  }
+}
+
+const goToLogin = () => {
+  router.push('/login')
+}
+</script>

@@ -1,0 +1,608 @@
+
+> accounting-frontend@1.0.0 test:e2e
+> playwright test frontend/e2e/full_flow.spec.ts --workers=1
+
+
+Running 1 test using 1 worker
+
+[1A[2K[1/1] [chromium] › e2e/full_flow.spec.ts:37:5 › Accounting App Full Flow › should complete full user journey
+[1A[2K[chromium] › e2e/full_flow.spec.ts:37:5 › Accounting App Full Flow › should complete full user journey
+Selected Transaction Category: 飲食
+
+[1A[2KAvailable categories: [ [32m'請選擇類別'[39m, [32m'飲食'[39m, [32m'交通'[39m, [32m'購物'[39m, [32m'醫療'[39m, [32m'娛樂'[39m ]
+
+[1A[2KBudget creation response: {
+  name: [32m'Food Budget'[39m,
+  category: [32m'飲食'[39m,
+  amount: [33m3000[39m,
+  daily_limit: [1mnull[22m,
+  period: [32m'monthly'[39m,
+  start_date: [32m'2025-11-19T17:59:00'[39m,
+  end_date: [32m'2025-12-19T17:59:00'[39m,
+  account_id: [33m5[39m,
+  id: [33m5[39m,
+  spent: [33m0[39m,
+  user_id: [33m5[39m,
+  created_at: [32m'2025-11-19T09:59:23'[39m,
+  updated_at: [1mnull[22m
+}
+
+[1A[2KPage content: <!DOCTYPE html><html lang="zh-TW"><head>
+    <script type="module" src="/@vite/client"></script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>會計與預算系統</title>
+  <style type="text/css" data-vite-dev-id="/Users/yshong/PycharmProjects/AccountingProject/frontend/src/style.css">* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f1729 100%);
+  background-attachment: fixed;
+  color: #e0e6ed;
+  overflow-x: hidden;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 15px;
+}
+
+.container h1 {
+  color: #00d4ff;
+  font-size: 32px;
+  margin-bottom: 25px;
+  font-weight: 700;
+  text-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+  position: relative;
+  display: inline-block;
+}
+
+.container h1::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(90deg, #00d4ff 0%, #0066ff 100%);
+  border-radius: 2px;
+}
+
+.container h2 {
+  color: #a0aec0;
+  font-size: 20px;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+.container h3 {
+  color: #cbd5e0;
+  font-size: 18px;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+/* 平板尺寸優化 */
+@media (max-width: 768px) {
+  .container {
+    padding: 10px;
+  }
+}
+
+/* 手機尺寸優化 */
+@media (max-width: 480px) {
+  .container {
+    padding: 8px;
+  }
+
+  .container h1 {
+    font-size: 24px;
+  }
+
+  .container h2 {
+    font-size: 20px;
+  }
+
+  .container h3 {
+    font-size: 18px;
+  }
+}
+
+.card {
+  background: linear-gradient(145deg, #1a1f3a 0%, #141829 100%);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 1px rgba(100, 150, 255, 0.3);
+  border: 1px solid rgba(100, 150, 255, 0.1);
+  margin-bottom: 20px;
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .card {
+    padding: 15px;
+    margin-bottom: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 12px;
+    margin-bottom: 12px;
+    border-radius: 6px;
+  }
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  font-weight: 500;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.btn:active {
+  transform: scale(0.95);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+@media (max-width: 480px) {
+  .btn {
+    padding: 8px 15px;
+    font-size: 13px;
+  }
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #00d4ff 0%, #0066ff 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(0, 102, 255, 0.3);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 6px 20px rgba(0, 102, 255, 0.5);
+  transform: translateY(-2px);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #ff4757 0%, #ff6348 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(255, 71, 87, 0.3);
+}
+
+.btn-danger:hover {
+  box-shadow: 0 6px 20px rgba(255, 71, 87, 0.5);
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(45, 55, 72, 0.3);
+}
+
+.btn-secondary:hover {
+  box-shadow: 0 6px 20px rgba(45, 55, 72, 0.5);
+  transform: translateY(-2px);
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #a0aec0;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 12px;
+  background: rgba(26, 31, 58, 0.6);
+  border: 1px solid rgba(100, 150, 255, 0.2);
+  border-radius: 6px;
+  font-size: 14px;
+  color: #e0e6ed;
+  transition: all 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #00d4ff;
+  background: rgba(26, 31, 58, 0.8);
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+}
+
+.form-group select option {
+  background: #1a1f3a;
+  color: #e0e6ed;
+}
+
+/* 日期和時間選擇器的日曆圖示改為白色 */
+.form-group input[type="date"]::-webkit-calendar-picker-indicator,
+.form-group input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  overflow-x: auto;
+}
+
+.table thead,
+.table tbody {
+  width: 100%;
+}
+
+.table th,
+.table td {
+  padding: 14px;
+  text-align: left;
+  border-bottom: 1px solid rgba(100, 150, 255, 0.1);
+}
+
+.table th {
+  background: linear-gradient(135deg, rgba(0, 102, 255, 0.1) 0%, rgba(0, 212, 255, 0.05) 100%);
+  font-weight: 600;
+  color: #00d4ff;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+.table tbody tr {
+  transition: all 0.3s ease;
+}
+
+.table tbody tr:hover {
+  background: rgba(0, 212, 255, 0.05);
+  transform: scale(1.01);
+}
+
+@media (max-width: 768px) {
+
+  .table th,
+  .table td {
+    padding: 8px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+
+  .table th,
+  .table td {
+    padding: 6px;
+    font-size: 12px;
+  }
+
+  .table {
+    font-size: 12px;
+  }
+}
+
+.error {
+  color: #ff6b6b;
+  font-size: 14px;
+  margin-top: 5px;
+  padding: 10px;
+  background: rgba(255, 107, 107, 0.1);
+  border-left: 3px solid #ff6b6b;
+  border-radius: 4px;
+}
+
+.success {
+  color: #51cf66;
+  font-size: 14px;
+  margin-top: 5px;
+  padding: 10px;
+  background: rgba(81, 207, 102, 0.1);
+  border-left: 3px solid #51cf66;
+  border-radius: 4px;
+}
+
+.navbar {
+  background: linear-gradient(135deg, rgba(10, 14, 39, 0.95) 0%, rgba(26, 31, 58, 0.95) 100%);
+  padding: 15px 20px;
+  color: white;
+  border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+}
+
+.navbar-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.navbar a {
+  color: #a0aec0;
+  text-decoration: none;
+  margin: 0 15px;
+  transition: all 0.3s ease;
+  position: relative;
+  font-weight: 500;
+}
+
+.navbar a::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #00d4ff 0%, #0066ff 100%);
+  transition: width 0.3s ease;
+}
+
+.navbar a:hover {
+  color: #00d4ff;
+  text-decoration: none;
+}
+
+.navbar a:hover::after {
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    padding: 12px 15px;
+  }
+
+  .navbar a {
+    margin: 0 10px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar {
+    padding: 10px;
+  }
+
+  .navbar a {
+    margin: 0 8px;
+    font-size: 13px;
+  }
+
+  .navbar-content {
+    gap: 5px;
+  }
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(5px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 15px;
+  overflow-y: auto;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-content {
+  background: linear-gradient(145deg, #1a1f3a 0%, #141829 100%);
+  padding: 30px;
+  border-radius: 12px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 1px rgba(0, 212, 255, 0.3);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-content h2 {
+  color: #00d4ff;
+  margin-bottom: 20px;
+  font-size: 24px;
+}
+
+@media (max-width: 768px) {
+  .modal-content {
+    padding: 20px;
+    width: 95%;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal {
+    padding: 10px;
+  }
+
+  .modal-content {
+    padding: 15px;
+    width: 100%;
+    max-width: 100%;
+    border-radius: 6px;
+  }
+
+  /* 表單輸入欄位 */
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    font-size: 16px;
+    /* 防止 iOS Safari 自動縮放 */
+  }
+
+  /* 搜尋欄位優化 */
+  input[type="text"],
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="number"] {
+    min-width: 100% !important;
+    font-size: 16px;
+  }
+}
+
+/* 科技感裝飾元素 */
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+  opacity: 0.5;
+}
+
+/* 滾動條樣式 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(26, 31, 58, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #00d4ff 0%, #0066ff 100%);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #00e5ff 0%, #0077ff 100%);
+}
+
+/* 選中文字樣式 */
+::selection {
+  background: rgba(0, 212, 255, 0.3);
+  color: #fff;
+}
+
+/* 連結樣式 */
+a {
+  color: #00d4ff;
+  transition: all 0.3s ease;
+}
+
+a:hover {
+  color: #00e5ff;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}</style></head>
+  <body>
+    <div id="app" data-v-app=""><div id="app"><nav class="navbar"><div class="navbar-content"><div><a href="/" class="">儀表板</a><a href="/accounts" class="">帳戶</a><a href="/transactions" class="">交易</a><a href="/budgets" class="router-link-active router-link-exact-active" aria-current="page">預算</a></div><div style="display: flex; gap: 10px; align-items: center;"><a href="/profile" class="">個人設定</a><button class="btn btn-secondary">登出</button></div></div></nav><div class="container"><h1>預算</h1><div class="card"><button class="btn btn-primary">新增預算</button><div style="margin-top: 20px;"><div class="card"><h3>Food Budget</h3><p><strong>類別：</strong>飲食</p><p><strong>週期：</strong>每月</p><p><strong>綁定帳戶：</strong>Main Account</p><p><strong>預算：</strong>$3000.00</p><!--v-if--><p><strong>已使用：</strong>$100.00</p><p><strong>剩餘：</strong>$2900.00</p><div style="background-color: rgba(0, 0, 0, 0.3); height: 20px; border-radius: 10px; overflow: hidden; margin: 10px 0px;"><div style="width: 3.33333%; background-color: rgb(81, 207, 102); height: 100%; box-shadow: rgba(81, 207, 102, 0.5) 0px 0px 10px;"></div></div><p><small>2025-11-19 17:59:00 - 2025-12-19 17:59:00</small></p><div style="display: flex; gap: 5px; flex-wrap: wrap; margin-top: 10px;"><button class="btn btn-primary" style="padding: 5px 10px;"> 編輯 </button><button class="btn btn-danger" style="padding: 5px 10px;"> 刪除 </button></div></div></div></div><!--v-if--><!-- 類別管理彈窗 --><!--v-if--><!-- 消息提示彈窗 --><!--v-if--></div></div></div>
+    <script type="module" src="/src/main.ts"></script>
+  
+
+</body></html>
+
+[1A[2K  1) [chromium] › e2e/full_flow.spec.ts:37:5 › Accounting App Full Flow › should complete full user journey 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('.card').filter({ hasText: 'Food Budget' })
+    Expected: visible
+    Error: strict mode violation: locator('.card').filter({ hasText: 'Food Budget' }) resolved to 2 elements:
+        1) <div class="card">…</div> aka getByText('新增預算Food Budget')
+        2) <div class="card">…</div> aka getByText('Food Budget類別：飲食週期：每月綁定帳戶：')
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('.card').filter({ hasText: 'Food Budget' })[22m
+
+
+      123 |         const budgetCard = page.locator('.card', { hasText: 'Food Budget' });
+      124 |         try {
+    > 125 |             await expect(budgetCard).toBeVisible({ timeout: 5000 });
+          |                                      ^
+      126 |         } catch (e) {
+      127 |             console.log('Page content:', await page.content());
+      128 |             throw e;
+        at /Users/yshong/PycharmProjects/AccountingProject/frontend/e2e/full_flow.spec.ts:125:38
+
+    Error Context: test-results/full_flow-Accounting-App-F-03ae7--complete-full-user-journey-chromium/error-context.md
+
+
+[1A[2K  1 failed
+    [chromium] › e2e/full_flow.spec.ts:37:5 › Accounting App Full Flow › should complete full user journey 
+
+[36m  Serving HTML report at http://localhost:49963. Press Ctrl+C to quit.[39m
