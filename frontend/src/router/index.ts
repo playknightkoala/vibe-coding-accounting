@@ -7,6 +7,8 @@ import Accounts from '@/views/Accounts.vue'
 import Transactions from '@/views/Transactions.vue'
 import Budgets from '@/views/Budgets.vue'
 import Profile from '@/views/Profile.vue'
+import Reports from '@/views/Reports.vue'
+import TestChart from '@/views/TestChart.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -48,6 +50,17 @@ const routes: RouteRecordRaw[] = [
     name: 'Profile',
     component: Profile,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/reports',
+    name: 'Reports',
+    component: Reports,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/test-chart',
+    name: 'TestChart',
+    component: TestChart
   }
 ]
 

@@ -164,3 +164,69 @@ export interface DailyStats {
 export interface MonthlyStats {
   daily_stats: DailyStats[]
 }
+
+// Report types
+export interface CategoryStats {
+  category: string
+  amount: number
+  percentage: number
+  credit: number
+  debit: number
+}
+
+export interface AccountStats {
+  account_id: number
+  account_name: string
+  amount: number
+  percentage: number
+  credit: number
+  debit: number
+  balance: number
+}
+
+export interface TransactionDetail {
+  id: number
+  description: string
+  amount: number
+  transaction_type: string
+  category: string | null
+  transaction_date: string
+  account_id: number
+  account_name: string
+}
+
+export interface DailyTransactions {
+  date: string
+  total_credit: number
+  total_debit: number
+  transactions: TransactionDetail[]
+}
+
+export interface OverviewReport {
+  total_credit: number
+  total_debit: number
+  net_amount: number
+  category_stats: CategoryStats[]
+  top_five_transactions: TransactionDetail[]
+}
+
+export interface DetailsReport {
+  daily_transactions: DailyTransactions[]
+  total_credit: number
+  total_debit: number
+}
+
+export interface CategoryReport {
+  category_stats: CategoryStats[]
+  total_amount: number
+}
+
+export interface RankingReport {
+  expense_ranking: TransactionDetail[]
+  income_ranking: TransactionDetail[]
+}
+
+export interface AccountReport {
+  account_stats: AccountStats[]
+  total_amount: number
+}

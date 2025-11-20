@@ -4,7 +4,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 from app.core.database import engine, Base
 from app.core.config import settings
-from app.api import auth, accounts, transactions, budgets, users, categories
+from app.api import auth, accounts, transactions, budgets, users, categories, reports
 from starlette.middleware.base import BaseHTTPMiddleware
 import time
 from collections import defaultdict
@@ -97,6 +97,7 @@ app.include_router(accounts.router, prefix="/api/accounts", tags=["accounts"])
 app.include_router(transactions.router, prefix="/api/transactions", tags=["transactions"])
 app.include_router(budgets.router, prefix="/api/budgets", tags=["budgets"])
 app.include_router(categories.router, prefix="/api/categories", tags=["categories"])
+app.include_router(reports.router, prefix="/api/reports", tags=["reports"])
 
 @app.get("/")
 def root():
