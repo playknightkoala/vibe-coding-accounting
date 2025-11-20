@@ -13,7 +13,11 @@
             <option value="credit">收入</option>
             <option value="debit">支出</option>
           </select>
-          <input type="date" v-model="searchDate" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; flex: 1; min-width: 150px;" />
+          <div style="display: flex; gap: 5px; align-items: center; flex-wrap: wrap; flex: 2; min-width: 280px;">
+            <input type="date" v-model="searchStartDate" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; flex: 1; min-width: 130px;" />
+            <span>~</span>
+            <input type="date" v-model="searchEndDate" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; flex: 1; min-width: 130px;" />
+          </div>
           <button @click="clearSearch" class="btn btn-secondary" style="padding: 8px 15px;">清除</button>
         </div>
       </div>
@@ -190,7 +194,9 @@ const dateTimeUtils = useDateTime()
 const searchQuery = ref('')
 const searchCategory = ref('')
 const searchType = ref('')
-const searchDate = ref('')
+const { start: defaultStart, end: defaultEnd } = dateTimeUtils.getCurrentMonthRange()
+const searchStartDate = ref(defaultStart)
+const searchEndDate = ref(defaultEnd)
 const showCategoryModal = ref(false)
 const showCalculator = ref(false)
 
@@ -213,8 +219,8 @@ const filteredTransactions = computed(() => {
     const matchesCategory = searchCategory.value === '' ||
       (transaction.category && transaction.category.toLowerCase().includes(searchCategory.value.toLowerCase()))
 
-    const matchesDate = searchDate.value === '' ||
-      transaction.transaction_date.startsWith(searchDate.value)
+    const matchesDate = (!searchStartDate.value || transaction.transaction_date >= `${searchStartDate.value}T00:00:00`) &&
+      (!searchEndDate.value || transaction.transaction_date <= `${searchEndDate.value}T23:59:59`)
 
     const matchesType = searchType.value === '' ||
       transaction.transaction_type === searchType.value
@@ -227,7 +233,9 @@ const clearSearch = () => {
   searchQuery.value = ''
   searchCategory.value = ''
   searchType.value = ''
-  searchDate.value = ''
+  const { start, end } = dateTimeUtils.getCurrentMonthRange()
+  searchStartDate.value = start
+  searchEndDate.value = end
 }
 
 const handleEdit = (transaction: Transaction) => {

@@ -36,6 +36,27 @@ export function useDateTime() {
     return `${year}-${month}-${day}`
   }
 
+  const getCurrentMonthRange = () => {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = now.getMonth()
+
+    const startDate = new Date(year, month, 1)
+    const endDate = new Date(year, month + 1, 0)
+
+    const format = (date: Date) => {
+      const y = date.getFullYear()
+      const m = String(date.getMonth() + 1).padStart(2, '0')
+      const d = String(date.getDate()).padStart(2, '0')
+      return `${y}-${m}-${d}`
+    }
+
+    return {
+      start: format(startDate),
+      end: format(endDate)
+    }
+  }
+
   return {
     getCurrentDate,
     getCurrentDateTime,
@@ -43,6 +64,7 @@ export function useDateTime() {
     getTodayString,
     formatDateTime,
     formatDateTimeForBackend,
-    formatDateTimeForInput
+    formatDateTimeForInput,
+    getCurrentMonthRange
   }
 }
