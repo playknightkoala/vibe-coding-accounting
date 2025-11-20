@@ -14,27 +14,53 @@
           <p class="amount">${{ reportData.total_debit.toFixed(2) }}</p>
         </div>
         <div class="stat-card net" :class="reportData.net_amount >= 0 ? 'positive' : 'negative'">
-          <h3>淨收入</h3>
+          <h3>總計</h3>
           <p class="amount">${{ reportData.net_amount.toFixed(2) }}</p>
         </div>
       </div>
 
       <!-- 類別占比圓餅圖 -->
-      <div class="card">
-        <h2>類別占比</h2>
-        <div v-if="reportData.category_stats.length > 0" ref="chartContainer" class="chart-container"></div>
-        <p v-else class="empty-message">本期沒有支出記錄</p>
+      <div class="charts-row">
+        <div class="card chart-card">
+          <h2>支出類別占比</h2>
+          <div v-if="hasExpenseData" ref="expenseChartContainer" class="chart-container"></div>
+          <p v-else class="empty-message">本期沒有支出記錄</p>
+        </div>
+        <div class="card chart-card">
+          <h2>收入類別占比</h2>
+          <div v-if="hasIncomeData" ref="incomeChartContainer" class="chart-container"></div>
+          <p v-else class="empty-message">本期沒有收入記錄</p>
+        </div>
       </div>
 
       <!-- 前五名最高消費 -->
       <div class="card">
-        <h2>前五名最高消費</h2>
+        <div class="card-header">
+          <h2>前五名{{ topTransactionType === 'expense' ? '支出' : '收入' }}</h2>
+          <div class="toggle-group">
+            <button 
+              class="toggle-btn" 
+              :class="{ active: topTransactionType === 'expense' }"
+              @click="topTransactionType = 'expense'"
+            >
+              支出
+            </button>
+            <button 
+              class="toggle-btn" 
+              :class="{ active: topTransactionType === 'income' }"
+              @click="topTransactionType = 'income'"
+            >
+              收入
+            </button>
+          </div>
+        </div>
+        
         <div class="top-transactions">
-          <div v-if="reportData.top_five_transactions.length === 0" class="empty">
+          <div v-if="currentTopTransactions.length === 0" class="empty">
             尚無交易記錄
           </div>
           <div
-            v-for="(trans, index) in reportData.top_five_transactions"
+            v-for="(trans, index) in currentTopTransactions"
             :key="trans.id"
             class="transaction-item"
           >
@@ -58,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount, nextTick, computed } from 'vue'
 import * as echarts from 'echarts'
 import api from '@/services/api'
 import type { OverviewReport as OverviewReportType } from '@/types'
@@ -75,13 +101,32 @@ const props = defineProps<Props>()
 const reportData = ref<OverviewReportType | null>(null)
 const loading = ref(false)
 const error = ref('')
-const chartContainer = ref<HTMLElement | null>(null)
-let chartInstance: echarts.ECharts | null = null
+const expenseChartContainer = ref<HTMLElement | null>(null)
+const incomeChartContainer = ref<HTMLElement | null>(null)
+let expenseChartInstance: echarts.ECharts | null = null
+let incomeChartInstance: echarts.ECharts | null = null
+
+const topTransactionType = ref<'expense' | 'income'>('expense')
+
+const currentTopTransactions = computed(() => {
+  if (!reportData.value) return []
+  return topTransactionType.value === 'expense' 
+    ? reportData.value.top_five_expense 
+    : reportData.value.top_five_income
+})
 
 const chartColors = [
   '#9966ff', '#ff9933', '#33ccff', '#ffcc00', '#ff6699',
   '#66ff99', '#ff6666', '#6699ff', '#ffcc99', '#cc99ff'
 ]
+
+const hasExpenseData = computed(() => {
+  return reportData.value?.category_stats.some(cat => cat.debit > 0) || false
+})
+
+const hasIncomeData = computed(() => {
+  return reportData.value?.category_stats.some(cat => cat.credit > 0) || false
+})
 
 const fetchReport = async () => {
   loading.value = true
@@ -96,63 +141,41 @@ const fetchReport = async () => {
     }
     reportData.value = response.data
 
-    console.log('=== Overview Report Data ===')
-    console.log('Full response:', response.data)
-    console.log('Category stats:', response.data.category_stats)
-    console.log('Category stats length:', response.data.category_stats?.length)
-
+    loading.value = false
     await nextTick()
-    renderPieChart()
+    renderCharts()
   } catch (err: any) {
+    loading.value = false
     error.value = err.response?.data?.detail || '載入報表失敗'
     console.error('Failed to fetch overview report:', err)
-  } finally {
-    loading.value = false
   }
 }
 
-const renderPieChart = () => {
-  console.log('=== renderPieChart called ===')
-  console.log('chartContainer.value:', chartContainer.value)
-  console.log('reportData.value:', reportData.value)
-  console.log('category_stats length:', reportData.value?.category_stats?.length)
+const renderCharts = () => {
+  renderExpenseChart()
+  renderIncomeChart()
+}
 
-  if (!chartContainer.value) {
-    console.error('Chart container is null!')
-    return
+const renderExpenseChart = () => {
+  if (!expenseChartContainer.value || !reportData.value || !hasExpenseData.value) return
+
+  if (expenseChartInstance) {
+    expenseChartInstance.dispose()
+    expenseChartInstance = null
   }
 
-  if (!reportData.value) {
-    console.error('Report data is null!')
-    return
-  }
+  expenseChartInstance = echarts.init(expenseChartContainer.value)
 
-  if (reportData.value.category_stats.length === 0) {
-    console.warn('No category stats data!')
-    return
-  }
+  const chartData = reportData.value.category_stats
+    .filter(cat => cat.debit > 0)
+    .map((cat, index) => ({
+      name: cat.category,
+      value: cat.debit,
+      itemStyle: {
+        color: chartColors[index % chartColors.length]
+      }
+    }))
 
-  // 如果圖表實例已存在，先銷毀
-  if (chartInstance) {
-    chartInstance.dispose()
-    chartInstance = null
-  }
-
-  console.log('Initializing ECharts...')
-  // 初始化 ECharts
-  chartInstance = echarts.init(chartContainer.value)
-  console.log('ECharts instance created:', chartInstance)
-
-  // 準備數據
-  const chartData = reportData.value.category_stats.map((cat, index) => ({
-    name: cat.category,
-    value: cat.debit,
-    itemStyle: {
-      color: chartColors[index % chartColors.length]
-    }
-  }))
-
-  // 配置選項
   const option: echarts.EChartsOption = {
     tooltip: {
       trigger: 'item',
@@ -160,16 +183,12 @@ const renderPieChart = () => {
       backgroundColor: 'rgba(0, 0, 0, 0.8)',
       borderColor: '#00d4ff',
       borderWidth: 1,
-      textStyle: {
-        color: '#fff'
-      }
+      textStyle: { color: '#fff' }
     },
     legend: {
       orient: 'horizontal',
-      bottom: 10,
-      textStyle: {
-        color: '#fff'
-      }
+      bottom: 0,
+      textStyle: { color: '#fff' }
     },
     series: [
       {
@@ -187,33 +206,70 @@ const renderPieChart = () => {
           formatter: '{b}\n{d}%',
           color: '#fff'
         },
-        emphasis: {
-          label: {
-            show: true,
-            fontSize: 16,
-            fontWeight: 'bold'
-          },
-          itemStyle: {
-            shadowBlur: 10,
-            shadowOffsetX: 0,
-            shadowColor: 'rgba(0, 212, 255, 0.5)'
-          }
+        data: chartData
+      }
+    ]
+  }
+
+  expenseChartInstance.setOption(option)
+}
+
+const renderIncomeChart = () => {
+  if (!incomeChartContainer.value || !reportData.value || !hasIncomeData.value) return
+
+  if (incomeChartInstance) {
+    incomeChartInstance.dispose()
+    incomeChartInstance = null
+  }
+
+  incomeChartInstance = echarts.init(incomeChartContainer.value)
+
+  const chartData = reportData.value.category_stats
+    .filter(cat => cat.credit > 0)
+    .map((cat, index) => ({
+      name: cat.category,
+      value: cat.credit,
+      itemStyle: {
+        color: chartColors[(index + 5) % chartColors.length] // Offset colors for variety
+      }
+    }))
+
+  const option: echarts.EChartsOption = {
+    tooltip: {
+      trigger: 'item',
+      formatter: '{b}: ${c} ({d}%)',
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      borderColor: '#00d4ff',
+      borderWidth: 1,
+      textStyle: { color: '#fff' }
+    },
+    legend: {
+      orient: 'horizontal',
+      bottom: 0,
+      textStyle: { color: '#fff' }
+    },
+    series: [
+      {
+        type: 'pie',
+        radius: ['40%', '70%'],
+        center: ['50%', '45%'],
+        avoidLabelOverlap: true,
+        itemStyle: {
+          borderRadius: 10,
+          borderColor: 'rgba(0, 0, 0, 0.2)',
+          borderWidth: 2
+        },
+        label: {
+          show: true,
+          formatter: '{b}\n{d}%',
+          color: '#fff'
         },
         data: chartData
       }
     ]
   }
 
-  // 設置選項
-  console.log('Setting chart option:', option)
-  chartInstance.setOption(option)
-  console.log('Chart option set successfully!')
-
-  // 添加窗口 resize 監聽
-  const handleResize = () => {
-    chartInstance?.resize()
-  }
-  window.addEventListener('resize', handleResize)
+  incomeChartInstance.setOption(option)
 }
 
 const formatDate = (dateString: string) => {
@@ -227,14 +283,24 @@ watch([() => props.reportType, () => props.year, () => props.month, () => props.
 
 onMounted(() => {
   fetchReport()
+  window.addEventListener('resize', handleResize)
 })
 
+const handleResize = () => {
+  expenseChartInstance?.resize()
+  incomeChartInstance?.resize()
+}
+
 onBeforeUnmount(() => {
-  if (chartInstance) {
-    chartInstance.dispose()
-    chartInstance = null
+  if (expenseChartInstance) {
+    expenseChartInstance.dispose()
+    expenseChartInstance = null
   }
-  window.removeEventListener('resize', () => chartInstance?.resize())
+  if (incomeChartInstance) {
+    incomeChartInstance.dispose()
+    incomeChartInstance = null
+  }
+  window.removeEventListener('resize', handleResize)
 })
 </script>
 
@@ -242,7 +308,7 @@ onBeforeUnmount(() => {
 .overview-report {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 30px;
 }
 
 .loading,
@@ -260,6 +326,7 @@ onBeforeUnmount(() => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 20px;
+  margin-bottom: 10px;
 }
 
 .stat-card {
@@ -312,10 +379,19 @@ onBeforeUnmount(() => {
   color: #ff6b6b;
 }
 
+.charts-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.chart-card {
+  min-height: 400px;
+}
+
 .chart-container {
   width: 100%;
-  height: 500px;
-  min-height: 400px;
+  height: 350px;
 }
 
 .empty-message {
@@ -389,6 +465,42 @@ onBeforeUnmount(() => {
   padding: 2px 8px;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 3px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.card-header h2 {
+  margin: 0;
+}
+
+.toggle-group {
+  display: flex;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 20px;
+  padding: 4px;
+  border: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+.toggle-btn {
+  background: transparent;
+  border: none;
+  color: #a0aec0;
+  padding: 6px 16px;
+  border-radius: 16px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.toggle-btn.active {
+  background: rgba(0, 212, 255, 0.2);
+  color: #00d4ff;
+  font-weight: 500;
 }
 
 .amount {

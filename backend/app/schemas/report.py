@@ -39,7 +39,8 @@ class OverviewReport(BaseModel):
     total_debit: float
     net_amount: float
     category_stats: List[CategoryStats]
-    top_five_transactions: List[TransactionDetail]
+    top_five_income: List[TransactionDetail]
+    top_five_expense: List[TransactionDetail]
 
 class DetailsReport(BaseModel):
     daily_transactions: List[DailyTransactions]

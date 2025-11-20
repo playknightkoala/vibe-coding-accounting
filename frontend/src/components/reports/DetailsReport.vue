@@ -3,15 +3,28 @@
     <div v-if="loading" class="loading">載入中...</div>
     <div v-else-if="error" class="error">{{ error }}</div>
     <div v-else-if="reportData">
-      <!-- 總計 -->
+      <!-- 搜尋與總計 -->
       <div class="summary-bar">
-        <span>總收入: <strong class="credit">${{ reportData.total_credit.toFixed(2) }}</strong></span>
-        <span>總支出: <strong class="debit">${{ reportData.total_debit.toFixed(2) }}</strong></span>
+        <div class="search-box">
+          <input 
+            v-model="searchQuery" 
+            type="text" 
+            placeholder="搜尋日期 (例如: 15, 2025-11-20)"
+            class="search-input"
+          />
+        </div>
+        <div class="totals">
+          <span>總收入: <strong class="credit">${{ reportData.total_credit.toFixed(2) }}</strong></span>
+          <span>總支出: <strong class="debit">${{ reportData.total_debit.toFixed(2) }}</strong></span>
+        </div>
       </div>
 
       <!-- 每日明細 -->
       <div class="daily-list">
-        <div v-for="daily in reportData.daily_transactions" :key="daily.date" class="daily-group">
+        <div v-if="filteredDailyTransactions.length === 0" class="no-match">
+          沒有符合的日期
+        </div>
+        <div v-for="daily in filteredDailyTransactions" :key="daily.date" class="daily-group">
           <div class="daily-header" @click="toggleDay(daily.date)">
             <div>
               <h3>{{ formatDate(daily.date) }}</h3>
@@ -49,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, computed } from 'vue'
 import api from '@/services/api'
 import type { DetailsReport as DetailsReportType } from '@/types'
 
@@ -66,6 +79,17 @@ const reportData = ref<DetailsReportType | null>(null)
 const loading = ref(false)
 const error = ref('')
 const expandedDays = ref<string[]>([])
+const searchQuery = ref('')
+
+const filteredDailyTransactions = computed(() => {
+  if (!reportData.value) return []
+  if (!searchQuery.value) return reportData.value.daily_transactions
+  
+  const query = searchQuery.value.toLowerCase()
+  return reportData.value.daily_transactions.filter(daily => {
+    return daily.date.includes(query) || formatDate(daily.date).toLowerCase().includes(query)
+  })
+})
 
 const fetchReport = async () => {
   loading.value = true
@@ -80,9 +104,9 @@ const fetchReport = async () => {
     }
     reportData.value = response.data
 
-    // Auto expand first day
+    // Auto expand all days
     if (reportData.value.daily_transactions.length > 0) {
-      expandedDays.value = [reportData.value.daily_transactions[0].date]
+      expandedDays.value = reportData.value.daily_transactions.map(d => d.date)
     }
   } catch (err: any) {
     error.value = err.response?.data?.detail || '載入報表失敗'
@@ -141,13 +165,48 @@ onMounted(() => {
 
 .summary-bar {
   display: flex;
-  gap: 30px;
+  gap: 20px;
   padding: 20px;
   background: linear-gradient(135deg, rgba(0, 102, 255, 0.1) 0%, rgba(0, 212, 255, 0.05) 100%);
   border-radius: 8px;
   border: 1px solid rgba(0, 212, 255, 0.2);
-  justify-content: center;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
   font-size: 16px;
+}
+
+.search-box {
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid rgba(0, 212, 255, 0.4);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  color: #fff;
+  font-size: 14px;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #00d4ff;
+  box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2);
+}
+
+.totals {
+  display: flex;
+  gap: 20px;
+}
+
+.no-match {
+  text-align: center;
+  padding: 30px;
+  color: #a0aec0;
+  font-style: italic;
 }
 
 .summary-bar .credit {

@@ -101,13 +101,13 @@ const fetchReport = async () => {
     }
     reportData.value = response.data
 
+    loading.value = false
     await nextTick()
     renderPieChart()
   } catch (err: any) {
+    loading.value = false
     error.value = err.response?.data?.detail || '載入報表失敗'
     console.error('Failed to fetch account report:', err)
-  } finally {
-    loading.value = false
   }
 }
 
@@ -200,6 +200,47 @@ const renderPieChart = () => {
   }
 
   chartInstance.setOption(option)
+
+  chartInstance.on('click', (params) => {
+    if (params.componentType === 'series') {
+      const accountName = params.name
+      const value = params.value as number
+      const percent = params.percent
+      
+      // Find account ID
+      const account = reportData.value?.account_stats.find(acc => acc.account_name === accountName)
+      
+      // Update title
+      chartInstance?.setOption({
+        title: {
+          text: `${accountName}\n$${value.toFixed(2)}`,
+          subtext: `${percent}%`
+        }
+      })
+      
+      // Expand list item
+      if (account && expandedAccount.value !== account.account_id) {
+        toggleAccount(account.account_id)
+      }
+    }
+  })
+
+  // Reset title when clicking on empty area (zrender event)
+  chartInstance.getZr().on('click', (params) => {
+    if (!params.target) {
+      chartInstance?.setOption({
+        title: {
+          text: `總金額\n$${totalAmount.toFixed(2)}`,
+          subtext: ''
+        }
+      })
+      
+      if (expandedAccount.value) {
+        // Toggle off - need to pass the current ID to toggle it off
+        toggleAccount(expandedAccount.value) 
+      }
+    }
+  })
 
   const handleResize = () => {
     chartInstance?.resize()

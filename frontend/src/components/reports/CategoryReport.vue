@@ -100,13 +100,13 @@ const fetchReport = async () => {
     }
     reportData.value = response.data
 
+    loading.value = false
     await nextTick()
     renderPieChart()
   } catch (err: any) {
+    loading.value = false
     error.value = err.response?.data?.detail || '載入報表失敗'
     console.error('Failed to fetch category report:', err)
-  } finally {
-    loading.value = false
   }
 }
 
@@ -199,6 +199,43 @@ const renderPieChart = () => {
   }
 
   chartInstance.setOption(option)
+
+  chartInstance.on('click', (params) => {
+    if (params.componentType === 'series') {
+      const category = params.name
+      const value = params.value as number
+      const percent = params.percent
+      
+      // Update title
+      chartInstance?.setOption({
+        title: {
+          text: `${category}\n$${value.toFixed(2)}`,
+          subtext: `${percent}%`
+        }
+      })
+      
+      // Expand list item
+      if (expandedCategory.value !== category) {
+        toggleCategory(category)
+      }
+    }
+  })
+
+  // Reset title when clicking on empty area (zrender event)
+  chartInstance.getZr().on('click', (params) => {
+    if (!params.target) {
+      chartInstance?.setOption({
+        title: {
+          text: `總金額\n$${totalAmount.toFixed(2)}`,
+          subtext: ''
+        }
+      })
+      
+      if (expandedCategory.value) {
+        toggleCategory(expandedCategory.value) // Toggle off
+      }
+    }
+  })
 
   const handleResize = () => {
     chartInstance?.resize()

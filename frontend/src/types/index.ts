@@ -207,7 +207,8 @@ export interface OverviewReport {
   total_debit: number
   net_amount: number
   category_stats: CategoryStats[]
-  top_five_transactions: TransactionDetail[]
+  top_five_income: TransactionDetail[]
+  top_five_expense: TransactionDetail[]
 }
 
 export interface DetailsReport {

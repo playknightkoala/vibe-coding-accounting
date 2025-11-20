@@ -95,14 +95,25 @@ def get_monthly_overview(
     category_stats.sort(key=lambda x: x.amount, reverse=True)
 
     # Get top 5 transactions
-    top_five = sorted(transactions, key=lambda x: x.amount, reverse=True)[:5]
+    top_five_income = sorted(
+        [t for t in transactions if t.transaction_type == 'credit'],
+        key=lambda x: x.amount,
+        reverse=True
+    )[:5]
+
+    top_five_expense = sorted(
+        [t for t in transactions if t.transaction_type == 'debit'],
+        key=lambda x: x.amount,
+        reverse=True
+    )[:5]
 
     return OverviewReport(
         total_credit=total_credit,
         total_debit=total_debit,
         net_amount=net_amount,
         category_stats=category_stats,
-        top_five_transactions=top_five
+        top_five_income=top_five_income,
+        top_five_expense=top_five_expense
     )
 
 @router.get("/overview/daily", response_model=OverviewReport)
@@ -152,14 +163,25 @@ def get_daily_overview(
     category_stats.sort(key=lambda x: x.amount, reverse=True)
 
     # Get top 5 transactions
-    top_five = sorted(transactions, key=lambda x: x.amount, reverse=True)[:5]
+    top_five_income = sorted(
+        [t for t in transactions if t.transaction_type == 'credit'],
+        key=lambda x: x.amount,
+        reverse=True
+    )[:5]
+
+    top_five_expense = sorted(
+        [t for t in transactions if t.transaction_type == 'debit'],
+        key=lambda x: x.amount,
+        reverse=True
+    )[:5]
 
     return OverviewReport(
         total_credit=total_credit,
         total_debit=total_debit,
         net_amount=net_amount,
         category_stats=category_stats,
-        top_five_transactions=top_five
+        top_five_income=top_five_income,
+        top_five_expense=top_five_expense
     )
 
 @router.get("/details/monthly", response_model=DetailsReport)
