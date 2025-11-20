@@ -21,7 +21,13 @@ import type {
   CategoryCreate,
   CategoryUpdate,
   CategoryOrderUpdate,
-  MonthlyStats
+  MonthlyStats,
+  OverviewReport,
+  DetailsReport,
+  CategoryReport,
+  RankingReport,
+  AccountReport,
+  TransactionDetail
 } from '@/types'
 
 // 使用相對路徑，讓 nginx 反向代理處理路由
@@ -194,5 +200,90 @@ export default {
 
   deleteCategory(id: number) {
     return api.delete(`/categories/${id}`)
+  },
+
+  // Reports
+  getOverviewReportMonthly(year: number, month: number) {
+    return api.get<OverviewReport>('/reports/overview/monthly', {
+      params: { year, month }
+    })
+  },
+
+  getOverviewReportDaily(date: string) {
+    return api.get<OverviewReport>('/reports/overview/daily', {
+      params: { date_str: date }
+    })
+  },
+
+  getDetailsReportMonthly(year: number, month: number) {
+    return api.get<DetailsReport>('/reports/details/monthly', {
+      params: { year, month }
+    })
+  },
+
+  getDetailsReportDaily(date: string) {
+    return api.get<DetailsReport>('/reports/details/daily', {
+      params: { date_str: date }
+    })
+  },
+
+  getCategoryReportMonthly(year: number, month: number) {
+    return api.get<CategoryReport>('/reports/category/monthly', {
+      params: { year, month }
+    })
+  },
+
+  getCategoryReportDaily(date: string) {
+    return api.get<CategoryReport>('/reports/category/daily', {
+      params: { date_str: date }
+    })
+  },
+
+  getRankingReportMonthly(year: number, month: number) {
+    return api.get<RankingReport>('/reports/ranking/monthly', {
+      params: { year, month }
+    })
+  },
+
+  getRankingReportDaily(date: string) {
+    return api.get<RankingReport>('/reports/ranking/daily', {
+      params: { date_str: date }
+    })
+  },
+
+  getAccountReportMonthly(year: number, month: number) {
+    return api.get<AccountReport>('/reports/account/monthly', {
+      params: { year, month }
+    })
+  },
+
+  getAccountReportDaily(date: string) {
+    return api.get<AccountReport>('/reports/account/daily', {
+      params: { date_str: date }
+    })
+  },
+
+  getCategoryTransactionsMonthly(category: string, year: number, month: number) {
+    return api.get<TransactionDetail[]>(`/reports/category/${encodeURIComponent(category)}/transactions/monthly`, {
+      params: { year, month }
+    })
+  },
+
+  getCategoryTransactionsDaily(category: string, date: string) {
+    return api.get<TransactionDetail[]>(`/reports/category/${encodeURIComponent(category)}/transactions/daily`, {
+      params: { date_str: date }
+    })
+  },
+
+  getAccountTransactionsMonthly(accountId: number, year: number, month: number) {
+    return api.get<TransactionDetail[]>(`/reports/account/${accountId}/transactions/monthly`, {
+      params: { year, month }
+    })
+  },
+
+  getAccountTransactionsDaily(accountId: number, date: string) {
+    return api.get<TransactionDetail[]>(`/reports/account/${accountId}/transactions/daily`, {
+      params: { date_str: date }
+    })
   }
 }

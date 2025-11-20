@@ -12,7 +12,9 @@
       "Bash(python3:*)",
       "Bash(docker-compose exec frontend npm install:*)",
       "Bash(npm install:*)",
-      "Bash(timeout 30 bash:*)"
+      "Bash(timeout 30 bash:*)",
+      "Bash(docker-compose exec backend python:*)",
+      "Bash(docker-compose exec:*)"
     ],
     "deny": [],
     "ask": []

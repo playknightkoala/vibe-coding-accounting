@@ -7,6 +7,7 @@
           <router-link to="/accounts">帳戶</router-link>
           <router-link to="/transactions">交易</router-link>
           <router-link to="/budgets">預算</router-link>
+          <router-link to="/reports">報表</router-link>
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
           <router-link to="/profile">個人設定</router-link>
