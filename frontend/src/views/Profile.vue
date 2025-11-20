@@ -108,6 +108,13 @@
         </div>
       </div>
     </div>
+
+    <!-- 消息提示彈窗 -->
+    <MessageModal
+      v-model="showMessageModal"
+      :type="messageType"
+      :message="message"
+    />
   </div>
 </template>
 
@@ -115,6 +122,7 @@
 import { ref, onMounted } from 'vue'
 import api from '@/services/api'
 import type { User } from '@/types'
+import MessageModal from '@/components/MessageModal.vue'
 
 const user = ref<User | null>(null)
 const passwordForm = ref({
@@ -132,6 +140,11 @@ const twoFactorError = ref('')
 
 const showDisable2FA = ref(false)
 const disableToken = ref('')
+
+// Message modal
+const showMessageModal = ref(false)
+const messageType = ref<'success' | 'error'>('success')
+const message = ref('')
 
 const loadUserProfile = async () => {
   try {
@@ -178,7 +191,9 @@ const verify2FASetup = async () => {
     qrCode.value = ''
     secret.value = ''
     await loadUserProfile()
-    alert('2FA 已成功啟用！')
+    messageType.value = 'success'
+    message.value = '2FA 已成功啟用！'
+    showMessageModal.value = true
   } catch (err: any) {
     twoFactorError.value = err.response?.data?.detail || '驗證失敗'
   }
@@ -199,7 +214,9 @@ const handleDisable2FA = async () => {
     showDisable2FA.value = false
     disableToken.value = ''
     await loadUserProfile()
-    alert('2FA 已停用')
+    messageType.value = 'success'
+    message.value = '2FA 已停用'
+    showMessageModal.value = true
   } catch (err: any) {
     twoFactorError.value = err.response?.data?.detail || '停用失敗'
   }

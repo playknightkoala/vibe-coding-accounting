@@ -91,40 +91,45 @@ export interface TransactionUpdate {
 export interface Budget {
   id: number
   name: string
-  category: string
+  category_names: string[]  // 改為類別名稱列表
   amount: number
   daily_limit?: number
   spent: number
-  period: 'monthly' | 'quarterly' | 'yearly'
+  range_mode: 'custom' | 'recurring'
+  period?: 'monthly' | 'quarterly' | 'yearly'
   start_date: string
   end_date: string
-  account_id: number
+  account_ids: number[]  // 改為帳戶ID列表
   user_id: number
+  parent_budget_id?: number
+  is_latest_period: boolean
   created_at: string
   updated_at: string | null
 }
 
 export interface BudgetCreate {
   name: string
-  category: string
+  category_names: string[]  // 改為類別名稱列表
   amount: number
   daily_limit?: number
-  period: 'monthly' | 'quarterly' | 'yearly'
-  start_date: string
-  end_date: string
-  account_id: number
+  range_mode: 'custom' | 'recurring'
+  period?: 'monthly' | 'quarterly' | 'yearly'
+  start_date?: string  // recurring模式可為空
+  end_date?: string    // recurring模式可為空
+  account_ids: number[]  // 改為帳戶ID列表
 }
 
 export interface BudgetUpdate {
   name?: string
-  category?: string
+  category_names?: string[]  // 改為類別名稱列表
   amount?: number
   daily_limit?: number
   spent?: number
+  range_mode?: 'custom' | 'recurring'
   period?: 'monthly' | 'quarterly' | 'yearly'
   start_date?: string
   end_date?: string
-  account_id?: number | null
+  account_ids?: number[]  // 改為帳戶ID列表
 }
 
 export interface Category {

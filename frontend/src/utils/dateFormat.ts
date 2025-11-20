@@ -1,13 +1,16 @@
 /**
  * 將 ISO 格式的日期時間轉換為顯示格式
- * @param dateString - ISO 格式的日期時間字符串 (如: "2025-11-19T00:00:00")
+ * @param dateString - ISO 格式的日期時間字符串 (如: "2025-11-19T00:00:00" 或 "2025-11-19T00:00:00Z")
  * @returns 格式化後的日期時間字符串 (如: "2025-11-19 00:00:00")
  */
 export function formatDateTime(dateString: string): string {
   if (!dateString) return ''
 
-  // 將 T 替換為空格，並移除毫秒和時區信息
-  return dateString.replace('T', ' ').split('.')[0]
+  // 移除時區標記 (Z) 和毫秒
+  let cleaned = dateString.replace('Z', '').split('.')[0]
+
+  // 將 T 替換為空格
+  return cleaned.replace('T', ' ')
 }
 
 /**

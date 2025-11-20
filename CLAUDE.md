@@ -31,7 +31,7 @@ docker-compose logs --tail 50 backend
 ```
 
 **Access Points:**
-- Frontend: http://localhost:5173
+- Frontend: http://localhost (nginx proxy to Vite dev server)
 - Backend API: http://localhost:8000
 - API Docs (Swagger): http://localhost:8000/docs
 - Database: localhost:5432 (user: accounting_user, db: accounting_db)
@@ -107,6 +107,7 @@ npm run build
 - `User` → one-to-many → `Budget` (via user_id)
 - `User` → one-to-many → `Category` (via user_id)
 - `Account` → one-to-many → `Transaction` (via account_id)
+- `Budget` ↔ many-to-many ↔ `Account` (via `BudgetAccount` junction table)
 
 **Critical Security Pattern:**
 All API endpoints MUST filter by `current_user.id` to enforce user data isolation. Never expose other users' data.
@@ -173,6 +174,72 @@ Registration and login errors display in modals, not inline. Forms validate clie
 **Dashboard Quick Transaction Feature:**
 Each account card has a "記帳" (record transaction) button that opens a pre-filled modal for that specific account. Uses datetime-local input for timestamp.
 
+### Budget Multi-Account Binding Architecture
+
+**Overview:**
+Budgets support flexible account binding:
+- Can bind to multiple accounts (track spending across specific accounts)
+- Can bind to zero accounts (track spending across ALL user's accounts)
+- Uses many-to-many relationship via `BudgetAccount` junction table
+
+**Implementation Pattern:**
+
+```python
+# Backend - backend/app/models/budget_account.py
+class BudgetAccount(Base):
+    """預算與帳戶的多對多關聯表"""
+    __tablename__ = "budget_accounts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    budget_id = Column(Integer, ForeignKey("budgets.id", ondelete="CASCADE"), nullable=False)
+    account_id = Column(Integer, ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False)
+```
+
+```python
+# Budget model relationship
+class Budget(Base):
+    # No direct account_id column
+    accounts = relationship("Account", secondary="budget_accounts", backref="budgets")
+```
+
+**Spent Calculation Logic:**
+```python
+def calculate_budget_spent(db: Session, budget: Budget) -> float:
+    account_ids = [acc.id for acc in budget.accounts]
+
+    if account_ids:
+        # Budget bound to specific accounts - only count those
+        query = query.filter(Transaction.account_id.in_(account_ids))
+    else:
+        # No account binding - count ALL user's accounts
+        user_account_ids = db.query(Account.id).filter(Account.user_id == budget.user_id).all()
+        query = query.filter(Transaction.account_id.in_(user_account_ids))
+```
+
+**CRITICAL: SQLAlchemy Eager Loading Pattern**
+Always use `joinedload()` when querying budgets to prevent lazy loading issues:
+
+```python
+from sqlalchemy.orm import joinedload
+
+# Correct - eager loads accounts relationship
+budgets = db.query(Budget).options(joinedload(Budget.accounts)).filter(...).all()
+
+# Wrong - accounts relationship not loaded, budget.accounts returns empty list
+budgets = db.query(Budget).filter(...).all()
+```
+
+**Frontend Schema:**
+```typescript
+export interface Budget {
+    account_ids: number[]  // Empty array = all accounts
+    // ... other fields
+}
+```
+
+**Recurring Budget Behavior:**
+When auto-generating next period budgets, account bindings are copied from the previous period.
+
 ### Transaction Balance Logic
 
 **Critical:** Transactions directly modify account balances:
@@ -208,6 +275,102 @@ See `backend/app/api/transactions.py` for implementation.
 - Management modal allows add/edit/delete/reorder
 - Changes immediately sync to backend
 
+## Reusable Components
+
+### Calculator Component
+
+**Location:** `frontend/src/components/Calculator.vue`
+
+**Purpose:** Provides an in-app calculator for amount input fields with basic arithmetic operations.
+
+**Features:**
+- Basic operations: +, -, *, / (displayed as +, −, ×, ÷)
+- Number pad (0-9), decimal point support
+- Clear (C) and backspace (←) functions
+- Dual-display: shows both expression and current value
+- Results automatically rounded to 2 decimal places
+- Division by zero prevention (displays "Error")
+- Beautiful dark theme matching application style
+
+**Usage Pattern:**
+
+```vue
+<template>
+  <!-- Amount input field with calculator button -->
+  <div style="position: relative;">
+    <input
+      type="number"
+      v-model.number="form.amount"
+      @focus="showCalculator = true"
+      style="padding-right: 40px;"
+    />
+    <button
+      type="button"
+      @click="showCalculator = true"
+      style="position: absolute; right: 5px; ..."
+      title="打開計算機"
+    >
+      🧮
+    </button>
+  </div>
+
+  <!-- Calculator component -->
+  <Calculator
+    v-model="showCalculator"
+    :initial-value="form.amount"
+    @confirm="handleCalculatorConfirm"
+  />
+</template>
+
+<script setup lang="ts">
+import Calculator from '@/components/Calculator.vue'
+
+const showCalculator = ref(false)
+
+const handleCalculatorConfirm = (value: number) => {
+  form.value.amount = value
+}
+</script>
+```
+
+**Props:**
+- `modelValue: boolean` - Controls calculator visibility
+- `initialValue?: number` - Pre-fills calculator with existing value
+
+**Events:**
+- `update:modelValue` - Emitted when closing calculator
+- `confirm` - Emitted with calculated value when user confirms
+
+**Current Usage:**
+- Transaction creation/edit form (`frontend/src/views/Transactions.vue`)
+- Dashboard quick transaction modal (`frontend/src/views/Dashboard.vue`)
+
+### Modal Components
+
+**ConfirmModal** (`frontend/src/components/ConfirmModal.vue`):
+- Used for confirmation dialogs (delete operations, etc.)
+- Props: title, message, confirmText, cancelText, confirmType
+
+**MessageModal** (`frontend/src/components/MessageModal.vue`):
+- Used for success/error messages
+- Props: type ('success' | 'error'), message
+
+**CategoryManagementModal** (`frontend/src/components/CategoryManagementModal.vue`):
+- Dedicated modal for category CRUD operations
+- Includes drag-and-drop reordering with Sortable.js
+
+**Usage Pattern:**
+All modals follow the same v-model pattern for visibility control:
+
+```vue
+<ConfirmModal
+  v-model="showConfirmModal"
+  title="確認刪除"
+  message="確定要刪除此交易嗎？"
+  @confirm="handleConfirm"
+/>
+```
+
 ## Database Schema
 
 Tables auto-created on backend startup via `Base.metadata.create_all(bind=engine)` in main.py.
@@ -222,7 +385,7 @@ Tables auto-created on backend startup via `Base.metadata.create_all(bind=engine
 `Account`:
 - id, name, account_type, balance, currency, description
 - user_id (FK), created_at, updated_at
-- Types: asset, liability, equity, revenue, expense
+- Types: cash, bank, credit_card, stored_value, securities, other
 
 `Transaction`:
 - id, description, amount, transaction_type, category, transaction_date
@@ -230,9 +393,15 @@ Tables auto-created on backend startup via `Base.metadata.create_all(bind=engine
 - Types: credit (income), debit (expense)
 
 `Budget`:
-- id, name, category, amount, spent, period, start_date, end_date
-- user_id (FK), account_id (FK), created_at, updated_at
-- Periods: monthly, quarterly, yearly
+- id, name, category, amount, spent, daily_limit, range_mode, period, start_date, end_date
+- user_id (FK), parent_budget_id (FK, for recurring budgets), created_at, updated_at
+- Range modes: recurring (auto-generates next period), custom (one-time date range)
+- Periods (for recurring mode): daily, weekly, monthly, yearly
+- **Note:** No direct account_id column - uses many-to-many via BudgetAccount
+
+`BudgetAccount`:
+- id, budget_id (FK), account_id (FK), created_at
+- Junction table for Budget-Account many-to-many relationship
 
 `Category`:
 - id, name, order_index
@@ -340,6 +509,32 @@ Modals use:
 
 Global `.modal` and `.modal-content` classes in style.css handle backdrop and positioning.
 
+### Date/Time Formatting
+
+**Critical:** Date strings from backend may include UTC "Z" marker and milliseconds. Always use the centralized formatting utilities:
+
+```typescript
+// frontend/src/utils/dateFormat.ts
+
+// Display format: "2025-11-19 12:00:00"
+formatDateTime(dateString: string)  // Removes Z and milliseconds, replaces T with space
+
+// Backend format: "2025-11-19T14:30:00"
+formatDateTimeForBackend(dateTimeLocal: string)  // Adds :00 seconds if missing
+
+// Input format: "2025-11-19T14:30"
+formatDateTimeForInput(dateString: string)  // Truncates to datetime-local format
+```
+
+**Common Mistake:**
+```typescript
+// Wrong - doesn't handle Z marker
+dateString.replace('T', ' ')
+
+// Correct - uses utility function
+formatDateTime(dateString)
+```
+
 ## Environment Configuration
 
 **Backend Environment Variables** (set in docker-compose.yml):
@@ -351,7 +546,7 @@ Global `.modal` and `.modal-content` classes in style.css handle backdrop and po
 **CORS Origins:**
 Hardcoded in `backend/app/main.py`. Update if frontend runs on different port:
 ```python
-allow_origins=["http://localhost:5173", "http://localhost:3000"]
+allow_origins=["http://localhost:5173", "http://localhost:3000", "http://localhost"]
 ```
 
 ## Troubleshooting
@@ -374,3 +569,13 @@ allow_origins=["http://localhost:5173", "http://localhost:3000"]
 **Login redirects even on failure:**
 - Verify API interceptor excludes auth requests from redirect logic
 - Check router guard doesn't create redirect loops
+
+**Budget spent amount not updating:**
+- Ensure budgets are queried with `joinedload(Budget.accounts)` to eager load relationships
+- Without eager loading, `budget.accounts` will be an empty list even when accounts are bound
+- See Budget Multi-Account Binding Architecture section for correct pattern
+
+**Dates showing "Z" or timezone markers:**
+- Use `formatDateTime()` utility from `frontend/src/utils/dateFormat.ts`
+- This function properly removes UTC markers and milliseconds
+- Always use centralized formatting utilities, not manual string replacement

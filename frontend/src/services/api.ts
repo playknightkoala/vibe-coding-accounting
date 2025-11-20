@@ -23,7 +23,8 @@ import type {
   CategoryOrderUpdate
 } from '@/types'
 
-const API_URL = 'http://localhost:8000/api'
+// 使用相對路徑，讓 nginx 反向代理處理路由
+const API_URL = '/api'
 
 const api: AxiosInstance = axios.create({
   baseURL: API_URL,

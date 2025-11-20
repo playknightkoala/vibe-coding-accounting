@@ -68,6 +68,17 @@
         關閉
       </button>
     </div>
+
+    <!-- 刪除確認對話框 -->
+    <ConfirmModal
+      v-model="showConfirmModal"
+      title="確認刪除"
+      message="確定要刪除此類別嗎？刪除後將無法復原。"
+      confirm-text="刪除"
+      cancel-text="取消"
+      confirm-type="danger"
+      @confirm="confirmDeleteCategory"
+    />
   </div>
 </template>
 
@@ -76,6 +87,7 @@ import { ref, watch, nextTick } from 'vue'
 import api from '@/services/api'
 import type { Category } from '@/types'
 import Sortable from 'sortablejs'
+import ConfirmModal from '@/components/ConfirmModal.vue'
 
 interface Props {
   modelValue: boolean
@@ -96,6 +108,10 @@ const sortableContainer = ref<HTMLElement | null>(null)
 const newCategoryName = ref('')
 const editingCategoryId = ref<number | null>(null)
 const editingCategoryName = ref('')
+
+// Confirm modal
+const showConfirmModal = ref(false)
+const deleteCategoryId = ref<number | null>(null)
 
 // 監聽 modal 打開，初始化 Sortable
 watch(() => props.modelValue, async (newVal) => {
@@ -180,17 +196,23 @@ const handleSaveCategory = async (categoryId: number) => {
   }
 }
 
-const handleDeleteCategory = async (categoryId: number) => {
-  if (!confirm('確定要刪除此類別嗎？')) return
+const handleDeleteCategory = (categoryId: number) => {
+  deleteCategoryId.value = categoryId
+  showConfirmModal.value = true
+}
+
+const confirmDeleteCategory = async () => {
+  if (deleteCategoryId.value === null) return
 
   try {
-    await api.deleteCategory(categoryId)
+    await api.deleteCategory(deleteCategoryId.value)
     emit('showMessage', 'success', '類別已刪除')
     emit('categoriesChanged')
   } catch (err: any) {
     console.error('刪除類別失敗:', err)
     emit('showMessage', 'error', err.response?.data?.detail || '刪除類別失敗')
   }
+  deleteCategoryId.value = null
 }
 
 const handleClose = () => {

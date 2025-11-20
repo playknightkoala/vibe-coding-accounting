@@ -4,7 +4,7 @@
 
     <div class="card">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
-        <button @click="showModal = true" class="btn btn-primary">新增交易</button>
+        <button @click="modal.open()" class="btn btn-primary">新增交易</button>
         <div style="display: flex; gap: 10px; flex-wrap: wrap; flex: 1; justify-content: flex-end; min-width: 250px;">
           <input type="text" v-model="searchQuery" placeholder="搜尋描述..." style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; flex: 1; min-width: 150px;" />
           <input type="text" v-model="searchCategory" placeholder="搜尋類別..." style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; flex: 1; min-width: 150px;" />
@@ -27,7 +27,7 @@
           </thead>
           <tbody>
             <tr v-for="transaction in filteredTransactions" :key="transaction.id">
-              <td>{{ formatDateTime(transaction.transaction_date) }}</td>
+              <td>{{ dateTimeUtils.formatDateTime(transaction.transaction_date) }}</td>
               <td>{{ transaction.description }}</td>
               <td>{{ transaction.transaction_type === 'credit' ? '收入' : '支出' }}</td>
               <td>{{ transaction.category || '無' }}</td>
@@ -36,10 +36,10 @@
               </td>
               <td>
                 <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                  <button @click="editTransaction(transaction)" class="btn btn-primary" style="padding: 5px 10px;">
+                  <button @click="handleEdit(transaction)" class="btn btn-primary" style="padding: 5px 10px;">
                     編輯
                   </button>
-                  <button @click="deleteTransaction(transaction.id)" class="btn btn-danger" style="padding: 5px 10px;">
+                  <button @click="handleDelete(transaction.id)" class="btn btn-danger" style="padding: 5px 10px;">
                     刪除
                   </button>
                 </div>
@@ -51,53 +51,70 @@
       <p v-else style="margin-top: 20px;">尚無交易記錄</p>
     </div>
 
-    <div v-if="showModal" class="modal">
+    <div v-if="modal.isOpen.value" class="modal">
       <div class="modal-content">
-        <h2>{{ editingTransactionId ? '編輯交易' : '新增交易' }}</h2>
-        <div v-if="accounts.length === 0" class="error" style="margin-bottom: 15px;">
+        <h2>{{ formController.isEditing() ? '編輯交易' : '新增交易' }}</h2>
+        <div v-if="accountsStore.accounts.length === 0" class="error" style="margin-bottom: 15px;">
           請先建立帳戶才能新增交易。
         </div>
-        <form @submit.prevent="editingTransactionId ? updateTransaction() : createTransaction()" v-if="accounts.length > 0">
+        <form @submit.prevent="handleSubmit" v-if="accountsStore.accounts.length > 0">
           <div class="form-group">
             <label>帳戶</label>
-            <select v-model="form.account_id" required>
-              <option v-for="account in accounts" :key="account.id" :value="account.id">
+            <select v-model="formController.form.value.account_id" required>
+              <option v-for="account in accountsStore.accounts" :key="account.id" :value="account.id">
                 {{ account.name }}
               </option>
             </select>
           </div>
           <div class="form-group">
             <label>描述</label>
-            <input v-model="form.description" required />
+            <input v-model="formController.form.value.description" required />
           </div>
           <div class="form-group">
             <label>金額</label>
-            <input type="number" step="0.01" v-model.number="form.amount" required />
+            <div style="position: relative;">
+              <input
+                type="number"
+                step="0.01"
+                v-model.number="formController.form.value.amount"
+                @focus="showCalculator = true"
+                required
+                style="padding-right: 40px;"
+              />
+              <button
+                type="button"
+                @click="showCalculator = true"
+                style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: rgba(0, 212, 255, 0.2); border: 1px solid rgba(0, 212, 255, 0.4); border-radius: 4px; padding: 4px 8px; cursor: pointer; color: #00d4ff; font-size: 18px;"
+                title="打開計算機"
+              >
+                🧮
+              </button>
+            </div>
           </div>
           <div class="form-group">
             <label>交易類型</label>
-            <select v-model="form.transaction_type" required>
+            <select v-model="formController.form.value.transaction_type" required>
               <option value="credit">收入</option>
               <option value="debit">支出</option>
             </select>
           </div>
           <CategorySelector
-            v-model="form.category"
-            :categories="categories"
+            v-model="formController.form.value.category"
+            :categories="categoriesStore.categories"
             @open-management="showCategoryModal = true"
           />
           <div class="form-group">
             <label>日期時間</label>
-            <input type="datetime-local" v-model="form.transaction_date" required />
+            <DateTimeInput v-model="formController.form.value.transaction_date" :required="true" />
           </div>
-          <div v-if="error" class="error">{{ error }}</div>
+          <div v-if="modal.error.value" class="error">{{ modal.error.value }}</div>
           <div style="display: flex; gap: 10px; margin-top: 20px;">
-            <button type="submit" class="btn btn-primary">建立</button>
-            <button type="button" @click="closeModal" class="btn btn-secondary">取消</button>
+            <button type="submit" class="btn btn-primary">{{ formController.isEditing() ? '更新' : '建立' }}</button>
+            <button type="button" @click="handleClose" class="btn btn-secondary">取消</button>
           </div>
         </form>
         <div v-else style="margin-top: 20px;">
-          <button type="button" @click="closeModal" class="btn btn-secondary">關閉</button>
+          <button type="button" @click="handleClose" class="btn btn-secondary">關閉</button>
         </div>
       </div>
     </div>
@@ -105,73 +122,85 @@
     <!-- 類別管理彈窗 -->
     <CategoryManagementModal
       v-model="showCategoryModal"
-      :categories="categories"
-      @categories-changed="loadData"
-      @show-message="handleShowMessage"
+      :categories="categoriesStore.categories"
+      @categories-changed="categoriesStore.fetchCategories()"
+      @show-message="messageModal.show"
     />
 
     <!-- 消息提示彈窗 -->
     <MessageModal
-      v-model="showMessageModal"
-      :type="messageType"
-      :message="message"
+      v-model="messageModal.isOpen.value"
+      :type="messageModal.type.value"
+      :message="messageModal.message.value"
+    />
+
+    <!-- 刪除確認對話框 -->
+    <ConfirmModal
+      v-model="confirmDialog.isOpen.value"
+      title="確認刪除"
+      message="確定要刪除此交易嗎？刪除後將無法復原。"
+      confirm-text="刪除"
+      cancel-text="取消"
+      confirm-type="danger"
+      @confirm="confirmDialog.handleConfirm"
+    />
+
+    <!-- 計算機 -->
+    <Calculator
+      v-model="showCalculator"
+      :initial-value="formController.form.value.amount"
+      @confirm="handleCalculatorConfirm"
     />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import api from '@/services/api'
-import type { Transaction, TransactionCreate, Account, Category } from '@/types'
+import type { Transaction, TransactionCreate } from '@/types'
 import CategorySelector from '@/components/CategorySelector.vue'
 import CategoryManagementModal from '@/components/CategoryManagementModal.vue'
 import MessageModal from '@/components/MessageModal.vue'
-import { formatDateTime, formatDateTimeForBackend, formatDateTimeForInput } from '@/utils/dateFormat'
+import ConfirmModal from '@/components/ConfirmModal.vue'
+import Calculator from '@/components/Calculator.vue'
+import DateTimeInput from '@/components/DateTimeInput.vue'
+import { useAccountsStore } from '@/stores/accounts'
+import { useTransactionsStore } from '@/stores/transactions'
+import { useBudgetsStore } from '@/stores/budgets'
+import { useCategoriesStore } from '@/stores/categories'
+import { useModal } from '@/composables/useModal'
+import { useConfirm } from '@/composables/useConfirm'
+import { useMessage } from '@/composables/useMessage'
+import { useForm } from '@/composables/useForm'
+import { useDateTime } from '@/composables/useDateTime'
 
-const transactions = ref<Transaction[]>([])
-const accounts = ref<Account[]>([])
-const showModal = ref(false)
-const error = ref('')
-const editingTransactionId = ref<number | null>(null)
+const accountsStore = useAccountsStore()
+const transactionsStore = useTransactionsStore()
+const budgetsStore = useBudgetsStore()
+const categoriesStore = useCategoriesStore()
+const modal = useModal()
+const confirmDialog = useConfirm()
+const messageModal = useMessage()
+const dateTimeUtils = useDateTime()
+
 const searchQuery = ref('')
 const searchCategory = ref('')
 const searchDate = ref('')
-
-// Category management
-const categories = ref<Category[]>([])
 const showCategoryModal = ref(false)
+const showCalculator = ref(false)
 
-// Message modal
-const showMessageModal = ref(false)
-const messageType = ref<'success' | 'error'>('success')
-const message = ref('')
-
-const handleShowMessage = (type: 'success' | 'error', msg: string) => {
-  messageType.value = type
-  message.value = msg
-  showMessageModal.value = true
-}
-const getCurrentDateTime = () => {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
-  const hours = String(now.getHours()).padStart(2, '0')
-  const minutes = String(now.getMinutes()).padStart(2, '0')
-  return `${year}-${month}-${day}T${hours}:${minutes}`
-}
-
-const form = ref<TransactionCreate>({
+const initialFormData: TransactionCreate = {
   account_id: 0,
   description: '',
   amount: 0,
   transaction_type: 'debit',
   category: '',
-  transaction_date: getCurrentDateTime()
-})
+  transaction_date: dateTimeUtils.getCurrentDateTime()
+}
+
+const formController = useForm<TransactionCreate>(initialFormData)
 
 const filteredTransactions = computed(() => {
-  return transactions.value.filter(transaction => {
+  return transactionsStore.transactions.filter(transaction => {
     const matchesDescription = searchQuery.value === '' ||
       transaction.description.toLowerCase().includes(searchQuery.value.toLowerCase())
 
@@ -191,117 +220,95 @@ const clearSearch = () => {
   searchDate.value = ''
 }
 
-const loadData = async () => {
-  try {
-    const [transactionsRes, accountsRes, categoriesRes] = await Promise.all([
-      api.getTransactions(),
-      api.getAccounts(),
-      api.getCategories()
-    ])
-    transactions.value = transactionsRes.data
-    accounts.value = accountsRes.data
-    categories.value = categoriesRes.data
-    // 自動選擇第一個帳戶
-    if (accounts.value.length > 0 && form.value.account_id === 0) {
-      form.value.account_id = accounts.value[0].id
-    }
-    // 自動選擇第一個類別
-    if (categories.value.length > 0 && form.value.category === '') {
-      form.value.category = categories.value[0].name
-    }
-  } catch (err) {
-    console.error('載入資料時發生錯誤:', err)
-  }
-}
-
-const createTransaction = async () => {
-  try {
-    error.value = ''
-    const transactionData = {
-      ...form.value,
-      transaction_date: formatDateTimeForBackend(form.value.transaction_date)
-    }
-    await api.createTransaction(transactionData)
-    showModal.value = false
-    form.value = {
-      account_id: 0,
-      description: '',
-      amount: 0,
-      transaction_type: 'debit',
-      category: '',
-      transaction_date: getCurrentDateTime()
-    }
-    await loadData()
-  } catch (err: any) {
-    error.value = err.response?.data?.detail || '建立交易失敗'
-  }
-}
-
-const editTransaction = (transaction: Transaction) => {
-  editingTransactionId.value = transaction.id
-  form.value = {
+const handleEdit = (transaction: Transaction) => {
+  formController.setForm({
     account_id: transaction.account_id,
     description: transaction.description,
     amount: transaction.amount,
     transaction_type: transaction.transaction_type,
     category: transaction.category || '',
-    transaction_date: formatDateTimeForInput(transaction.transaction_date)
-  }
-  showModal.value = true
+    transaction_date: dateTimeUtils.formatDateTimeForInput(transaction.transaction_date)
+  }, transaction.id)
+  modal.open()
 }
 
-const updateTransaction = async () => {
-  if (!editingTransactionId.value) return
-  try {
-    error.value = ''
-    await api.updateTransaction(editingTransactionId.value, {
-      description: form.value.description,
-      amount: form.value.amount,
-      category: form.value.category,
-      transaction_date: formatDateTimeForBackend(form.value.transaction_date)
-    })
-    showModal.value = false
-    editingTransactionId.value = null
-    form.value = {
-      account_id: 0,
-      description: '',
-      amount: 0,
-      transaction_type: 'debit',
-      category: '',
-      transaction_date: getCurrentDateTime()
-    }
-    await loadData()
-  } catch (err: any) {
-    error.value = err.response?.data?.detail || '更新交易失敗'
-  }
-}
-
-const deleteTransaction = async (id: number) => {
-  if (confirm('確定要刪除此交易嗎？')) {
+const handleDelete = (id: number) => {
+  confirmDialog.confirm(id, async () => {
     try {
-      await api.deleteTransaction(id)
-      await loadData()
+      await transactionsStore.deleteTransaction(id)
+      // 刪除交易後需要更新帳戶餘額和預算
+      await Promise.all([
+        accountsStore.fetchAccounts(),
+        budgetsStore.fetchBudgets()
+      ])
     } catch (err) {
       console.error('刪除交易時發生錯誤:', err)
     }
+  })
+}
+
+const handleSubmit = async () => {
+  try {
+    modal.clearError()
+    const transactionData = {
+      ...formController.form.value,
+      transaction_date: dateTimeUtils.formatDateTimeForBackend(formController.form.value.transaction_date)
+    }
+
+    if (formController.isEditing()) {
+      await transactionsStore.updateTransaction(formController.editingId.value!, {
+        description: transactionData.description,
+        amount: transactionData.amount,
+        category: transactionData.category,
+        transaction_date: transactionData.transaction_date
+      })
+    } else {
+      await transactionsStore.createTransaction(transactionData)
+    }
+
+    // 交易會影響帳戶餘額和預算，需要重新載入
+    await Promise.all([
+      accountsStore.fetchAccounts(),
+      budgetsStore.fetchBudgets()
+    ])
+    handleClose()
+  } catch (err: any) {
+    modal.setError(err.response?.data?.detail || (formController.isEditing() ? '更新交易失敗' : '建立交易失敗'))
   }
 }
 
-const closeModal = () => {
-  showModal.value = false
-  editingTransactionId.value = null
-  error.value = ''
-  form.value = {
-    account_id: 0,
-    description: '',
-    amount: 0,
-    transaction_type: 'debit',
-    category: '',
-    transaction_date: getCurrentDateTime()
+const handleClose = () => {
+  modal.close()
+  formController.resetForm()
+  formController.form.value.transaction_date = dateTimeUtils.getCurrentDateTime()
+  // 確保有帳戶時自動選擇第一個
+  if (accountsStore.accounts.length > 0) {
+    formController.form.value.account_id = accountsStore.accounts[0].id
+  }
+  // 確保有類別時自動選擇第一個
+  if (categoriesStore.categories.length > 0) {
+    formController.form.value.category = categoriesStore.categories[0].name
   }
 }
 
-onMounted(() => {
-  loadData()
+const handleCalculatorConfirm = (value: number) => {
+  formController.form.value.amount = value
+}
+
+onMounted(async () => {
+  await Promise.all([
+    transactionsStore.fetchTransactions(),
+    accountsStore.fetchAccounts(),
+    categoriesStore.fetchCategories()
+  ])
+
+  // 自動選擇第一個帳戶
+  if (accountsStore.accounts.length > 0 && formController.form.value.account_id === 0) {
+    formController.form.value.account_id = accountsStore.accounts[0].id
+  }
+  // 自動選擇第一個類別
+  if (categoriesStore.categories.length > 0 && formController.form.value.category === '') {
+    formController.form.value.category = categoriesStore.categories[0].name
+  }
 })
 </script>

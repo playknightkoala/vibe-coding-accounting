@@ -59,25 +59,28 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
 
-  // 防止無限重定向
-  if (to.path === from.path) {
-    next()
-    return
-  }
-
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    if (to.path !== '/login') {
+  // 需要認證的頁面
+  if (to.meta.requiresAuth) {
+    if (!authStore.isAuthenticated) {
+      // 未登入，導向登入頁
       next('/login')
     } else {
+      // 已登入，允許訪問
       next()
     }
-  } else if ((to.name === 'Login' || to.name === 'Register') && authStore.isAuthenticated) {
-    if (to.path !== '/') {
+  }
+  // 登入或註冊頁面
+  else if (to.name === 'Login' || to.name === 'Register') {
+    if (authStore.isAuthenticated) {
+      // 已登入，導向首頁
       next('/')
     } else {
+      // 未登入，允許訪問
       next()
     }
-  } else {
+  }
+  // 其他頁面
+  else {
     next()
   }
 })

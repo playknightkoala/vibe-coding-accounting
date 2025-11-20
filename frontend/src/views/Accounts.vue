@@ -3,9 +3,9 @@
     <h1>帳戶</h1>
 
     <div class="card">
-      <button @click="showModal = true" class="btn btn-primary">新增帳戶</button>
+      <button @click="modal.open()" class="btn btn-primary">新增帳戶</button>
 
-      <div style="overflow-x: auto;" v-if="accounts.length > 0">
+      <div style="overflow-x: auto;" v-if="accountsStore.accounts.length > 0">
         <table class="table" style="margin-top: 20px;">
           <thead>
             <tr>
@@ -17,17 +17,17 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="account in accounts" :key="account.id">
+            <tr v-for="account in accountsStore.accounts" :key="account.id">
               <td>{{ account.name }}</td>
-              <td>{{ getAccountTypeText(account.account_type) }}</td>
+              <td>{{ accountsStore.getAccountTypeText(account.account_type) }}</td>
               <td>${{ account.balance.toFixed(2) }}</td>
               <td>{{ account.currency }}</td>
               <td>
                 <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                  <button @click="editAccount(account)" class="btn btn-primary" style="padding: 5px 10px;">
+                  <button @click="handleEdit(account)" class="btn btn-primary" style="padding: 5px 10px;">
                     編輯
                   </button>
-                  <button @click="deleteAccount(account.id)" class="btn btn-danger" style="padding: 5px 10px;">
+                  <button @click="handleDelete(account.id)" class="btn btn-danger" style="padding: 5px 10px;">
                     刪除
                   </button>
                 </div>
@@ -39,27 +39,28 @@
       <p v-else style="margin-top: 20px;">尚無帳戶</p>
     </div>
 
-    <div v-if="showModal" class="modal">
+    <div v-if="modal.isOpen.value" class="modal">
       <div class="modal-content">
-        <h2>{{ editingAccountId ? '編輯帳戶' : '新增帳戶' }}</h2>
-        <form @submit.prevent="editingAccountId ? updateAccount() : createAccount()">
+        <h2>{{ formController.isEditing() ? '編輯帳戶' : '新增帳戶' }}</h2>
+        <form @submit.prevent="handleSubmit">
           <div class="form-group">
             <label>帳戶名稱</label>
-            <input v-model="form.name" required />
+            <input v-model="formController.form.value.name" required />
           </div>
           <div class="form-group">
             <label>帳戶類型</label>
-            <select v-model="form.account_type" required>
-              <option value="asset">資產</option>
-              <option value="liability">負債</option>
-              <option value="equity">權益</option>
-              <option value="revenue">收入</option>
-              <option value="expense">費用</option>
+            <select v-model="formController.form.value.account_type" required>
+              <option value="cash">現金</option>
+              <option value="bank">銀行</option>
+              <option value="credit_card">信用卡</option>
+              <option value="stored_value">儲值卡</option>
+              <option value="securities">證券戶</option>
+              <option value="other">其他</option>
             </select>
           </div>
           <div class="form-group">
             <label>幣別</label>
-            <select v-model="form.currency" required>
+            <select v-model="formController.form.value.currency" required>
               <option value="NTD">NTD</option>
               <option value="USD">USD</option>
               <option value="JPY">JPY</option>
@@ -67,128 +68,95 @@
           </div>
           <div class="form-group">
             <label>描述</label>
-            <textarea v-model="form.description"></textarea>
+            <textarea v-model="formController.form.value.description"></textarea>
           </div>
-          <div v-if="error" class="error">{{ error }}</div>
+          <div v-if="modal.error.value" class="error">{{ modal.error.value }}</div>
           <div style="display: flex; gap: 10px; margin-top: 20px;">
-            <button type="submit" class="btn btn-primary">建立</button>
-            <button type="button" @click="closeModal" class="btn btn-secondary">取消</button>
+            <button type="submit" class="btn btn-primary">{{ formController.isEditing() ? '更新' : '建立' }}</button>
+            <button type="button" @click="handleClose" class="btn btn-secondary">取消</button>
           </div>
         </form>
       </div>
     </div>
+
+    <!-- 刪除確認對話框 -->
+    <ConfirmModal
+      v-model="confirmDialog.isOpen.value"
+      title="確認刪除"
+      message="確定要刪除此帳戶嗎？刪除後將無法復原。"
+      confirm-text="刪除"
+      cancel-text="取消"
+      confirm-type="danger"
+      @confirm="confirmDialog.handleConfirm"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import api from '@/services/api'
+import { onMounted } from 'vue'
 import type { Account, AccountCreate } from '@/types'
+import ConfirmModal from '@/components/ConfirmModal.vue'
+import { useAccountsStore } from '@/stores/accounts'
+import { useModal } from '@/composables/useModal'
+import { useConfirm } from '@/composables/useConfirm'
+import { useForm } from '@/composables/useForm'
 
-const accounts = ref<Account[]>([])
-const showModal = ref(false)
-const error = ref('')
-const editingAccountId = ref<number | null>(null)
-const form = ref<AccountCreate>({
+const accountsStore = useAccountsStore()
+const modal = useModal()
+const confirmDialog = useConfirm()
+
+const initialFormData: AccountCreate = {
   name: '',
-  account_type: 'asset',
+  account_type: 'cash',
   currency: 'NTD',
   description: ''
-})
-
-const accountTypeMap: Record<string, string> = {
-  asset: '資產',
-  liability: '負債',
-  equity: '權益',
-  revenue: '收入',
-  expense: '費用'
 }
 
-const getAccountTypeText = (type: string) => {
-  return accountTypeMap[type] || type
-}
+const formController = useForm<AccountCreate>(initialFormData)
 
-const loadAccounts = async () => {
-  try {
-    const response = await api.getAccounts()
-    accounts.value = response.data
-  } catch (err) {
-    console.error('載入帳戶時發生錯誤:', err)
-  }
-}
-
-const createAccount = async () => {
-  try {
-    error.value = ''
-    await api.createAccount(form.value)
-    showModal.value = false
-    form.value = {
-      name: '',
-      account_type: 'asset',
-      currency: 'NTD',
-      description: ''
-    }
-    await loadAccounts()
-  } catch (err: any) {
-    error.value = err.response?.data?.detail || '建立帳戶失敗'
-  }
-}
-
-const editAccount = (account: Account) => {
-  editingAccountId.value = account.id
-  form.value = {
+const handleEdit = (account: Account) => {
+  formController.setForm({
     name: account.name,
     account_type: account.account_type,
     currency: account.currency,
     description: account.description || ''
-  }
-  showModal.value = true
+  }, account.id)
+  modal.open()
 }
 
-const updateAccount = async () => {
-  if (!editingAccountId.value) return
-  try {
-    error.value = ''
-    await api.updateAccount(editingAccountId.value, {
-      name: form.value.name,
-      description: form.value.description
-    })
-    showModal.value = false
-    editingAccountId.value = null
-    form.value = {
-      name: '',
-      account_type: 'asset',
-      currency: 'NTD',
-      description: ''
-    }
-    await loadAccounts()
-  } catch (err: any) {
-    error.value = err.response?.data?.detail || '更新帳戶失敗'
-  }
-}
-
-const deleteAccount = async (id: number) => {
-  if (confirm('確定要刪除此帳戶嗎？')) {
+const handleDelete = (id: number) => {
+  confirmDialog.confirm(id, async () => {
     try {
-      await api.deleteAccount(id)
-      await loadAccounts()
+      await accountsStore.deleteAccount(id)
     } catch (err) {
       console.error('刪除帳戶時發生錯誤:', err)
     }
+  })
+}
+
+const handleSubmit = async () => {
+  try {
+    modal.clearError()
+    if (formController.isEditing()) {
+      await accountsStore.updateAccount(formController.editingId.value!, {
+        name: formController.form.value.name,
+        description: formController.form.value.description
+      })
+    } else {
+      await accountsStore.createAccount(formController.form.value)
+    }
+    handleClose()
+  } catch (err: any) {
+    modal.setError(err.response?.data?.detail || (formController.isEditing() ? '更新帳戶失敗' : '建立帳戶失敗'))
   }
 }
 
-const closeModal = () => {
-  showModal.value = false
-  editingAccountId.value = null
-  error.value = ''
-  form.value = {
-    name: '',
-    account_type: 'asset',
-    currency: 'NTD',
-    description: ''
-  }
+const handleClose = () => {
+  modal.close()
+  formController.resetForm()
 }
 
-onMounted(loadAccounts)
+onMounted(() => {
+  accountsStore.fetchAccounts()
+})
 </script>

@@ -84,5 +84,12 @@ def verify_2fa_login(
     return {"access_token": access_token, "token_type": "bearer", "requires_2fa": False}
 
 @router.get("/me", response_model=UserSchema)
-def get_current_user_info(current_user: User = Depends(get_db)):
-    return current_user
+def get_current_user_info(db: Session = Depends(get_db)):
+    # This endpoint is kept for backwards compatibility but should use the users router
+    # Redirect to /api/users/me instead
+    from app.api.deps import get_current_user
+    from fastapi import Depends as FastAPIDepends
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="This endpoint is deprecated. Use /api/users/me instead"
+    )

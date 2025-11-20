@@ -3,14 +3,26 @@
     <h1>預算</h1>
 
     <div class="card">
-      <button @click="openCreateModal" class="btn btn-primary">新增預算</button>
+      <button @click="handleCreate" class="btn btn-primary">新增預算</button>
 
-      <div v-if="budgets.length > 0" style="margin-top: 20px;">
-        <div v-for="budget in budgets" :key="budget.id" class="card">
-          <h3>{{ budget.name }}</h3>
-          <p><strong>類別：</strong>{{ budget.category }}</p>
-          <p><strong>週期：</strong>{{ getPeriodText(budget.period) }}</p>
-          <p><strong>綁定帳戶：</strong>{{ getAccountName(budget.account_id) }}</p>
+      <div v-if="budgetsStore.budgets.length > 0" style="margin-top: 20px;">
+        <div v-for="budget in budgetsStore.budgets" :key="budget.id" class="card">
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+            <h3 style="margin: 0;">{{ budget.name }}</h3>
+            <span v-if="budget.range_mode === 'recurring'"
+                  style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                         color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px;">
+              🔄 {{ budgetsStore.getPeriodText(budget.period || '') }}
+            </span>
+            <span v-else
+                  style="background: rgba(0, 212, 255, 0.2);
+                         color: #00d4ff; padding: 4px 12px; border-radius: 12px; font-size: 12px; border: 1px solid #00d4ff;">
+              📅 自訂區間
+            </span>
+          </div>
+
+          <p><strong>類別：</strong>{{ budget.category_names.length > 0 ? budget.category_names.join('、') : '全部類別' }}</p>
+          <p><strong>綁定帳戶：</strong>{{ budgetsStore.getAccountNames(budget.account_ids) }}</p>
           <p><strong>預算：</strong>${{ budget.amount.toFixed(2) }}</p>
           <p v-if="budget.daily_limit"><strong>每日預算：</strong>${{ budget.daily_limit.toFixed(2) }}</p>
           <p><strong>已使用：</strong>${{ budget.spent.toFixed(2) }}</p>
@@ -27,13 +39,19 @@
             ></div>
           </div>
 
-          <p><small>{{ formatDateTime(budget.start_date) }} - {{ formatDateTime(budget.end_date) }}</small></p>
+          <p><small>{{ dateTimeUtils.formatDateTime(budget.start_date) }} - {{ dateTimeUtils.formatDateTime(budget.end_date) }}</small></p>
+
+          <p v-if="budget.range_mode === 'recurring' && budget.is_latest_period"
+             style="margin: 10px 0 0 0; padding: 8px; background: rgba(102, 126, 234, 0.1); border-left: 3px solid #667eea; font-size: 12px;">
+            ℹ️ 本週期結束後將自動建立下一個週期
+          </p>
+
           <div style="display: flex; gap: 5px; flex-wrap: wrap; margin-top: 10px;">
-            <button @click="editBudget(budget)" class="btn btn-primary" style="padding: 5px 10px;">
+            <button @click="handleEdit(budget)" class="btn btn-primary" style="padding: 5px 10px;">
               編輯
             </button>
-            <button @click="deleteBudget(budget.id)" class="btn btn-danger" style="padding: 5px 10px;">
-              刪除
+            <button @click="handleDelete(budget.id)" class="btn btn-danger" style="padding: 5px 10px;">
+              {{ budget.range_mode === 'recurring' && budget.is_latest_period ? '取消週期' : '刪除' }}
             </button>
           </div>
         </div>
@@ -41,63 +59,148 @@
       <p v-else style="margin-top: 20px;">尚無預算</p>
     </div>
 
-    <div v-if="showModal" class="modal">
+    <div v-if="modal.isOpen.value" class="modal">
       <div class="modal-content">
-        <h2>{{ editingBudgetId ? '編輯預算' : '新增預算' }}</h2>
-        <div v-if="accounts.length === 0 && !editingBudgetId" class="error" style="margin-bottom: 15px;">
+        <h2>{{ formController.isEditing() ? '編輯預算' : '新增預算' }}</h2>
+        <div v-if="accountsStore.accounts.length === 0 && !formController.isEditing()" class="error" style="margin-bottom: 15px;">
           請先建立帳戶才能新增預算。
         </div>
-        <form @submit.prevent="editingBudgetId ? updateBudget() : createBudget()" v-if="accounts.length > 0 || editingBudgetId">
+        <form @submit.prevent="handleSubmit" v-if="accountsStore.accounts.length > 0 || formController.isEditing()">
           <div class="form-group">
             <label>預算名稱</label>
-            <input v-model="form.name" required />
+            <input v-model="formController.form.value.name" required />
           </div>
-          <CategorySelector
-            v-model="form.category"
-            :categories="categories"
-            :required="true"
-            @open-management="showCategoryModal = true"
-          />
+
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <label>綁定類別（非必選，可多選）</label>
+              <button
+                type="button"
+                @click="showCategoryModal = true"
+                class="btn btn-primary"
+                style="padding: 4px 12px; font-size: 12px;"
+              >
+                管理類別
+              </button>
+            </div>
+            <div style="background: rgba(26, 31, 58, 0.6); border: 1px solid rgba(0, 212, 255, 0.2); border-radius: 6px; padding: 12px; max-height: 200px; overflow-y: auto;">
+              <div v-if="categoriesStore.categories.length === 0" style="color: #a0aec0; text-align: center;">
+                尚無類別
+              </div>
+              <div v-else style="display: flex; flex-direction: column; gap: 8px;">
+                <label
+                  v-for="category in categoriesStore.categories"
+                  :key="category.id"
+                  style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px; border-radius: 4px; transition: background 0.2s;"
+                  :style="{ background: formController.form.value.category_names.includes(category.name) ? 'rgba(0, 212, 255, 0.1)' : 'transparent' }"
+                >
+                  <input
+                    type="checkbox"
+                    :value="category.name"
+                    v-model="formController.form.value.category_names"
+                    style="cursor: pointer; width: 16px; height: 16px; flex-shrink: 0;"
+                  />
+                  <span style="color: #e0e6ed; flex: 1;">{{ category.name }}</span>
+                </label>
+              </div>
+            </div>
+            <p style="margin: 8px 0 0 0; font-size: 12px; color: #a0aec0;">
+              不選擇類別表示此預算適用於所有類別的消費
+            </p>
+          </div>
+
           <div class="form-group">
             <label>金額</label>
-            <input type="number" step="0.01" v-model.number="form.amount" required />
+            <input type="number" step="0.01" v-model.number="formController.form.value.amount" required />
           </div>
+
           <div class="form-group">
             <label>每日預算 (選填)</label>
-            <input type="number" step="0.01" v-model.number="form.daily_limit" />
+            <input type="number" step="0.01" v-model.number="formController.form.value.daily_limit" />
           </div>
+
+          <!-- 範圍模式選擇 -->
           <div class="form-group">
-            <label>週期</label>
-            <select v-model="form.period" required>
+            <label>週期設定</label>
+            <div style="display: flex; gap: 10px; margin-top: 8px;">
+              <button
+                type="button"
+                @click="selectRangeMode('custom')"
+                :style="getRangeModeButtonStyle('custom')"
+              >
+                📅 自訂區間
+              </button>
+              <button
+                type="button"
+                @click="selectRangeMode('recurring')"
+                :style="getRangeModeButtonStyle('recurring')"
+              >
+                🔄 週期
+              </button>
+            </div>
+          </div>
+
+          <!-- 週期模式: 選擇週期類型 -->
+          <div v-if="formController.form.value.range_mode === 'recurring'" class="form-group">
+            <label>週期類型</label>
+            <select v-model="formController.form.value.period" required>
               <option value="monthly">每月</option>
               <option value="quarterly">每季</option>
               <option value="yearly">每年</option>
             </select>
+            <p style="margin: 8px 0 0 0; font-size: 12px; color: #a0aec0;">
+              系統將自動計算本週期的開始和結束時間，並在週期結束後自動建立下一個週期
+            </p>
           </div>
+
+          <!-- 自訂區間模式: 手動選擇日期 -->
+          <div v-if="formController.form.value.range_mode === 'custom'">
+            <div class="form-group">
+              <label>開始日期</label>
+              <input type="date" v-model="budgetForm.startDateOnly.value" @change="() => budgetForm.updateStartDate(formController.form.value)" required />
+            </div>
+            <div class="form-group">
+              <label>結束日期</label>
+              <input type="date" v-model="budgetForm.endDateOnly.value" @change="() => budgetForm.updateEndDate(formController.form.value)" required />
+            </div>
+          </div>
+
           <div class="form-group">
-            <label>開始日期時間</label>
-            <input type="datetime-local" v-model="form.start_date" required />
+            <label>綁定帳戶（非必選，可多選）</label>
+            <div style="background: rgba(26, 31, 58, 0.6); border: 1px solid rgba(0, 212, 255, 0.2); border-radius: 6px; padding: 12px; max-height: 200px; overflow-y: auto;">
+              <div v-if="accountsStore.accounts.length === 0" style="color: #a0aec0; text-align: center;">
+                尚無帳戶
+              </div>
+              <div v-else style="display: flex; flex-direction: column; gap: 8px;">
+                <label
+                  v-for="account in accountsStore.accounts"
+                  :key="account.id"
+                  style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px; border-radius: 4px; transition: background 0.2s;"
+                  :style="{ background: formController.form.value.account_ids.includes(account.id) ? 'rgba(0, 212, 255, 0.1)' : 'transparent' }"
+                >
+                  <input
+                    type="checkbox"
+                    :value="account.id"
+                    v-model="formController.form.value.account_ids"
+                    style="cursor: pointer; width: 16px; height: 16px; flex-shrink: 0;"
+                  />
+                  <span style="color: #e0e6ed; flex: 1;">{{ account.name }}</span>
+                </label>
+              </div>
+            </div>
+            <p style="margin: 8px 0 0 0; font-size: 12px; color: #a0aec0;">
+              不選擇帳戶表示此預算適用於所有帳戶的消費
+            </p>
           </div>
-          <div class="form-group">
-            <label>結束日期時間</label>
-            <input type="datetime-local" v-model="form.end_date" required />
-          </div>
-          <div class="form-group">
-            <label>綁定帳戶</label>
-            <select v-model="form.account_id" required>
-              <option v-for="account in accounts" :key="account.id" :value="account.id">
-                {{ account.name }}
-              </option>
-            </select>
-          </div>
-          <div v-if="error" class="error">{{ error }}</div>
+
+          <div v-if="modal.error.value" class="error">{{ modal.error.value }}</div>
           <div style="display: flex; gap: 10px; margin-top: 20px;">
-            <button type="submit" class="btn btn-primary">{{ editingBudgetId ? '更新' : '建立' }}</button>
-            <button type="button" @click="closeModal" class="btn btn-secondary">取消</button>
+            <button type="submit" class="btn btn-primary">{{ formController.isEditing() ? '更新' : '建立' }}</button>
+            <button type="button" @click="handleClose" class="btn btn-secondary">取消</button>
           </div>
         </form>
         <div v-else style="margin-top: 20px;">
-          <button type="button" @click="closeModal" class="btn btn-secondary">關閉</button>
+          <button type="button" @click="handleClose" class="btn btn-secondary">關閉</button>
         </div>
       </div>
     </div>
@@ -105,241 +208,162 @@
     <!-- 類別管理彈窗 -->
     <CategoryManagementModal
       v-model="showCategoryModal"
-      :categories="categories"
-      @categories-changed="loadCategories"
-      @show-message="handleShowMessage"
+      :categories="categoriesStore.categories"
+      @categories-changed="categoriesStore.fetchCategories()"
+      @show-message="messageModal.show"
     />
 
     <!-- 消息提示彈窗 -->
     <MessageModal
-      v-model="showMessageModal"
-      :type="messageType"
-      :message="message"
+      v-model="messageModal.isOpen.value"
+      :type="messageModal.type.value"
+      :message="messageModal.message.value"
+    />
+
+    <!-- 刪除確認對話框 -->
+    <ConfirmModal
+      v-model="confirmDialog.isOpen.value"
+      title="確認刪除"
+      message="確定要刪除此預算嗎？刪除後將無法復原。"
+      confirm-text="刪除"
+      cancel-text="取消"
+      confirm-type="danger"
+      @confirm="confirmDialog.handleConfirm"
     />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import api from '@/services/api'
-import type { Budget, BudgetCreate, Account, Category } from '@/types'
-import CategorySelector from '@/components/CategorySelector.vue'
+import type { Budget } from '@/types'
 import CategoryManagementModal from '@/components/CategoryManagementModal.vue'
 import MessageModal from '@/components/MessageModal.vue'
-import { formatDateTime, formatDateTimeForBackend, formatDateTimeForInput } from '@/utils/dateFormat'
+import ConfirmModal from '@/components/ConfirmModal.vue'
+import { useAccountsStore } from '@/stores/accounts'
+import { useBudgetsStore } from '@/stores/budgets'
+import { useCategoriesStore } from '@/stores/categories'
+import { useModal } from '@/composables/useModal'
+import { useConfirm } from '@/composables/useConfirm'
+import { useMessage } from '@/composables/useMessage'
+import { useForm } from '@/composables/useForm'
+import { useDateTime } from '@/composables/useDateTime'
+import { useBudgetForm } from '@/composables/useBudgetForm'
 
-const getCurrentDateTime = () => {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
-  const hours = String(now.getHours()).padStart(2, '0')
-  const minutes = String(now.getMinutes()).padStart(2, '0')
-  return `${year}-${month}-${day}T${hours}:${minutes}`
-}
+const accountsStore = useAccountsStore()
+const budgetsStore = useBudgetsStore()
+const categoriesStore = useCategoriesStore()
+const modal = useModal()
+const confirmDialog = useConfirm()
+const messageModal = useMessage()
+const dateTimeUtils = useDateTime()
+const budgetForm = useBudgetForm()
 
-const getNextMonthDateTime = () => {
-  const now = new Date()
-  const nextMonth = new Date(now.setMonth(now.getMonth() + 1))
-  const year = nextMonth.getFullYear()
-  const month = String(nextMonth.getMonth() + 1).padStart(2, '0')
-  const day = String(nextMonth.getDate()).padStart(2, '0')
-  const hours = String(nextMonth.getHours()).padStart(2, '0')
-  const minutes = String(nextMonth.getMinutes()).padStart(2, '0')
-  return `${year}-${month}-${day}T${hours}:${minutes}`
-}
-
-const budgets = ref<Budget[]>([])
-const accounts = ref<Account[]>([])
-const categories = ref<Category[]>([])
-const showModal = ref(false)
-const error = ref('')
-const editingBudgetId = ref<number | null>(null)
-
-// Category management
 const showCategoryModal = ref(false)
 
-// Message modal
-const showMessageModal = ref(false)
-const messageType = ref<'success' | 'error'>('success')
-const message = ref('')
+const formController = useForm(budgetForm.initialFormData)
 
-const handleShowMessage = (type: 'success' | 'error', msg: string) => {
-  messageType.value = type
-  message.value = msg
-  showMessageModal.value = true
-}
-const form = ref<BudgetCreate>({
-  name: '',
-  category: '',
-  amount: 0,
-  daily_limit: undefined,
-  period: 'monthly',
-  start_date: getCurrentDateTime(),
-  end_date: getNextMonthDateTime(),
-  account_id: 0
-})
+const getRangeModeButtonStyle = (mode: 'custom' | 'recurring') => {
+  const isSelected = formController.form.value.range_mode === mode
+  const baseColor = mode === 'custom' ? '#00d4ff' : '#667eea'
 
-const periodMap: Record<string, string> = {
-  monthly: '每月',
-  quarterly: '每季',
-  yearly: '每年'
-}
-
-const getPeriodText = (period: string) => {
-  return periodMap[period] || period
-}
-
-const getAccountName = (accountId: number) => {
-  const account = accounts.value.find(a => a.id === accountId)
-  return account ? account.name : '未知帳戶'
-}
-
-const loadBudgets = async () => {
-  try {
-    const response = await api.getBudgets()
-    budgets.value = response.data
-  } catch (err) {
-    console.error('載入預算時發生錯誤:', err)
+  return {
+    flex: 1,
+    padding: '12px 20px',
+    border: isSelected ? `2px solid ${baseColor}` : `1px solid rgba(${mode === 'custom' ? '0, 212, 255' : '102, 126, 234'}, 0.3)`,
+    borderRadius: '8px',
+    background: isSelected ? `rgba(${mode === 'custom' ? '0, 212, 255' : '102, 126, 234'}, 0.2)` : 'rgba(0, 0, 0, 0.3)',
+    color: isSelected ? baseColor : 'white',
+    cursor: 'pointer',
+    fontWeight: isSelected ? 'bold' : 'normal',
+    transition: 'all 0.3s ease'
   }
 }
 
-const loadAccounts = async () => {
-  try {
-    const response = await api.getAccounts()
-    accounts.value = response.data
-    // 自動選擇第一個帳戶
-    if (accounts.value.length > 0 && form.value.account_id === 0) {
-      form.value.account_id = accounts.value[0].id
-    }
-  } catch (err) {
-    console.error('載入帳戶時發生錯誤:', err)
+const selectRangeMode = (mode: 'custom' | 'recurring') => {
+  formController.form.value.range_mode = mode
+  budgetForm.onRangeModeChange(formController.form.value)
+}
+
+const handleCreate = () => {
+  if (accountsStore.accounts.length === 0) {
+    modal.open()
+  } else {
+    modal.open()
   }
 }
 
-const loadCategories = async () => {
-  try {
-    const response = await api.getCategories()
-    categories.value = response.data
-    // 自動選擇第一個類別
-    if (categories.value.length > 0 && form.value.category === '') {
-      form.value.category = categories.value[0].name
-    }
-  } catch (err) {
-    console.error('載入類別時發生錯誤:', err)
-  }
-}
+const handleEdit = (budget: Budget) => {
+  if (budget.range_mode === 'custom') {
+    const startDateTime = dateTimeUtils.formatDateTimeForInput(budget.start_date)
+    const endDateTime = dateTimeUtils.formatDateTimeForInput(budget.end_date)
 
-const createBudget = async () => {
-  try {
-    error.value = ''
-    const budgetData = {
-      ...form.value,
-      start_date: formatDateTimeForBackend(form.value.start_date),
-      end_date: formatDateTimeForBackend(form.value.end_date)
-    }
-    await api.createBudget(budgetData)
-    showModal.value = false
-    form.value = {
-      name: '',
-      category: '',
-      amount: 0,
-      daily_limit: undefined,
-      period: 'monthly',
-      start_date: getCurrentDateTime(),
-      end_date: getNextMonthDateTime(),
-      account_id: 0
-    }
-    await loadBudgets()
-  } catch (err: any) {
-    error.value = err.response?.data?.detail || '建立預算失敗'
+    budgetForm.startDateOnly.value = startDateTime.split('T')[0]
+    budgetForm.endDateOnly.value = endDateTime.split('T')[0]
   }
-}
 
-const editBudget = (budget: Budget) => {
-  editingBudgetId.value = budget.id
-  form.value = {
+  formController.setForm({
     name: budget.name,
-    category: budget.category,
+    category_names: budget.category_names || [],
     amount: budget.amount,
     daily_limit: budget.daily_limit,
+    range_mode: budget.range_mode,
     period: budget.period,
-    start_date: formatDateTimeForInput(budget.start_date),
-    end_date: formatDateTimeForInput(budget.end_date),
-    account_id: budget.account_id
-  }
-  showModal.value = true
+    start_date: budget.range_mode === 'custom' ? `${budgetForm.startDateOnly.value}T00:00` : undefined,
+    end_date: budget.range_mode === 'custom' ? `${budgetForm.endDateOnly.value}T23:59` : undefined,
+    account_ids: budget.account_ids || []
+  }, budget.id)
+
+  modal.open()
 }
 
-const updateBudget = async () => {
-  if (!editingBudgetId.value) return
-  try {
-    error.value = ''
-    await api.updateBudget(editingBudgetId.value, {
-      name: form.value.name,
-      category: form.value.category,
-      amount: form.value.amount,
-      daily_limit: form.value.daily_limit,
-      period: form.value.period,
-      start_date: formatDateTimeForBackend(form.value.start_date),
-      end_date: formatDateTimeForBackend(form.value.end_date),
-      account_id: form.value.account_id
-    })
-    showModal.value = false
-    editingBudgetId.value = null
-    form.value = {
-      name: '',
-      category: '',
-      amount: 0,
-      daily_limit: undefined,
-      period: 'monthly',
-      start_date: getCurrentDateTime(),
-      end_date: getNextMonthDateTime(),
-      account_id: 0
-    }
-    await loadBudgets()
-  } catch (err: any) {
-    error.value = err.response?.data?.detail || '更新預算失敗'
-  }
-}
-
-const deleteBudget = async (id: number) => {
-  if (confirm('確定要刪除此預算嗎？')) {
+const handleDelete = (id: number) => {
+  confirmDialog.confirm(id, async () => {
     try {
-      await api.deleteBudget(id)
-      await loadBudgets()
+      await budgetsStore.deleteBudget(id)
     } catch (err) {
       console.error('刪除預算時發生錯誤:', err)
     }
+  })
+}
+
+const handleSubmit = async () => {
+  try {
+    modal.clearError()
+    const budgetData: any = {
+      ...formController.form.value
+    }
+
+    // 只在自訂區間模式下格式化日期
+    if (formController.form.value.range_mode === 'custom' && formController.form.value.start_date && formController.form.value.end_date) {
+      budgetData.start_date = dateTimeUtils.formatDateTimeForBackend(formController.form.value.start_date)
+      budgetData.end_date = dateTimeUtils.formatDateTimeForBackend(formController.form.value.end_date)
+    }
+
+    if (formController.isEditing()) {
+      await budgetsStore.updateBudget(formController.editingId.value!, budgetData)
+    } else {
+      await budgetsStore.createBudget(budgetData)
+    }
+
+    handleClose()
+  } catch (err: any) {
+    modal.setError(err.response?.data?.detail || (formController.isEditing() ? '更新預算失敗' : '建立預算失敗'))
   }
 }
 
-const openCreateModal = () => {
-  if (accounts.value.length === 0) {
-    // 如果沒有帳戶，仍然打開模態框但會顯示提示訊息
-    showModal.value = true
-  } else {
-    showModal.value = true
-  }
-}
-
-const closeModal = () => {
-  showModal.value = false
-  editingBudgetId.value = null
-  error.value = ''
-  form.value = {
-    name: '',
-    category: '',
-    amount: 0,
-    daily_limit: undefined,
-    period: 'monthly',
-    start_date: getCurrentDateTime(),
-    end_date: getNextMonthDateTime(),
-    account_id: 0
-  }
+const handleClose = () => {
+  modal.close()
+  budgetForm.resetDates()
+  formController.resetForm()
+  // 重置為預設值
+  formController.form.value = { ...budgetForm.initialFormData }
 }
 
 onMounted(async () => {
-  await Promise.all([loadBudgets(), loadAccounts(), loadCategories()])
+  await Promise.all([
+    budgetsStore.fetchBudgets(),
+    accountsStore.fetchAccounts(),
+    categoriesStore.fetchCategories()
+  ])
 })
 </script>

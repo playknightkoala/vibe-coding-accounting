@@ -8,7 +8,7 @@ class Account(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    account_type = Column(String, nullable=False)  # 'asset', 'liability', 'equity', 'revenue', 'expense'
+    account_type = Column(String, nullable=False)  # 'cash', 'bank', 'credit_card', 'stored_value', 'securities', 'other'
     balance = Column(Float, default=0.0)
     currency = Column(String, default="USD")
     description = Column(String)
