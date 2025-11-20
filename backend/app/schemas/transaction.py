@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime, date
-from typing import Optional
+from typing import Optional, List, Dict
 
 class TransactionBase(BaseModel):
     description: str
@@ -26,3 +26,11 @@ class Transaction(TransactionBase):
 
     class Config:
         from_attributes = True
+
+class DailyStats(BaseModel):
+    date: str
+    credit: float
+    debit: float
+
+class MonthlyStats(BaseModel):
+    daily_stats: List[DailyStats]

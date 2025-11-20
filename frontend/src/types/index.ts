@@ -154,3 +154,13 @@ export interface CategoryOrderUpdate {
   category_id: number
   order_index: number
 }
+
+export interface DailyStats {
+  date: string
+  credit: number
+  debit: number
+}
+
+export interface MonthlyStats {
+  daily_stats: DailyStats[]
+}

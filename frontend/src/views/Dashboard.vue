@@ -2,6 +2,11 @@
   <div class="container">
     <h1>儀表板</h1>
 
+    <!-- 收入與支出折線圖 -->
+    <div class="card">
+      <MonthlyChart ref="monthlyChartRef" @day-click="handleDayClick" />
+    </div>
+
     <div class="card">
       <h2>總覽</h2>
 
@@ -261,6 +266,12 @@
       :initial-value="quickForm.form.value.amount"
       @confirm="handleQuickCalculatorConfirm"
     />
+
+    <!-- 當日交易明細彈窗 -->
+    <DailyTransactionsModal
+      v-model="showDailyModal"
+      :date="selectedDate"
+    />
   </div>
 </template>
 
@@ -272,6 +283,8 @@ import CategoryManagementModal from '@/components/CategoryManagementModal.vue'
 import MessageModal from '@/components/MessageModal.vue'
 import Calculator from '@/components/Calculator.vue'
 import DateTimeInput from '@/components/DateTimeInput.vue'
+import MonthlyChart from '@/components/MonthlyChart.vue'
+import DailyTransactionsModal from '@/components/DailyTransactionsModal.vue'
 import { useAccountsStore } from '@/stores/accounts'
 import { useTransactionsStore } from '@/stores/transactions'
 import { useBudgetsStore } from '@/stores/budgets'
@@ -300,6 +313,9 @@ const searchEndDate = ref(defaultEnd)
 const showCategoryModal = ref(false)
 const showQuickCalculator = ref(false)
 const selectedAccount = ref<Account | null>(null)
+const showDailyModal = ref(false)
+const selectedDate = ref('')
+const monthlyChartRef = ref<InstanceType<typeof MonthlyChart> | null>(null)
 
 const initialQuickFormData: TransactionCreate = {
   account_id: 0,
@@ -383,6 +399,11 @@ const handleQuickTransaction = async () => {
       budgetsStore.fetchBudgets()
     ])
 
+    // 刷新折線圖
+    if (monthlyChartRef.value) {
+      await monthlyChartRef.value.refresh()
+    }
+
     messageModal.showSuccess('交易已成功新增！')
     closeQuickTransaction()
   } catch (error: any) {
@@ -399,6 +420,11 @@ const closeQuickTransaction = () => {
 
 const handleQuickCalculatorConfirm = (value: number) => {
   quickForm.form.value.amount = value
+}
+
+const handleDayClick = (date: string) => {
+  selectedDate.value = date
+  showDailyModal.value = true
 }
 
 onMounted(async () => {

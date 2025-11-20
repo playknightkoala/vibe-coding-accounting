@@ -20,7 +20,8 @@ import type {
   Category,
   CategoryCreate,
   CategoryUpdate,
-  CategoryOrderUpdate
+  CategoryOrderUpdate,
+  MonthlyStats
 } from '@/types'
 
 // 使用相對路徑，讓 nginx 反向代理處理路由
@@ -145,6 +146,16 @@ export default {
 
   deleteTransaction(id: number) {
     return api.delete(`/transactions/${id}`)
+  },
+
+  getMonthlyStats(year: number, month: number) {
+    return api.get<MonthlyStats>('/transactions/stats/monthly', {
+      params: { year, month }
+    })
+  },
+
+  getDailyTransactions(date: string) {
+    return api.get<Transaction[]>(`/transactions/stats/daily/${date}`)
   },
 
   // 預算
