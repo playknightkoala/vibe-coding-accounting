@@ -99,11 +99,18 @@
           <div v-if="budget.daily_limit" style="margin-top: 15px; border-top: 1px dashed rgba(0, 212, 255, 0.2); padding-top: 10px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
               <p style="margin: 0; font-size: 14px;"><strong>今日預算：</strong>${{ budget.daily_limit.toFixed(2) }}</p>
-              <p style="margin: 0; font-size: 14px;">
-                已用: <span :style="{ color: dashboard.getDailySpent(budget) > budget.daily_limit ? '#ff6b6b' : '#51cf66' }">
-                  ${{ dashboard.getDailySpent(budget).toFixed(2) }}
-                </span>
-              </p>
+              <div style="text-align: right;">
+                <p style="margin: 0; font-size: 14px;">
+                  已用: <span :style="{ color: dashboard.getDailySpent(budget) > budget.daily_limit ? '#ff6b6b' : '#51cf66' }">
+                    ${{ dashboard.getDailySpent(budget).toFixed(2) }}
+                  </span>
+                </p>
+                <p style="margin: 0; font-size: 14px;">
+                  剩餘: <span :style="{ color: (budget.daily_limit - dashboard.getDailySpent(budget)) < 0 ? '#ff6b6b' : '#51cf66' }">
+                    ${{ (budget.daily_limit - dashboard.getDailySpent(budget)).toFixed(2) }}
+                  </span>
+                </p>
+              </div>
             </div>
             <div style="background-color: rgba(0, 0, 0, 0.3); height: 10px; border-radius: 5px; overflow: hidden;">
               <div
@@ -132,6 +139,11 @@
                style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; flex: 1; min-width: 150px;" />
         <input type="text" v-model="searchCategory" placeholder="搜尋類別..."
                style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; flex: 1; min-width: 150px;" />
+        <select v-model="searchType" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; min-width: 100px;">
+          <option value="">所有類型</option>
+          <option value="credit">收入</option>
+          <option value="debit">支出</option>
+        </select>
         <input type="date" v-model="searchDate"
                style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; min-width: 150px;" />
         <button @click="clearSearch" class="btn btn-secondary" style="padding: 8px 15px;">清除</button>
@@ -143,6 +155,7 @@
               <th>日期</th>
               <th>描述</th>
               <th>類型</th>
+              <th>類別</th>
               <th>金額</th>
             </tr>
           </thead>
@@ -151,6 +164,7 @@
               <td>{{ dateTimeUtils.formatDateTime(transaction.transaction_date) }}</td>
               <td>{{ transaction.description }}</td>
               <td>{{ transaction.transaction_type === 'credit' ? '收入' : '支出' }}</td>
+              <td>{{ transaction.category || '無' }}</td>
               <td :style="{ color: transaction.transaction_type === 'credit' ? '#51cf66' : '#ff6b6b' }">
                 ${{ transaction.amount.toFixed(2) }}
               </td>
@@ -274,6 +288,7 @@ const dashboard = useDashboard()
 
 const searchQuery = ref('')
 const searchCategory = ref('')
+const searchType = ref('')
 const searchDate = ref('')
 const showCategoryModal = ref(false)
 const showQuickCalculator = ref(false)
@@ -311,12 +326,19 @@ const filteredTransactions = computed(() => {
     )
   }
 
+  if (searchType.value) {
+    filtered = filtered.filter(transaction =>
+      transaction.transaction_type === searchType.value
+    )
+  }
+
   return filtered.slice(0, 20)
 })
 
 const clearSearch = () => {
   searchQuery.value = ''
   searchCategory.value = ''
+  searchType.value = ''
   searchDate.value = ''
 }
 

@@ -1,21 +1,21 @@
 <template>
   <div class="datetime-input-wrapper">
-    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-      <div style="flex: 1; min-width: 150px;">
+    <div class="datetime-row">
+      <div class="date-part">
         <input
           type="date"
           :value="dateValue"
           @input="updateDate"
           :required="required"
-          style="width: 100%; padding: 8px; border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 4px; background: rgba(0, 0, 0, 0.3); color: white;"
+          class="date-input"
         />
       </div>
-      <div style="display: flex; gap: 5px; align-items: center;">
+      <div class="time-part">
         <select
           :value="hourValue"
           @change="updateHour"
           :required="required"
-          style="padding: 8px; border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 4px; background: rgba(0, 0, 0, 0.3); color: white; width: 70px;"
+          class="time-select"
         >
           <option v-for="hour in 24" :key="hour - 1" :value="String(hour - 1).padStart(2, '0')">
             {{ String(hour - 1).padStart(2, '0') }}
@@ -26,7 +26,7 @@
           :value="minuteValue"
           @change="updateMinute"
           :required="required"
-          style="padding: 8px; border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 4px; background: rgba(0, 0, 0, 0.3); color: white; width: 70px;"
+          class="time-select"
         >
           <option v-for="minute in 60" :key="minute - 1" :value="String(minute - 1).padStart(2, '0')">
             {{ String(minute - 1).padStart(2, '0') }}
@@ -89,8 +89,55 @@ const updateMinute = (event: Event) => {
 </script>
 
 <style scoped>
-.datetime-input-wrapper select {
+.datetime-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.date-part {
+  flex: 1.5;
+  min-width: 150px;
+}
+
+.time-part {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  flex: 1;
+  min-width: 140px;
+}
+
+.date-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  color: white;
+}
+
+.time-select {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  color: white;
+  min-width: 60px;
   cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .datetime-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .date-part, .time-part {
+    width: 100%;
+    flex: none;
+  }
 }
 
 .datetime-input-wrapper select:focus,

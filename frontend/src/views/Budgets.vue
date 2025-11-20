@@ -154,12 +154,12 @@
           </div>
 
           <!-- 自訂區間模式: 手動選擇日期 -->
-          <div v-if="formController.form.value.range_mode === 'custom'">
-            <div class="form-group">
+          <div v-if="formController.form.value.range_mode === 'custom'" class="date-range-row">
+            <div class="form-group date-input-group">
               <label>開始日期</label>
               <input type="date" v-model="budgetForm.startDateOnly.value" @change="() => budgetForm.updateStartDate(formController.form.value)" required />
             </div>
-            <div class="form-group">
+            <div class="form-group date-input-group">
               <label>結束日期</label>
               <input type="date" v-model="budgetForm.endDateOnly.value" @change="() => budgetForm.updateEndDate(formController.form.value)" required />
             </div>
@@ -367,3 +367,21 @@ onMounted(async () => {
   ])
 })
 </script>
+
+<style scoped>
+.date-range-row {
+  display: flex;
+  gap: 15px;
+}
+
+.date-input-group {
+  flex: 1;
+}
+
+@media (max-width: 768px) {
+  .date-range-row {
+    flex-direction: column;
+    gap: 0;
+  }
+}
+</style>

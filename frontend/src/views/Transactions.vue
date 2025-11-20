@@ -8,6 +8,11 @@
         <div style="display: flex; gap: 10px; flex-wrap: wrap; flex: 1; justify-content: flex-end; min-width: 250px;">
           <input type="text" v-model="searchQuery" placeholder="搜尋描述..." style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; flex: 1; min-width: 150px;" />
           <input type="text" v-model="searchCategory" placeholder="搜尋類別..." style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; flex: 1; min-width: 150px;" />
+          <select v-model="searchType" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; min-width: 100px;">
+            <option value="">所有類型</option>
+            <option value="credit">收入</option>
+            <option value="debit">支出</option>
+          </select>
           <input type="date" v-model="searchDate" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; flex: 1; min-width: 150px;" />
           <button @click="clearSearch" class="btn btn-secondary" style="padding: 8px 15px;">清除</button>
         </div>
@@ -184,6 +189,7 @@ const dateTimeUtils = useDateTime()
 
 const searchQuery = ref('')
 const searchCategory = ref('')
+const searchType = ref('')
 const searchDate = ref('')
 const showCategoryModal = ref(false)
 const showCalculator = ref(false)
@@ -210,13 +216,17 @@ const filteredTransactions = computed(() => {
     const matchesDate = searchDate.value === '' ||
       transaction.transaction_date.startsWith(searchDate.value)
 
-    return matchesDescription && matchesCategory && matchesDate
+    const matchesType = searchType.value === '' ||
+      transaction.transaction_type === searchType.value
+
+    return matchesDescription && matchesCategory && matchesDate && matchesType
   })
 })
 
 const clearSearch = () => {
   searchQuery.value = ''
   searchCategory.value = ''
+  searchType.value = ''
   searchDate.value = ''
 }
 
