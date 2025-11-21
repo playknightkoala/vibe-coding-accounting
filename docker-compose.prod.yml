@@ -34,6 +34,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    container_name: accounting_backend_prod
     restart: always
     environment:
       DATABASE_URL: ${DATABASE_URL}
@@ -60,6 +61,7 @@ services:
       dockerfile: Dockerfile
       args:
         - NODE_ENV=production
+    container_name: accounting_frontend_prod
     restart: always
     environment:
       # Vite allowed hosts for DNS rebinding protection
