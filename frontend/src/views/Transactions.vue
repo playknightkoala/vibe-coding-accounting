@@ -81,6 +81,10 @@
           <div class="form-group">
             <label>描述</label>
             <input v-model="formController.form.value.description" required />
+            <DescriptionHistory
+              :descriptions="historicalDescriptions"
+              @select="handleDescriptionSelect"
+            />
           </div>
           <div class="form-group">
             <label>金額</label>
@@ -176,6 +180,7 @@ import MessageModal from '@/components/MessageModal.vue'
 import ConfirmModal from '@/components/ConfirmModal.vue'
 import Calculator from '@/components/Calculator.vue'
 import DateTimeInput from '@/components/DateTimeInput.vue'
+import DescriptionHistory from '@/components/DescriptionHistory.vue'
 import { useAccountsStore } from '@/stores/accounts'
 import { useTransactionsStore } from '@/stores/transactions'
 import { useBudgetsStore } from '@/stores/budgets'
@@ -185,6 +190,7 @@ import { useConfirm } from '@/composables/useConfirm'
 import { useMessage } from '@/composables/useMessage'
 import { useForm } from '@/composables/useForm'
 import { useDateTime } from '@/composables/useDateTime'
+import api from '@/services/api'
 
 const accountsStore = useAccountsStore()
 const transactionsStore = useTransactionsStore()
@@ -232,6 +238,18 @@ const filteredTransactions = computed(() => {
     return matchesDescription && matchesCategory && matchesDate && matchesType
   })
 })
+
+// Historical descriptions from backend
+const historicalDescriptions = ref<string[]>([])
+
+const fetchDescriptionHistory = async () => {
+  try {
+    const response = await api.getDescriptionHistory()
+    historicalDescriptions.value = response.data.descriptions
+  } catch (error) {
+    console.error('載入敘述歷史時發生錯誤:', error)
+  }
+}
 
 const clearSearch = () => {
   searchQuery.value = ''
@@ -284,14 +302,19 @@ const handleSubmit = async () => {
         category: transactionData.category,
         transaction_date: transactionData.transaction_date
       })
+      // 更新交易時也更新敘述歷史
+      await api.updateDescriptionHistory(transactionData.description)
     } else {
       await transactionsStore.createTransaction(transactionData)
+      // 新增交易後更新敘述歷史
+      await api.updateDescriptionHistory(transactionData.description)
     }
 
     // 交易會影響帳戶餘額和預算，需要重新載入
     await Promise.all([
       accountsStore.fetchAccounts(),
-      budgetsStore.fetchBudgets()
+      budgetsStore.fetchBudgets(),
+      fetchDescriptionHistory()
     ])
     handleClose()
   } catch (err: any) {
@@ -317,6 +340,10 @@ const handleCalculatorConfirm = (value: number) => {
   formController.form.value.amount = value
 }
 
+const handleDescriptionSelect = (description: string) => {
+  formController.form.value.description = description
+}
+
 const handleRecordAgain = (transaction: Transaction) => {
   formController.resetForm()
   formController.form.value.account_id = transaction.account_id
@@ -332,7 +359,8 @@ onMounted(async () => {
   await Promise.all([
     transactionsStore.fetchTransactions(),
     accountsStore.fetchAccounts(),
-    categoriesStore.fetchCategories()
+    categoriesStore.fetchCategories(),
+    fetchDescriptionHistory()
   ])
 
   // 自動選擇第一個帳戶

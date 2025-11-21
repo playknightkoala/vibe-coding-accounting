@@ -18,7 +18,8 @@
       "Bash(timeout 5 bash:*)",
       "Bash(python -m pytest:*)",
       "Bash(python -m py_compile:*)",
-      "Bash(/dev/null)"
+      "Bash(/dev/null)",
+      "Bash(timeout 10 bash:*)"
     ],
     "deny": [],
     "ask": []

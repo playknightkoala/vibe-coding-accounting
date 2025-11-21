@@ -226,6 +226,10 @@
           <div class="form-group">
             <label>描述</label>
             <input v-model="quickForm.form.value.description" placeholder="交易描述" required />
+            <DescriptionHistory
+              :descriptions="historicalDescriptions"
+              @select="handleDescriptionSelect"
+            />
           </div>
 
           <div class="form-group">
@@ -319,6 +323,7 @@ import Calculator from '@/components/Calculator.vue'
 import DateTimeInput from '@/components/DateTimeInput.vue'
 import MonthlyChart from '@/components/MonthlyChart.vue'
 import DailyTransactionsModal from '@/components/DailyTransactionsModal.vue'
+import DescriptionHistory from '@/components/DescriptionHistory.vue'
 import { useAccountsStore } from '@/stores/accounts'
 import { useTransactionsStore } from '@/stores/transactions'
 import { useBudgetsStore } from '@/stores/budgets'
@@ -328,6 +333,7 @@ import { useMessage } from '@/composables/useMessage'
 import { useForm } from '@/composables/useForm'
 import { useDateTime } from '@/composables/useDateTime'
 import { useDashboard } from '@/composables/useDashboard'
+import api from '@/services/api'
 
 const accountsStore = useAccountsStore()
 const transactionsStore = useTransactionsStore()
@@ -362,6 +368,18 @@ const initialQuickFormData: TransactionCreate = {
 }
 
 const quickForm = useForm<TransactionCreate>(initialQuickFormData)
+
+// Historical descriptions from backend
+const historicalDescriptions = ref<string[]>([])
+
+const fetchDescriptionHistory = async () => {
+  try {
+    const response = await api.getDescriptionHistory()
+    historicalDescriptions.value = response.data.descriptions
+  } catch (error) {
+    console.error('載入敘述歷史時發生錯誤:', error)
+  }
+}
 
 const filteredTransactions = computed(() => {
   let filtered = transactionsStore.transactions
@@ -427,10 +445,14 @@ const handleQuickTransaction = async () => {
 
     await transactionsStore.createTransaction(transactionData)
 
+    // 更新敘述歷史
+    await api.updateDescriptionHistory(transactionData.description)
+
     // 重新載入所有資料
     await Promise.all([
       accountsStore.fetchAccounts(),
-      budgetsStore.fetchBudgets()
+      budgetsStore.fetchBudgets(),
+      fetchDescriptionHistory()
     ])
 
     // 刷新折線圖
@@ -455,6 +477,10 @@ const handleQuickCalculatorConfirm = (value: number) => {
   quickForm.form.value.amount = value
 }
 
+const handleDescriptionSelect = (description: string) => {
+  quickForm.form.value.description = description
+}
+
 const handleDayClick = (date: string) => {
   selectedDate.value = date
   showDailyModal.value = true
@@ -476,7 +502,8 @@ onMounted(async () => {
     accountsStore.fetchAccounts(),
     transactionsStore.fetchTransactions(),
     budgetsStore.fetchBudgets(),
-    categoriesStore.fetchCategories()
+    categoriesStore.fetchCategories(),
+    fetchDescriptionHistory()
   ])
 })
 </script>

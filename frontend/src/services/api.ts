@@ -300,5 +300,16 @@ export default {
     return api.get<TransactionDetail[]>(`/reports/account/${accountId}/transactions/daily`, {
       params: { date_str: date }
     })
+  },
+
+  // 敘述歷史
+  getDescriptionHistory() {
+    return api.get<{ descriptions: string[] }>('/description-history/')
+  },
+
+  updateDescriptionHistory(description: string) {
+    return api.post('/description-history/update', null, {
+      params: { description }
+    })
   }
 }
