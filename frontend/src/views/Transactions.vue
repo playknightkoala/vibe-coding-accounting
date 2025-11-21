@@ -83,12 +83,13 @@
             <label>金額</label>
             <div style="position: relative;">
               <input
-                type="number"
-                step="0.01"
+                type="text"
                 v-model.number="formController.form.value.amount"
-                @focus="showCalculator = true"
+                @click="showCalculator = true"
+                readonly
                 required
-                style="padding-right: 40px;"
+                style="padding-right: 40px; cursor: pointer;"
+                placeholder="點擊使用計算機輸入"
               />
               <button
                 type="button"

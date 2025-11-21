@@ -199,13 +199,13 @@
             <label>金額</label>
             <div style="position: relative;">
               <input
-                type="number"
+                type="text"
                 v-model.number="quickForm.form.value.amount"
-                @focus="showQuickCalculator = true"
-                step="0.01"
-                min="0.01"
+                @click="showQuickCalculator = true"
+                readonly
                 required
-                style="padding-right: 40px;"
+                style="padding-right: 40px; cursor: pointer;"
+                placeholder="點擊使用計算機輸入"
               />
               <button
                 type="button"
