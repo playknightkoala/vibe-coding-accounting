@@ -186,6 +186,7 @@
               <th>類型</th>
               <th>類別</th>
               <th>金額</th>
+              <th>操作</th>
             </tr>
           </thead>
           <tbody>
@@ -197,6 +198,11 @@
               <td :style="{ color: transaction.transaction_type === 'credit' ? '#51cf66' : '#ff6b6b' }">
                 ${{ transaction.amount.toFixed(2) }}
               </td>
+              <td>
+                <button @click="handleRecordAgain(transaction)" class="btn btn-primary" style="padding: 5px 10px; white-space: nowrap;">
+                  再記一筆
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -207,8 +213,16 @@
     <!-- 快速記帳彈窗 -->
     <div v-if="quickModal.isOpen.value" class="modal">
       <div class="modal-content">
-        <h2 style="color: #00d4ff;">快速記帳 - {{ selectedAccount?.name }}</h2>
+        <h2 style="color: #00d4ff;">快速記帳</h2>
         <form @submit.prevent="handleQuickTransaction">
+          <div class="form-group">
+            <label>帳戶</label>
+            <select v-model="quickForm.form.value.account_id" required>
+              <option v-for="account in accountsStore.accounts" :key="account.id" :value="account.id">
+                {{ account.name }}
+              </option>
+            </select>
+          </div>
           <div class="form-group">
             <label>描述</label>
             <input v-model="quickForm.form.value.description" placeholder="交易描述" required />
@@ -395,7 +409,6 @@ const clearSearch = () => {
 }
 
 const openQuickTransaction = (account: Account) => {
-  selectedAccount.value = account
   quickForm.resetForm()
   quickForm.form.value.account_id = account.id
   quickForm.form.value.transaction_date = dateTimeUtils.getCurrentDateTime()
@@ -434,7 +447,6 @@ const handleQuickTransaction = async () => {
 
 const closeQuickTransaction = () => {
   quickModal.close()
-  selectedAccount.value = null
   quickForm.resetForm()
   quickForm.form.value.transaction_date = dateTimeUtils.getCurrentDateTime()
 }
@@ -446,6 +458,17 @@ const handleQuickCalculatorConfirm = (value: number) => {
 const handleDayClick = (date: string) => {
   selectedDate.value = date
   showDailyModal.value = true
+}
+
+const handleRecordAgain = (transaction: any) => {
+  quickForm.resetForm()
+  quickForm.form.value.account_id = transaction.account_id
+  quickForm.form.value.description = transaction.description
+  quickForm.form.value.amount = transaction.amount
+  quickForm.form.value.transaction_type = transaction.transaction_type
+  quickForm.form.value.category = transaction.category || ''
+  quickForm.form.value.transaction_date = dateTimeUtils.getCurrentDateTime()
+  quickModal.open()
 }
 
 onMounted(async () => {

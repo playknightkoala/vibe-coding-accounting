@@ -45,6 +45,9 @@
               </td>
               <td>
                 <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                  <button @click="handleRecordAgain(transaction)" class="btn" style="padding: 5px 10px; background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white;">
+                    再記一筆
+                  </button>
                   <button @click="handleEdit(transaction)" class="btn btn-primary" style="padding: 5px 10px;">
                     編輯
                   </button>
@@ -312,6 +315,17 @@ const handleClose = () => {
 
 const handleCalculatorConfirm = (value: number) => {
   formController.form.value.amount = value
+}
+
+const handleRecordAgain = (transaction: Transaction) => {
+  formController.resetForm()
+  formController.form.value.account_id = transaction.account_id
+  formController.form.value.description = transaction.description
+  formController.form.value.amount = transaction.amount
+  formController.form.value.transaction_type = transaction.transaction_type
+  formController.form.value.category = transaction.category || ''
+  formController.form.value.transaction_date = dateTimeUtils.getCurrentDateTime()
+  modal.open()
 }
 
 onMounted(async () => {
