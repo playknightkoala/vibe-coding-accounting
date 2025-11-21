@@ -3,7 +3,7 @@
     <nav v-if="isAuthenticated" class="navbar">
       <div class="navbar-content">
         <div>
-          <router-link to="/">儀表板</router-link>
+          <router-link to="/dashboard">儀表板</router-link>
           <router-link to="/accounts">帳戶</router-link>
           <router-link to="/transactions">交易</router-link>
           <router-link to="/budgets">預算</router-link>

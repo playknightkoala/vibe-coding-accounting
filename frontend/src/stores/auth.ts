@@ -7,7 +7,9 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const token = ref<string | null>(localStorage.getItem('token'))
 
-  const isAuthenticated = computed(() => !!token.value)
+  const isAuthenticated = computed(() => {
+    return !!token.value && token.value !== 'null' && token.value !== 'undefined'
+  })
 
   async function register(userData: UserCreate) {
     const response = await api.register(userData)
