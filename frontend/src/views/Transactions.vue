@@ -3,22 +3,22 @@
     <h1>交易</h1>
 
     <div class="card">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
-        <button @click="modal.open()" class="btn btn-primary">新增交易</button>
-        <div style="display: flex; gap: 10px; flex-wrap: wrap; flex: 1; justify-content: flex-end; min-width: 250px;">
-          <input type="text" v-model="searchQuery" placeholder="搜尋描述..." style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; flex: 1; min-width: 150px;" />
-          <input type="text" v-model="searchCategory" placeholder="搜尋類別..." style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; flex: 1; min-width: 150px;" />
-          <select v-model="searchType" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; min-width: 100px;">
+      <div class="controls-header">
+        <button @click="modal.open()" class="btn btn-primary btn-add">新增交易</button>
+        <div class="filters-wrapper">
+          <input type="text" v-model="searchQuery" placeholder="搜尋描述..." class="search-input" />
+          <input type="text" v-model="searchCategory" placeholder="搜尋類別..." class="search-input" />
+          <select v-model="searchType" class="search-select">
             <option value="">所有類型</option>
             <option value="credit">收入</option>
             <option value="debit">支出</option>
           </select>
-          <div style="display: flex; gap: 5px; align-items: center; flex-wrap: wrap; flex: 2; min-width: 280px;">
-            <input type="date" v-model="searchStartDate" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; flex: 1; min-width: 130px;" />
-            <span>~</span>
-            <input type="date" v-model="searchEndDate" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; flex: 1; min-width: 130px;" />
+          <div class="date-range-wrapper">
+            <input type="date" v-model="searchStartDate" class="date-input" />
+            <span class="date-separator">~</span>
+            <input type="date" v-model="searchEndDate" class="date-input" />
           </div>
-          <button @click="clearSearch" class="btn btn-secondary" style="padding: 8px 15px;">清除</button>
+          <button @click="clearSearch" class="btn btn-secondary btn-clear">清除</button>
         </div>
       </div>
 
@@ -330,3 +330,94 @@ onMounted(async () => {
   }
 })
 </script>
+
+<style scoped>
+.controls-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.filters-wrapper {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex: 1;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.search-input,
+.search-select,
+.date-input {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 150px;
+}
+
+.search-select {
+  min-width: 100px;
+}
+
+.date-range-wrapper {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.date-input {
+  flex: 1;
+  min-width: 130px;
+}
+
+.btn-clear {
+  padding: 8px 15px;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  .controls-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-add {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+
+  .filters-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .search-input,
+  .search-select,
+  .date-range-wrapper,
+  .btn-clear {
+    width: 100%;
+    min-width: 0; /* Override min-width to prevent overflow */
+  }
+
+  .date-range-wrapper {
+    display: flex;
+    flex-direction: row; /* Keep dates side-by-side if possible, or stack if very narrow */
+    gap: 5px;
+  }
+  
+  .date-input {
+    min-width: 0;
+    flex: 1;
+  }
+}
+</style>
