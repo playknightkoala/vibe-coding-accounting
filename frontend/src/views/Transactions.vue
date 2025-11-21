@@ -5,21 +5,10 @@
     <div class="card">
       <div class="controls-header">
         <button @click="modal.open()" class="btn btn-primary btn-add">新增交易</button>
-        <div class="filters-wrapper">
-          <input type="text" v-model="searchQuery" placeholder="搜尋描述..." class="search-input" />
-          <input type="text" v-model="searchCategory" placeholder="搜尋類別..." class="search-input" />
-          <select v-model="searchType" class="search-select">
-            <option value="">所有類型</option>
-            <option value="credit">收入</option>
-            <option value="debit">支出</option>
-          </select>
-          <div class="date-range-wrapper">
-            <input type="date" v-model="searchStartDate" class="date-input" />
-            <span class="date-separator">~</span>
-            <input type="date" v-model="searchEndDate" class="date-input" />
-          </div>
-          <button @click="clearSearch" class="btn btn-secondary btn-clear">清除</button>
-        </div>
+        <button @click="showSearchModal = true" class="btn btn-primary" style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.2rem;">🔍</span>
+          <span>搜尋交易</span>
+        </button>
       </div>
 
       <div style="overflow-x: auto;" v-if="filteredTransactions.length > 0">
@@ -168,6 +157,12 @@
       :initial-value="formController.form.value.amount"
       @confirm="handleCalculatorConfirm"
     />
+
+    <!-- 交易搜尋彈窗 -->
+    <TransactionsSearchModal
+      v-model="showSearchModal"
+      :transactions="transactionsStore.transactions"
+    />
   </div>
 </template>
 
@@ -181,6 +176,7 @@ import ConfirmModal from '@/components/ConfirmModal.vue'
 import Calculator from '@/components/Calculator.vue'
 import DateTimeInput from '@/components/DateTimeInput.vue'
 import DescriptionHistory from '@/components/DescriptionHistory.vue'
+import TransactionsSearchModal from '@/components/TransactionsSearchModal.vue'
 import { useAccountsStore } from '@/stores/accounts'
 import { useTransactionsStore } from '@/stores/transactions'
 import { useBudgetsStore } from '@/stores/budgets'
@@ -201,14 +197,9 @@ const confirmDialog = useConfirm()
 const messageModal = useMessage()
 const dateTimeUtils = useDateTime()
 
-const searchQuery = ref('')
-const searchCategory = ref('')
-const searchType = ref('')
-const { start: defaultStart, end: defaultEnd } = dateTimeUtils.getCurrentMonthRange()
-const searchStartDate = ref(defaultStart)
-const searchEndDate = ref(defaultEnd)
 const showCategoryModal = ref(false)
 const showCalculator = ref(false)
+const showSearchModal = ref(false)
 
 const initialFormData: TransactionCreate = {
   account_id: 0,
@@ -221,22 +212,9 @@ const initialFormData: TransactionCreate = {
 
 const formController = useForm<TransactionCreate>(initialFormData)
 
+// Show recent 20 transactions
 const filteredTransactions = computed(() => {
-  return transactionsStore.transactions.filter(transaction => {
-    const matchesDescription = searchQuery.value === '' ||
-      transaction.description.toLowerCase().includes(searchQuery.value.toLowerCase())
-
-    const matchesCategory = searchCategory.value === '' ||
-      (transaction.category && transaction.category.toLowerCase().includes(searchCategory.value.toLowerCase()))
-
-    const matchesDate = (!searchStartDate.value || transaction.transaction_date >= `${searchStartDate.value}T00:00:00`) &&
-      (!searchEndDate.value || transaction.transaction_date <= `${searchEndDate.value}T23:59:59`)
-
-    const matchesType = searchType.value === '' ||
-      transaction.transaction_type === searchType.value
-
-    return matchesDescription && matchesCategory && matchesDate && matchesType
-  })
+  return transactionsStore.transactions.slice(0, 20)
 })
 
 // Historical descriptions from backend
@@ -249,15 +227,6 @@ const fetchDescriptionHistory = async () => {
   } catch (error) {
     console.error('載入敘述歷史時發生錯誤:', error)
   }
-}
-
-const clearSearch = () => {
-  searchQuery.value = ''
-  searchCategory.value = ''
-  searchType.value = ''
-  const { start, end } = dateTimeUtils.getCurrentMonthRange()
-  searchStartDate.value = start
-  searchEndDate.value = end
 }
 
 const handleEdit = (transaction: Transaction) => {
@@ -377,53 +346,11 @@ onMounted(async () => {
 <style scoped>
 .controls-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   margin-bottom: 20px;
   flex-wrap: wrap;
   gap: 10px;
-}
-
-.filters-wrapper {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  flex: 1;
-  justify-content: flex-end;
-  align-items: center;
-}
-
-.search-input,
-.search-select,
-.date-input {
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
-.search-input {
-  flex: 1;
-  min-width: 150px;
-}
-
-.search-select {
-  min-width: 100px;
-}
-
-.date-range-wrapper {
-  display: flex;
-  gap: 5px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.date-input {
-  flex: 1;
-  min-width: 130px;
-}
-
-.btn-clear {
-  padding: 8px 15px;
 }
 
 /* Mobile Responsive Styles */
@@ -435,32 +362,6 @@ onMounted(async () => {
 
   .btn-add {
     width: 100%;
-    margin-bottom: 10px;
-  }
-
-  .filters-wrapper {
-    flex-direction: column;
-    align-items: stretch;
-    width: 100%;
-  }
-
-  .search-input,
-  .search-select,
-  .date-range-wrapper,
-  .btn-clear {
-    width: 100%;
-    min-width: 0; /* Override min-width to prevent overflow */
-  }
-
-  .date-range-wrapper {
-    display: flex;
-    flex-direction: row; /* Keep dates side-by-side if possible, or stack if very narrow */
-    gap: 5px;
-  }
-  
-  .date-input {
-    min-width: 0;
-    flex: 1;
   }
 }
 </style>

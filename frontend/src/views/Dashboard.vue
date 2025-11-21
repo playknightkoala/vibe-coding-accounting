@@ -157,57 +157,18 @@
     </div>
 
     <div class="card">
-      <h2>最近交易</h2>
-      <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
-        <input type="text" v-model="searchQuery" placeholder="搜尋描述..."
-               style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; flex: 1; min-width: 150px;" />
-        <input type="text" v-model="searchCategory" placeholder="搜尋類別..."
-               style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; flex: 1; min-width: 150px;" />
-        <select v-model="searchType" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; min-width: 100px;">
-          <option value="">所有類型</option>
-          <option value="credit">收入</option>
-          <option value="debit">支出</option>
-        </select>
-        <div style="display: flex; gap: 5px; align-items: center; flex-wrap: wrap;">
-          <input type="date" v-model="searchStartDate"
-                 style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; min-width: 130px;" />
-          <span>~</span>
-          <input type="date" v-model="searchEndDate"
-                 style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; min-width: 130px;" />
-        </div>
-        <button @click="clearSearch" class="btn btn-secondary" style="padding: 8px 15px;">清除</button>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h2 style="margin: 0;">交易日曆</h2>
+        <button @click="showSearchModal = true" class="btn btn-primary" style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.2rem;">🔍</span>
+          <span>搜尋交易</span>
+        </button>
       </div>
-      <div style="overflow-x: auto;" v-if="filteredTransactions.length > 0">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>日期</th>
-              <th>描述</th>
-              <th>類型</th>
-              <th>類別</th>
-              <th>金額</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="transaction in filteredTransactions" :key="transaction.id">
-              <td>{{ dateTimeUtils.formatDateTime(transaction.transaction_date) }}</td>
-              <td>{{ transaction.description }}</td>
-              <td>{{ transaction.transaction_type === 'credit' ? '收入' : '支出' }}</td>
-              <td>{{ transaction.category || '無' }}</td>
-              <td :style="{ color: transaction.transaction_type === 'credit' ? '#51cf66' : '#ff6b6b' }">
-                ${{ transaction.amount.toFixed(2) }}
-              </td>
-              <td>
-                <button @click="handleRecordAgain(transaction)" class="btn btn-primary" style="padding: 5px 10px; white-space: nowrap;">
-                  再記一筆
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <p v-else>尚無交易記錄</p>
+      <TransactionCalendar
+        :transactions="transactionsStore.transactions"
+        :selected-date="selectedDate"
+        @date-selected="handleCalendarDateSelected"
+      />
     </div>
 
     <!-- 快速記帳彈窗 -->
@@ -310,6 +271,12 @@
       v-model="showDailyModal"
       :date="selectedDate"
     />
+
+    <!-- 交易搜尋彈窗 -->
+    <TransactionsSearchModal
+      v-model="showSearchModal"
+      :transactions="transactionsStore.transactions"
+    />
   </div>
 </template>
 
@@ -324,6 +291,8 @@ import DateTimeInput from '@/components/DateTimeInput.vue'
 import MonthlyChart from '@/components/MonthlyChart.vue'
 import DailyTransactionsModal from '@/components/DailyTransactionsModal.vue'
 import DescriptionHistory from '@/components/DescriptionHistory.vue'
+import TransactionCalendar from '@/components/TransactionCalendar.vue'
+import TransactionsSearchModal from '@/components/TransactionsSearchModal.vue'
 import { useAccountsStore } from '@/stores/accounts'
 import { useTransactionsStore } from '@/stores/transactions'
 import { useBudgetsStore } from '@/stores/budgets'
@@ -345,15 +314,9 @@ const dateTimeUtils = useDateTime()
 const dashboard = useDashboard()
 
 const activeTab = ref('accounts')
-const searchQuery = ref('')
-const searchCategory = ref('')
-const searchType = ref('')
-const { start: defaultStart, end: defaultEnd } = dateTimeUtils.getCurrentMonthRange()
-const searchStartDate = ref(defaultStart)
-const searchEndDate = ref(defaultEnd)
 const showCategoryModal = ref(false)
 const showQuickCalculator = ref(false)
-const selectedAccount = ref<Account | null>(null)
+const showSearchModal = ref(false)
 const showDailyModal = ref(false)
 const selectedDate = ref('')
 const monthlyChartRef = ref<InstanceType<typeof MonthlyChart> | null>(null)
@@ -381,49 +344,9 @@ const fetchDescriptionHistory = async () => {
   }
 }
 
-const filteredTransactions = computed(() => {
-  let filtered = transactionsStore.transactions
-
-  if (searchQuery.value) {
-    filtered = filtered.filter(transaction =>
-      transaction.description.toLowerCase().includes(searchQuery.value.toLowerCase())
-    )
-  }
-
-  if (searchCategory.value) {
-    filtered = filtered.filter(transaction =>
-      transaction.category && transaction.category.toLowerCase().includes(searchCategory.value.toLowerCase())
-    )
-  }
-
-  if (searchStartDate.value) {
-    filtered = filtered.filter(transaction =>
-      transaction.transaction_date >= `${searchStartDate.value}T00:00:00`
-    )
-  }
-
-  if (searchEndDate.value) {
-    filtered = filtered.filter(transaction =>
-      transaction.transaction_date <= `${searchEndDate.value}T23:59:59`
-    )
-  }
-
-  if (searchType.value) {
-    filtered = filtered.filter(transaction =>
-      transaction.transaction_type === searchType.value
-    )
-  }
-
-  return filtered.slice(0, 20)
-})
-
-const clearSearch = () => {
-  searchQuery.value = ''
-  searchCategory.value = ''
-  searchType.value = ''
-  const { start, end } = dateTimeUtils.getCurrentMonthRange()
-  searchStartDate.value = start
-  searchEndDate.value = end
+const handleCalendarDateSelected = (date: string) => {
+  selectedDate.value = date
+  showDailyModal.value = true
 }
 
 const openQuickTransaction = (account: Account) => {
@@ -479,11 +402,6 @@ const handleQuickCalculatorConfirm = (value: number) => {
 
 const handleDescriptionSelect = (description: string) => {
   quickForm.form.value.description = description
-}
-
-const handleDayClick = (date: string) => {
-  selectedDate.value = date
-  showDailyModal.value = true
 }
 
 const handleRecordAgain = (transaction: any) => {
