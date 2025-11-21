@@ -3,6 +3,7 @@ import { useAccountsStore } from '@/stores/accounts'
 import { useTransactionsStore } from '@/stores/transactions'
 import { useBudgetsStore } from '@/stores/budgets'
 import type { Account, Budget } from '@/types'
+import { useDateTime } from './useDateTime'
 
 export function useDashboard() {
   const accountsStore = useAccountsStore()
@@ -36,8 +37,10 @@ export function useDashboard() {
     return '#4CAF50'
   }
 
+  const { getTodayString } = useDateTime()
+
   const getDailySpent = (budget: Budget) => {
-    const today = new Date().toISOString().split('T')[0]
+    const today = getTodayString()
 
     return transactionsStore.transactions
       .filter(t => {

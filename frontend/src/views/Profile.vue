@@ -193,6 +193,9 @@ import api from '@/services/api'
 import type { User } from '@/types'
 import MessageModal from '@/components/MessageModal.vue'
 import ConfirmModal from '@/components/ConfirmModal.vue'
+import { useDateTime } from '@/composables/useDateTime'
+
+const { getTodayString } = useDateTime()
 
 const user = ref<User | null>(null)
 const passwordForm = ref({
@@ -314,9 +317,11 @@ const handleExportData = async () => {
     const link = document.createElement('a')
     link.href = url
 
+
+
     // 從響應頭取得檔案名稱，或使用預設名稱
     const contentDisposition = response.headers['content-disposition']
-    let filename = `accounting_data_${new Date().toISOString().split('T')[0]}.json`
+    let filename = `accounting_data_${getTodayString()}.json`
     if (contentDisposition) {
       // 修正檔名解析，處理可能的引號和額外字符
       const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)

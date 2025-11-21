@@ -113,11 +113,15 @@ import CategoryReport from '@/components/reports/CategoryReport.vue'
 import RankingReport from '@/components/reports/RankingReport.vue'
 import AccountReportView from '@/components/reports/AccountReportView.vue'
 
+import { useDateTime } from '@/composables/useDateTime'
+
+const { getTodayString } = useDateTime()
+
 const reportType = ref<'monthly' | 'daily'>('monthly')
 const activeTab = ref('overview')
 const currentYear = ref(new Date().getFullYear())
 const currentMonth = ref(new Date().getMonth() + 1)
-const selectedDate = ref(new Date().toISOString().split('T')[0])
+const selectedDate = ref(getTodayString())
 
 const tabs = [
   { label: '總覽', value: 'overview' },
