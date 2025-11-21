@@ -18,7 +18,7 @@ jobs:
           timeout: 30s
           
           script: |
-            cd /home/hong/accounting-project
+            cd /home/hong/accounting-project-new
             git pull origin main
             sudo docker compose -f docker-compose.prod.yml down
             sleep 10 
