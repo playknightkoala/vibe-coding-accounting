@@ -6,20 +6,11 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
-          port: 22
-          timeout: 30s
-          
-          script: |
-            cd /home/hong/accounting-project-new
-            git pull origin main
-            sudo docker compose -f docker-compose.prod.yml down
-            sleep 10 
-            sudo docker compose -f docker-compose.prod.yml up -d --build
+      - name: Deploy on Local Machine
+        run: |
+          cd /home/hong/accounting-project-new
+          git pull origin main
+          docker compose -f docker-compose.prod.yml down 
+          docker compose -f docker-compose.prod.yml up -d --build
