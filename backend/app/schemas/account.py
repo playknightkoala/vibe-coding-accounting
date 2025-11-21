@@ -9,7 +9,7 @@ class AccountBase(BaseModel):
     description: Optional[str] = None
 
 class AccountCreate(AccountBase):
-    pass
+    initial_balance: Optional[float] = 0.0
 
 class AccountUpdate(BaseModel):
     name: Optional[str] = None

@@ -15,7 +15,10 @@
       "Bash(timeout 30 bash:*)",
       "Bash(docker-compose exec backend python:*)",
       "Bash(docker-compose exec:*)",
-      "Bash(timeout 5 bash:*)"
+      "Bash(timeout 5 bash:*)",
+      "Bash(python -m pytest:*)",
+      "Bash(python -m py_compile:*)",
+      "Bash(/dev/null)"
     ],
     "deny": [],
     "ask": []

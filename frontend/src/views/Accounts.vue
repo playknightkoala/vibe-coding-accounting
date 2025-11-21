@@ -70,6 +70,18 @@
             <label>描述</label>
             <textarea v-model="formController.form.value.description"></textarea>
           </div>
+          <div class="form-group" v-if="!formController.isEditing()">
+            <label>初始金額（選填）</label>
+            <input
+              type="number"
+              step="0.01"
+              v-model.number="formController.form.value.initial_balance"
+              placeholder="0.00"
+            />
+            <p style="margin-top: 5px; font-size: 12px; color: #a0aec0;">
+              可輸入此帳戶目前已有的金額，預設為 0
+            </p>
+          </div>
           <div v-if="modal.error.value" class="error">{{ modal.error.value }}</div>
           <div style="display: flex; gap: 10px; margin-top: 20px;">
             <button type="submit" class="btn btn-primary">{{ formController.isEditing() ? '更新' : '建立' }}</button>
@@ -109,7 +121,8 @@ const initialFormData: AccountCreate = {
   name: '',
   account_type: 'cash',
   currency: 'NTD',
-  description: ''
+  description: '',
+  initial_balance: 0
 }
 
 const formController = useForm<AccountCreate>(initialFormData)

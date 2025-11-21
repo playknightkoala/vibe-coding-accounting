@@ -39,7 +39,7 @@ export interface TwoFactorVerify {
 export interface Account {
   id: number
   name: string
-  account_type: 'asset' | 'liability' | 'equity' | 'revenue' | 'expense'
+  account_type: 'cash' | 'bank' | 'credit_card' | 'stored_value' | 'securities' | 'other'
   balance: number
   currency: string
   description: string | null
@@ -50,9 +50,10 @@ export interface Account {
 
 export interface AccountCreate {
   name: string
-  account_type: 'asset' | 'liability' | 'equity' | 'revenue' | 'expense'
+  account_type: 'cash' | 'bank' | 'credit_card' | 'stored_value' | 'securities' | 'other'
   currency?: string
   description?: string
+  initial_balance?: number
 }
 
 export interface AccountUpdate {

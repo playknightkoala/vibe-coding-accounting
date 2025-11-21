@@ -20,7 +20,11 @@ def create_account(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    db_account = Account(**account.dict(), user_id=current_user.id)
+    # 提取 initial_balance 並將其設為 balance
+    account_data = account.dict()
+    initial_balance = account_data.pop('initial_balance', 0.0)
+
+    db_account = Account(**account_data, balance=initial_balance, user_id=current_user.id)
     db.add(db_account)
     db.commit()
     db.refresh(db_account)

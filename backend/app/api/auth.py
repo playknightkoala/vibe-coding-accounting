@@ -6,6 +6,7 @@ from app.core.database import get_db
 from app.core.security import verify_password, get_password_hash, create_access_token
 from app.core.config import settings
 from app.models.user import User
+from app.models.account import Account
 from app.schemas.user import UserCreate, User as UserSchema, Token, TwoFactorVerify, TwoFactorLogin
 import pyotp
 
@@ -27,6 +28,32 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
+
+    # 為新使用者建立預設帳戶
+    default_accounts = [
+        Account(
+            name="現金",
+            account_type="cash",
+            currency="NTD",
+            description="預設現金帳戶",
+            balance=0.0,
+            user_id=db_user.id
+        ),
+        Account(
+            name="預設銀行",
+            account_type="bank",
+            currency="NTD",
+            description="預設銀行帳戶",
+            balance=0.0,
+            user_id=db_user.id
+        )
+    ]
+
+    for account in default_accounts:
+        db.add(account)
+
+    db.commit()
+
     return db_user
 
 @router.post("/login", response_model=Token)

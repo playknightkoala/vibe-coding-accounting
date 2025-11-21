@@ -2,56 +2,75 @@
   <div class="container">
     <h1>儀表板</h1>
 
-    <!-- 收入與支出折線圖 -->
-    <div class="card">
-      <MonthlyChart ref="monthlyChartRef" @day-click="handleDayClick" />
-    </div>
-
     <div class="card">
       <h2>總覽</h2>
 
-      <div style="margin-bottom: 30px;">
-        <h3 style="margin-bottom: 15px;">帳戶狀況</h3>
-        <div v-if="accountsStore.accounts.length > 0" style="display: grid; gap: 15px;">
-          <div v-for="account in accountsStore.accounts" :key="account.id"
-               style="border: 1px solid rgba(0, 212, 255, 0.2); padding: 15px; border-radius: 8px; background: rgba(0, 212, 255, 0.03); transition: all 0.3s ease;"
-               @mouseenter="($event.currentTarget as HTMLElement).style.borderColor = 'rgba(0, 212, 255, 0.5)'"
-               @mouseleave="($event.currentTarget as HTMLElement).style.borderColor = 'rgba(0, 212, 255, 0.2)'">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <div>
-                <h4 style="margin: 0 0 5px 0;">{{ account.name }}</h4>
-                <p style="margin: 0; font-size: 14px; color: #a0aec0;">
-                  {{ accountsStore.getAccountTypeText(account.account_type) }} - {{ account.currency }}
-                </p>
-              </div>
-              <div style="text-align: right; display: flex; align-items: center; gap: 15px;">
-                <p style="margin: 0; font-size: 24px; font-weight: bold;"
-                   :style="{ color: account.balance >= 0 ? '#51cf66' : '#ff6b6b' }">
-                  {{ account.currency }} ${{ account.balance.toFixed(2) }}
-                </p>
-                <button @click="openQuickTransaction(account)" class="btn"
-                        style="padding: 8px 15px; background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; white-space: nowrap;">
-                  記帳
-                </button>
+      <!-- 頁籤選單 -->
+      <div class="tabs-container">
+        <button
+          :class="['tab-btn', activeTab === 'accounts' ? 'active' : '']"
+          @click="activeTab = 'accounts'"
+        >
+          帳戶狀況及總額統計
+        </button>
+        <button
+          :class="['tab-btn', activeTab === 'trends' ? 'active' : '']"
+          @click="activeTab = 'trends'"
+        >
+          收入與支出趨勢
+        </button>
+      </div>
+
+      <!-- 帳戶狀況及總額統計頁籤 -->
+      <div v-if="activeTab === 'accounts'" class="tab-content">
+        <div style="margin-bottom: 30px;">
+          <h3 style="margin-bottom: 15px;">帳戶狀況</h3>
+          <div v-if="accountsStore.accounts.length > 0" style="display: grid; gap: 15px;">
+            <div v-for="account in accountsStore.accounts" :key="account.id"
+                 style="border: 1px solid rgba(0, 212, 255, 0.2); padding: 15px; border-radius: 8px; background: rgba(0, 212, 255, 0.03); transition: all 0.3s ease;"
+                 @mouseenter="($event.currentTarget as HTMLElement).style.borderColor = 'rgba(0, 212, 255, 0.5)'"
+                 @mouseleave="($event.currentTarget as HTMLElement).style.borderColor = 'rgba(0, 212, 255, 0.2)'">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <h4 style="margin: 0 0 5px 0;">{{ account.name }}</h4>
+                  <p style="margin: 0; font-size: 14px; color: #a0aec0;">
+                    {{ accountsStore.getAccountTypeText(account.account_type) }} - {{ account.currency }}
+                  </p>
+                </div>
+                <div style="text-align: right; display: flex; align-items: center; gap: 15px;">
+                  <p style="margin: 0; font-size: 24px; font-weight: bold;"
+                     :style="{ color: account.balance >= 0 ? '#51cf66' : '#ff6b6b' }">
+                    {{ account.currency }} ${{ account.balance.toFixed(2) }}
+                  </p>
+                  <button @click="openQuickTransaction(account)" class="btn"
+                          style="padding: 8px 15px; background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; white-space: nowrap;">
+                    記帳
+                  </button>
+                </div>
               </div>
             </div>
           </div>
+          <p v-else style="color: #a0aec0;">尚無帳戶</p>
         </div>
-        <p v-else style="color: #a0aec0;">尚無帳戶</p>
-      </div>
 
-      <div style="border-top: 2px solid rgba(0, 212, 255, 0.2); padding-top: 20px;">
-        <h3 style="margin-bottom: 15px;">總額統計</h3>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
-          <div v-for="(total, currency) in dashboard.totalByCurrency.value" :key="currency"
-               style="text-align: center; padding: 15px; background: linear-gradient(135deg, rgba(0, 102, 255, 0.1) 0%, rgba(0, 212, 255, 0.05) 100%); border-radius: 8px; border: 1px solid rgba(0, 212, 255, 0.2);">
-            <h4 style="margin: 0 0 10px 0; color: #a0aec0;">{{ currency }}</h4>
-            <p style="margin: 0; font-size: 28px; font-weight: bold;"
-               :style="{ color: total >= 0 ? '#51cf66' : '#ff6b6b' }">
-              ${{ total.toFixed(2) }}
-            </p>
+        <div style="border-top: 2px solid rgba(0, 212, 255, 0.2); padding-top: 20px;">
+          <h3 style="margin-bottom: 15px;">總額統計</h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+            <div v-for="(total, currency) in dashboard.totalByCurrency.value" :key="currency"
+                 style="text-align: center; padding: 15px; background: linear-gradient(135deg, rgba(0, 102, 255, 0.1) 0%, rgba(0, 212, 255, 0.05) 100%); border-radius: 8px; border: 1px solid rgba(0, 212, 255, 0.2);">
+              <h4 style="margin: 0 0 10px 0; color: #a0aec0;">{{ currency }}</h4>
+              <p style="margin: 0; font-size: 28px; font-weight: bold;"
+                 :style="{ color: total >= 0 ? '#51cf66' : '#ff6b6b' }">
+                ${{ total.toFixed(2) }}
+              </p>
+            </div>
           </div>
         </div>
+      </div>
+
+      <!-- 收入與支出趨勢頁籤 -->
+      <div v-else-if="activeTab === 'trends'" class="tab-content">
+        <MonthlyChart ref="monthlyChartRef" @day-click="handleDayClick" />
       </div>
     </div>
 
@@ -85,7 +104,7 @@
               </span>
             </div>
           </div>
-          <p style="margin: 5px 0;"><strong>類別：</strong>{{ budget.category }}</p>
+          <p style="margin: 5px 0;"><strong>類別：</strong>{{ budget.category_names.join(', ') || '所有類別' }}</p>
           <p style="margin: 5px 0;"><strong>預算：</strong>${{ budget.amount.toFixed(2) }}</p>
           <p style="margin: 5px 0;"><strong>已使用：</strong>${{ budget.spent.toFixed(2) }}</p>
           <p style="margin: 5px 0;"><strong>剩餘：</strong>${{ (budget.amount - budget.spent).toFixed(2) }}</p>
@@ -227,7 +246,8 @@
           </div>
 
           <CategorySelector
-            v-model="quickForm.form.value.category"
+            :model-value="quickForm.form.value.category || ''"
+            @update:model-value="quickForm.form.value.category = $event"
             :categories="categoriesStore.categories"
             @open-management="showCategoryModal = true"
           />
@@ -304,6 +324,7 @@ const messageModal = useMessage()
 const dateTimeUtils = useDateTime()
 const dashboard = useDashboard()
 
+const activeTab = ref('accounts')
 const searchQuery = ref('')
 const searchCategory = ref('')
 const searchType = ref('')
@@ -436,3 +457,40 @@ onMounted(async () => {
   ])
 })
 </script>
+
+<style scoped>
+.tabs-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.tab-btn {
+  padding: 10px 20px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 4px;
+  color: #a0aec0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 15px;
+}
+
+.tab-btn:hover {
+  background: rgba(0, 212, 255, 0.1);
+  border-color: rgba(0, 212, 255, 0.4);
+  color: #fff;
+}
+
+.tab-btn.active {
+  background: linear-gradient(135deg, rgba(0, 102, 255, 0.3) 0%, rgba(0, 212, 255, 0.3) 100%);
+  border-color: #00d4ff;
+  color: #00d4ff;
+  font-weight: 500;
+}
+
+.tab-content {
+  margin-top: 20px;
+}
+</style>

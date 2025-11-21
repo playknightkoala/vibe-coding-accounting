@@ -4,7 +4,7 @@
 
     <!-- 使用者資訊 -->
     <div class="card">
-      <h2>帳戶資訊</h2>
+      <h2>帳號資訊</h2>
       <p><strong>使用者名稱：</strong>{{ user?.username }}</p>
       <p><strong>2FA 狀態：</strong>{{ user?.two_factor_enabled ? '已啟用' : '未啟用' }}</p>
     </div>
@@ -40,69 +40,11 @@
       </form>
     </div>
 
-    <!-- 資料匯出匯入 -->
-    <div class="card">
-      <h2>資料匯出匯入</h2>
-      <p style="margin-bottom: 15px; color: #a0aec0;">
-        匯出您的所有記帳資料（帳戶、交易、預算），或從備份檔案中還原資料
-      </p>
-      <div style="padding: 10px; background: rgba(0, 212, 255, 0.1); border-left: 3px solid #00d4ff; border-radius: 4px; margin-bottom: 15px;">
-        <p style="margin: 0; font-size: 14px; color: #00d4ff;">
-          🔒 您的資料已使用應用程式專屬密鑰加密，只能在本應用程式中匯入
-        </p>
-      </div>
-
-      <div style="display: flex; flex-direction: column; gap: 15px;">
-        <!-- 匯出功能 -->
-        <div>
-          <h3 style="margin-bottom: 10px;">匯出資料</h3>
-          <p style="margin-bottom: 10px; font-size: 14px; color: #a0aec0;">
-            將所有資料匯出為加密的 JSON 檔案，可用於備份或轉移到其他帳號
-          </p>
-          <button @click="handleExportData" class="btn btn-primary" :disabled="exportLoading">
-            {{ exportLoading ? '匯出中...' : '匯出資料' }}
-          </button>
-        </div>
-
-        <!-- 匯入功能 -->
-        <div>
-          <h3 style="margin-bottom: 10px;">匯入資料</h3>
-          <p style="margin-bottom: 10px; font-size: 14px; color: #a0aec0;">
-            從加密的 JSON 檔案還原資料。注意：這會在現有資料基礎上新增，不會覆蓋現有資料
-          </p>
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <input
-              type="file"
-              ref="fileInput"
-              accept=".json"
-              @change="handleFileSelect"
-              style="display: none;"
-            />
-            <button @click="triggerFileInput" class="btn btn-secondary">
-              選擇檔案
-            </button>
-            <span v-if="selectedFile" style="color: #00d4ff;">{{ selectedFile.name }}</span>
-          </div>
-          <button
-            v-if="selectedFile"
-            @click="handleImportData"
-            class="btn btn-primary"
-            :disabled="importLoading"
-            style="margin-top: 10px;"
-          >
-            {{ importLoading ? '匯入中...' : '開始匯入' }}
-          </button>
-        </div>
-      </div>
-
-      <div v-if="importExportError" class="error" style="margin-top: 15px;">{{ importExportError }}</div>
-    </div>
-
     <!-- 2FA 設定 -->
     <div class="card">
       <h2>雙因素認證 (2FA)</h2>
       <p style="margin-bottom: 15px; color: #a0aec0;">
-        使用手機驗證器應用程式（如 Google Authenticator、Microsoft Authenticator）來增加帳戶安全性
+        使用手機驗證器應用程式（如 Google Authenticator、Microsoft Authenticator）來增加帳號安全性
       </p>
 
       <!-- 尚未啟用 2FA -->
@@ -146,7 +88,7 @@
       <!-- 停用 2FA -->
       <div v-if="showDisable2FA">
         <h3 style="margin-bottom: 15px;">停用雙因素認證</h3>
-        <p style="margin-bottom: 15px; color: #ff6b6b;">警告：停用 2FA 會降低帳戶安全性</p>
+        <p style="margin-bottom: 15px; color: #ff6b6b;">警告：停用 2FA 會降低帳號安全性</p>
         <div class="form-group">
           <label for="disable_token">輸入驗證碼以確認</label>
           <input
@@ -165,6 +107,64 @@
           <button @click="showDisable2FA = false; disableToken = ''" class="btn btn-secondary">取消</button>
         </div>
       </div>
+    </div>
+
+    <!-- 資料匯出匯入 -->
+    <div class="card">
+      <h2>資料匯出匯入</h2>
+      <p style="margin-bottom: 15px; color: #a0aec0;">
+        匯出您的所有記帳資料（帳戶、交易、預算），或從備份檔案中還原資料
+      </p>
+      <div style="padding: 10px; background: rgba(0, 212, 255, 0.1); border-left: 3px solid #00d4ff; border-radius: 4px; margin-bottom: 15px;">
+        <p style="margin: 0; font-size: 14px; color: #00d4ff;">
+          🔒 您的資料已使用應用程式專屬密鑰加密，只能在本應用程式中匯入
+        </p>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 15px;">
+        <!-- 匯出功能 -->
+        <div>
+          <h3 style="margin-bottom: 10px;">匯出資料</h3>
+          <p style="margin-bottom: 10px; font-size: 14px; color: #a0aec0;">
+            將所有資料匯出為加密的 JSON 檔案，可用於備份或轉移到其他使用者帳號
+          </p>
+          <button @click="handleExportData" class="btn btn-primary" :disabled="exportLoading">
+            {{ exportLoading ? '匯出中...' : '匯出資料' }}
+          </button>
+        </div>
+
+        <!-- 匯入功能 -->
+        <div>
+          <h3 style="margin-bottom: 10px;">匯入資料</h3>
+          <p style="margin-bottom: 10px; font-size: 14px; color: #a0aec0;">
+            從加密的 JSON 檔案還原資料。注意：這會在現有資料基礎上新增，不會覆蓋現有資料
+          </p>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <input
+              type="file"
+              ref="fileInput"
+              accept=".json"
+              @change="handleFileSelect"
+              style="display: none;"
+            />
+            <button @click="triggerFileInput" class="btn btn-secondary">
+              選擇檔案
+            </button>
+            <span v-if="selectedFile" style="color: #00d4ff;">{{ selectedFile.name }}</span>
+          </div>
+          <button
+            v-if="selectedFile"
+            @click="handleImportData"
+            class="btn btn-primary"
+            :disabled="importLoading"
+            style="margin-top: 10px;"
+          >
+            {{ importLoading ? '匯入中...' : '開始匯入' }}
+          </button>
+        </div>
+      </div>
+
+      <div v-if="importExportError" class="error" style="margin-top: 15px;">{{ importExportError }}</div>
     </div>
 
     <!-- 消息提示彈窗 -->
