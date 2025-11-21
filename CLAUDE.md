@@ -32,8 +32,9 @@ docker-compose logs --tail 50 backend
 
 **Access Points:**
 - Frontend: http://localhost (nginx proxy to Vite dev server)
+- Frontend Direct (dev): http://localhost:5173
 - Backend API: http://localhost:8000
-- API Docs (Swagger): http://localhost:8000/docs
+- API Docs (Swagger): http://localhost:8000/docs (development only)
 - Database: localhost:5432 (user: accounting_user, db: accounting_db)
 
 ### Installing Dependencies in Running Containers
@@ -108,6 +109,7 @@ npm run build
 - `User` → one-to-many → `Category` (via user_id)
 - `Account` → one-to-many → `Transaction` (via account_id)
 - `Budget` ↔ many-to-many ↔ `Account` (via `BudgetAccount` junction table)
+- `Budget` ↔ many-to-many ↔ `Category` (via `BudgetCategory` junction table)
 
 **Critical Security Pattern:**
 All API endpoints MUST filter by `current_user.id` to enforce user data isolation. Never expose other users' data.
@@ -128,12 +130,27 @@ Enforced on backend via Pydantic validators in `schemas/user.py`:
 - At least one number
 - At least one special character (!@#$%^&*(),.?":{}|<>)
 
-### Frontend Architecture (Vue 3 + Vite + Pinia)
+### Frontend Architecture (Vue 3 + Vite + Pinia + Composables)
 
-**State Management:**
-- Authentication state in Pinia store (`frontend/src/stores/auth.ts`)
-- JWT token persisted in localStorage
-- All other state is component-local (no global state for business data)
+**State Management (Pinia Stores):**
+- `auth.ts`: Authentication state, JWT token (persisted in localStorage)
+- `accounts.ts`: Account CRUD operations and state
+- `transactions.ts`: Transaction CRUD operations and state
+- `budgets.ts`: Budget CRUD operations, helper functions (getPeriodText, getAccountNames)
+- `categories.ts`: Category CRUD operations including reordering
+- Pattern: Composition API with `defineStore`, reactive `ref()` state, async functions
+
+**Composables (Reusable Logic):**
+- `useModal.ts`: Modal visibility and error state management
+- `useConfirm.ts`: Confirmation dialog handling with callbacks
+- `useMessage.ts`: Success/error message display
+- `useForm.ts`: Generic form state management with editing support
+- `useBudgetForm.ts`: Budget-specific form logic (date range, range mode)
+- `useDashboard.ts`: Dashboard calculations (totals, budget status, daily spending)
+- `useDateTime.ts`: Centralized date/time formatting utilities
+
+**Architectural Pattern:**
+Views import stores and composables to avoid code duplication. All business logic lives in stores or composables, not in components.
 
 **API Communication:**
 - Centralized in `frontend/src/services/api.ts`
@@ -238,7 +255,58 @@ export interface Budget {
 ```
 
 **Recurring Budget Behavior:**
-When auto-generating next period budgets, account bindings are copied from the previous period.
+When auto-generating next period budgets (`backend/app/tasks/budget_recurring.py`), both account bindings and category bindings are copied from the previous period.
+
+### Budget Multi-Category Binding Architecture
+
+**Overview:**
+Budgets support flexible category binding (added alongside multi-account binding):
+- Can bind to multiple categories (track spending across specific categories)
+- Can bind to zero categories (track spending across ALL categories)
+- Uses many-to-many relationship via `BudgetCategory` junction table
+
+**Implementation Pattern:**
+
+```python
+# Backend - backend/app/models/budget_category.py
+class BudgetCategory(Base):
+    """預算與類別的多對多關聯表"""
+    __tablename__ = "budget_categories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    budget_id = Column(Integer, ForeignKey("budgets.id", ondelete="CASCADE"), nullable=False)
+    category_name = Column(String, nullable=False)  # Stores category name directly
+```
+
+**Key Difference from Account Binding:**
+- Account binding uses ForeignKey to `accounts.id` (references Account table)
+- Category binding uses `category_name` String (no FK, flexible for user-defined categories)
+
+**Spent Calculation Logic:**
+```python
+def calculate_budget_spent(db: Session, budget: Budget, category_names: List[str] = None) -> float:
+    # ... account filtering logic ...
+
+    # If category_names provided and not empty, filter by those categories
+    if category_names and len(category_names) > 0:
+        query = query.filter(Transaction.category.in_(category_names))
+
+    # Empty list = all categories included
+    spent = query.scalar()
+    return spent or 0.0
+```
+
+**Frontend Schema:**
+```typescript
+export interface Budget {
+    account_ids: number[]        // Empty array = all accounts
+    category_names: string[]     // Empty array = all categories
+    // ... other fields
+}
+```
+
+**Multi-Select UI Pattern:**
+Both accounts and categories use checkbox-based multi-select interfaces in the budget form, consistent with the account binding pattern.
 
 ### Transaction Balance Logic
 
@@ -271,9 +339,29 @@ See `backend/app/api/transactions.py` for implementation.
 **Frontend:**
 - Categories loaded on Dashboard mount
 - Transaction forms use `<select>` with categories
+- Budget forms use checkbox-based multi-select for category binding
 - Drag-and-drop reordering using Sortable.js library
 - Management modal allows add/edit/delete/reorder
 - Changes immediately sync to backend
+
+### Reports System
+
+**Overview:**
+Comprehensive reporting endpoints at `/api/reports` provide data analytics for specified date ranges.
+
+**Available Reports:**
+- `/overview`: Summary with category breakdown, top 5 income/expense transactions
+- `/details`: Daily transaction lists with totals
+- `/category`: Category-based spending analysis with percentages
+- `/ranking`: Top expense and income transactions (configurable limit)
+- `/account`: Account-based spending analysis with balances
+- `/monthly-stats`: Daily statistics for a specific month (for charts)
+
+**Features:**
+- All reports require `start_date` and `end_date` query parameters
+- Returns aggregated data with percentages, rankings, and totals
+- Supports filtering by category and account
+- Data formatted for frontend charts and visualizations
 
 ## Reusable Components
 
@@ -393,15 +481,21 @@ Tables auto-created on backend startup via `Base.metadata.create_all(bind=engine
 - Types: credit (income), debit (expense)
 
 `Budget`:
-- id, name, category, amount, spent, daily_limit, range_mode, period, start_date, end_date
+- id, name, category (nullable, legacy field), amount, spent, daily_limit, range_mode, period, start_date, end_date
 - user_id (FK), parent_budget_id (FK, for recurring budgets), created_at, updated_at
 - Range modes: recurring (auto-generates next period), custom (one-time date range)
-- Periods (for recurring mode): daily, weekly, monthly, yearly
+- Periods (for recurring mode): monthly, quarterly, yearly
 - **Note:** No direct account_id column - uses many-to-many via BudgetAccount
+- **Note:** No direct category column - uses many-to-many via BudgetCategory (category field kept for backward compatibility)
 
 `BudgetAccount`:
 - id, budget_id (FK), account_id (FK), created_at
 - Junction table for Budget-Account many-to-many relationship
+
+`BudgetCategory`:
+- id, budget_id (FK), category_name, created_at
+- Junction table for Budget-Category many-to-many relationship
+- Stores category name directly (no FK) for flexibility
 
 `Category`:
 - id, name, order_index
@@ -537,17 +631,48 @@ formatDateTime(dateString)
 
 ## Environment Configuration
 
-**Backend Environment Variables** (set in docker-compose.yml):
+**Backend Environment Variables** (set in docker-compose.yml or .env):
 - `DATABASE_URL`: PostgreSQL connection string
 - `SECRET_KEY`: JWT signing key (MUST change in production)
 - `ALGORITHM`: JWT algorithm (default: HS256)
 - `ACCESS_TOKEN_EXPIRE_MINUTES`: Token lifetime (not currently used due to custom expiration)
+- `ALLOWED_ORIGINS`: Comma-separated list of allowed CORS origins
+- `ENVIRONMENT`: `development` or `production` (controls API docs visibility)
+- `RATE_LIMIT_ENABLED`: Enable rate limiting (default: true)
+- `RATE_LIMIT_PER_MINUTE`: Requests per minute per IP (default: 60)
+- `ENABLE_SECURITY_HEADERS`: Enable security headers (default: true)
 
 **CORS Origins:**
-Hardcoded in `backend/app/main.py`. Update if frontend runs on different port:
+Configured via `ALLOWED_ORIGINS` environment variable, parsed in `backend/app/core/config.py`:
 ```python
-allow_origins=["http://localhost:5173", "http://localhost:3000", "http://localhost"]
+# Environment variable
+ALLOWED_ORIGINS=http://localhost,http://localhost:5173,https://yourdomain.com
 ```
+
+## Security Features
+
+**Rate Limiting:**
+- Custom middleware in `main.py` tracks requests per IP address
+- Configurable via `RATE_LIMIT_ENABLED` and `RATE_LIMIT_PER_MINUTE`
+- Returns 429 status when limit exceeded
+- Requests tracked per minute with automatic cleanup
+
+**Security Headers:**
+When `ENABLE_SECURITY_HEADERS=true`, the following headers are added:
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: DENY`
+- `X-XSS-Protection: 1; mode=block`
+- `Strict-Transport-Security: max-age=31536000; includeSubDomains`
+- `Content-Security-Policy: default-src 'self'; ...`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- `Permissions-Policy: geolocation=(), microphone=(), camera=()`
+
+**Production Deployment:**
+- Nginx reverse proxy handles TLS termination and request routing
+- Backend/frontend containers exposed only internally (not on host ports)
+- API docs (`/docs`, `/redoc`) disabled in production mode
+- Database port should not be exposed in production (remove from docker-compose.yml)
+- SSL certificates should be placed in `nginx/ssl/` directory
 
 ## Troubleshooting
 
@@ -579,3 +704,20 @@ allow_origins=["http://localhost:5173", "http://localhost:3000", "http://localho
 - Use `formatDateTime()` utility from `frontend/src/utils/dateFormat.ts`
 - This function properly removes UTC markers and milliseconds
 - Always use centralized formatting utilities, not manual string replacement
+
+**Transaction operations not updating budget spent amounts:**
+- After creating/updating/deleting transactions, both accounts AND budgets must be refreshed
+- Correct pattern in `Transactions.vue`:
+```typescript
+await Promise.all([
+  accountsStore.fetchAccounts(),
+  budgetsStore.fetchBudgets()  // CRITICAL: Must also refresh budgets
+])
+```
+- Missing `budgetsStore.fetchBudgets()` causes stale budget data on the dashboard
+
+**Custom categories not affecting budget calculations:**
+- Ensure the `calculate_budget_spent()` function filters by category correctly
+- Should use `category_names IN (...)` for multi-category support
+- Empty `category_names` list means "all categories"
+- Never include uncategorized transactions in category-specific budgets
