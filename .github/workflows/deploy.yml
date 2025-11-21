@@ -12,5 +12,7 @@ jobs:
         run: |
           cd /home/hong/accounting-project-new
           git pull origin main
-          docker compose -f docker-compose.prod.yml down 
-          docker compose -f docker-compose.prod.yml up -d --build
+          docker compose -f docker-compose.prod.yml build
+          docker compose -f docker-compose.prod.yml up -d --remove-orphans
+          docker compose -f docker-compose.prod.yml exec -T nginx nginx -s reload
+          docker image prune -f
