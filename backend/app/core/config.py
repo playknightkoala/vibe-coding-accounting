@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
+    # Data Encryption Key (用於加密匯出的資料)
+    DATA_ENCRYPTION_KEY: str = "CHANGE_THIS_DATA_ENCRYPTION_KEY_MIN_32_CHARS"
+
     # CORS
     ALLOWED_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
 

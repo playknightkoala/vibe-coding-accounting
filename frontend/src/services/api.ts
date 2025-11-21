@@ -119,6 +119,21 @@ export default {
     return api.post('/users/me/2fa/disable', data)
   },
 
+  // 資料匯出匯入
+  exportUserData() {
+    return api.get('/users/me/export', {
+      responseType: 'blob'
+    })
+  },
+
+  importUserData(file: File) {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.post('/users/me/import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+  },
+
   // 帳戶
   getAccounts() {
     return api.get<Account[]>('/accounts/')

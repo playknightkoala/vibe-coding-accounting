@@ -17,6 +17,7 @@
           <div
             v-for="category in reportData.category_stats"
             :key="category.category"
+            :ref="el => setCategoryItemRef(el, category.category)"
             class="category-item"
             @click="toggleCategory(category.category)"
           >
@@ -80,11 +81,18 @@ let chartInstance: echarts.ECharts | null = null
 
 const expandedCategory = ref<string>('')
 const categoryTransactions = ref<TransactionDetail[]>([])
+const categoryItemRefs = ref<Map<string, HTMLElement>>(new Map())
 
 const chartColors = [
   '#9966ff', '#ff9933', '#33ccff', '#ffcc00', '#ff6699',
   '#66ff99', '#ff6666', '#6699ff', '#ffcc99', '#cc99ff'
 ]
+
+const setCategoryItemRef = (el: any, categoryName: string) => {
+  if (el) {
+    categoryItemRefs.value.set(categoryName, el)
+  }
+}
 
 const fetchReport = async () => {
   loading.value = true
@@ -261,8 +269,22 @@ const toggleCategory = async (category: string) => {
       response = await api.getCategoryTransactionsDaily(category, props.date)
     }
     categoryTransactions.value = response.data
+
+    // Scroll to the category item after data is loaded
+    await nextTick()
+    scrollToCategoryItem(category)
   } catch (err: any) {
     console.error('Failed to fetch category transactions:', err)
+  }
+}
+
+const scrollToCategoryItem = (categoryName: string) => {
+  const element = categoryItemRefs.value.get(categoryName)
+  if (element) {
+    element.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    })
   }
 }
 

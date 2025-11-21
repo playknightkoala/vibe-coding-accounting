@@ -17,6 +17,7 @@
           <div
             v-for="account in reportData.account_stats"
             :key="account.account_id"
+            :ref="el => setAccountItemRef(el, account.account_id)"
             class="account-item"
             @click="toggleAccount(account.account_id)"
           >
@@ -81,11 +82,18 @@ let chartInstance: echarts.ECharts | null = null
 
 const expandedAccount = ref<number | null>(null)
 const accountTransactions = ref<TransactionDetail[]>([])
+const accountItemRefs = ref<Map<number, HTMLElement>>(new Map())
 
 const chartColors = [
   '#9966ff', '#ff9933', '#33ccff', '#ffcc00', '#ff6699',
   '#66ff99', '#ff6666', '#6699ff', '#ffcc99', '#cc99ff'
 ]
+
+const setAccountItemRef = (el: any, accountId: number) => {
+  if (el) {
+    accountItemRefs.value.set(accountId, el)
+  }
+}
 
 const fetchReport = async () => {
   loading.value = true
@@ -266,8 +274,22 @@ const toggleAccount = async (accountId: number) => {
       response = await api.getAccountTransactionsDaily(accountId, props.date)
     }
     accountTransactions.value = response.data
+
+    // Scroll to the account item after data is loaded
+    await nextTick()
+    scrollToAccountItem(accountId)
   } catch (err: any) {
     console.error('Failed to fetch account transactions:', err)
+  }
+}
+
+const scrollToAccountItem = (accountId: number) => {
+  const element = accountItemRefs.value.get(accountId)
+  if (element) {
+    element.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    })
   }
 }
 
