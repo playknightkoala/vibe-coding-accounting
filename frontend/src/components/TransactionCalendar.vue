@@ -38,7 +38,7 @@
       </div>
       <div class="transactions-list">
         <div v-if="selectedDateTransactions.length > 0">
-          <div v-for="transaction in selectedDateTransactions" :key="transaction.id" class="transaction-item">
+          <div v-for="transaction in selectedDateTransactions" :key="transaction.id" class="transaction-item" @click="emit('edit-transaction', transaction)">
             <div class="transaction-info">
               <div class="transaction-time">{{ formatTime(transaction.transaction_date) }}</div>
               <div class="transaction-description">{{ transaction.description }}</div>
@@ -69,6 +69,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'date-selected', date: string): void
+  (e: 'edit-transaction', transaction: Transaction): void
 }>()
 
 const currentYear = ref(new Date().getFullYear())
@@ -302,6 +303,7 @@ watch(() => props.transactions, () => {
   border-radius: 4px;
   border: 1px solid rgba(0, 212, 255, 0.2);
   transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .transaction-item:hover {

@@ -17,11 +17,12 @@
           <span class="date-separator">~</span>
           <input type="date" v-model="localSearchEndDate" class="date-input" />
         </div>
+        <button @click="performSearch" class="btn btn-primary">搜尋</button>
         <button @click="clearLocalSearch" class="btn btn-secondary">清除</button>
       </div>
 
-      <div v-if="hasSearchCriteria" style="margin-top: 20px;">
-        <div v-if="filteredTransactions.length > 0" style="overflow-x: auto;">
+      <div v-if="hasSearched" style="margin-top: 20px;">
+        <div v-if="searchResults.length > 0" style="overflow-x: auto;">
           <table class="table">
             <thead>
               <tr>
@@ -33,7 +34,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="transaction in filteredTransactions" :key="transaction.id">
+              <tr v-for="transaction in searchResults" :key="transaction.id">
                 <td>{{ formatDateTime(transaction.transaction_date) }}</td>
                 <td>{{ transaction.description }}</td>
                 <td>{{ transaction.transaction_type === 'credit' ? '收入' : '支出' }}</td>
@@ -77,18 +78,12 @@ const { start: defaultStart, end: defaultEnd } = dateTimeUtils.getCurrentMonthRa
 const localSearchStartDate = ref(defaultStart)
 const localSearchEndDate = ref(defaultEnd)
 
-const hasSearchCriteria = computed(() => {
-  return localSearchQuery.value !== '' ||
-         localSearchCategory.value !== '' ||
-         localSearchType.value !== ''
-})
+const searchResults = ref<Transaction[]>([])
+const hasSearched = ref(false)
 
-const filteredTransactions = computed(() => {
-  if (!hasSearchCriteria.value) {
-    return []
-  }
-
-  return props.transactions.filter(transaction => {
+const performSearch = () => {
+  hasSearched.value = true
+  searchResults.value = props.transactions.filter(transaction => {
     const matchesDescription = localSearchQuery.value === '' ||
       transaction.description.toLowerCase().includes(localSearchQuery.value.toLowerCase())
 
@@ -103,7 +98,7 @@ const filteredTransactions = computed(() => {
 
     return matchesDescription && matchesCategory && matchesDate && matchesType
   })
-})
+}
 
 const clearLocalSearch = () => {
   localSearchQuery.value = ''
@@ -112,6 +107,8 @@ const clearLocalSearch = () => {
   const { start, end } = dateTimeUtils.getCurrentMonthRange()
   localSearchStartDate.value = start
   localSearchEndDate.value = end
+  searchResults.value = []
+  hasSearched.value = false
 }
 
 const formatDateTime = (dateString: string) => {

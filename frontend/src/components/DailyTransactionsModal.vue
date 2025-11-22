@@ -32,6 +32,7 @@
             :key="transaction.id"
             class="transaction-item"
             :class="transaction.transaction_type"
+            @click="emit('edit-transaction', transaction)"
           >
             <div class="transaction-main">
               <div class="transaction-info">
@@ -71,6 +72,7 @@ interface Props {
 const props = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
+  (e: 'edit-transaction', transaction: Transaction): void
 }>()
 
 const accountsStore = useAccountsStore()
@@ -278,6 +280,7 @@ watch(() => props.date, (newValue) => {
   padding: 15px;
   transition: all 0.2s;
   border: 1px solid rgba(255, 255, 255, 0.05);
+  cursor: pointer;
 }
 
 .transaction-item:hover {

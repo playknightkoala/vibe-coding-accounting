@@ -4,7 +4,7 @@ import Login from '@/views/Login.vue'
 import Register from '@/views/Register.vue'
 import Dashboard from '@/views/Dashboard.vue'
 import Accounts from '@/views/Accounts.vue'
-import Transactions from '@/views/Transactions.vue'
+
 import Budgets from '@/views/Budgets.vue'
 import Profile from '@/views/Profile.vue'
 import Reports from '@/views/Reports.vue'
@@ -37,12 +37,7 @@ const routes: RouteRecordRaw[] = [
     component: Accounts,
     meta: { requiresAuth: true }
   },
-  {
-    path: '/transactions',
-    name: 'Transactions',
-    component: Transactions,
-    meta: { requiresAuth: true }
-  },
+
   {
     path: '/budgets',
     name: 'Budgets',

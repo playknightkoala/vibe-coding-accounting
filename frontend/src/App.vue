@@ -5,7 +5,7 @@
         <div>
           <router-link to="/dashboard">儀表板</router-link>
           <router-link to="/accounts">帳戶</router-link>
-          <router-link to="/transactions">交易</router-link>
+
           <router-link to="/budgets">預算</router-link>
           <router-link to="/reports">報表</router-link>
         </div>

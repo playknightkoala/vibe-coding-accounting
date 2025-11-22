@@ -168,13 +168,14 @@
         :transactions="transactionsStore.transactions"
         :selected-date="selectedDate"
         @date-selected="handleCalendarDateSelected"
+        @edit-transaction="handleEditTransaction"
       />
     </div>
 
     <!-- 快速記帳彈窗 -->
     <div v-if="quickModal.isOpen.value" class="modal">
       <div class="modal-content">
-        <h2 style="color: #00d4ff;">快速記帳</h2>
+        <h2 style="color: #00d4ff;">{{ quickForm.isEditing() ? '編輯交易' : '快速記帳' }}</h2>
         <form @submit.prevent="handleQuickTransaction">
           <div class="form-group">
             <label>帳戶</label>
@@ -236,8 +237,32 @@
             <DateTimeInput v-model="quickForm.form.value.transaction_date" :required="true" />
           </div>
 
-          <div style="display: flex; gap: 10px; margin-top: 20px;">
-            <button type="submit" class="btn btn-primary" style="flex: 1;">新增交易</button>
+          <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+            <button type="submit" class="btn btn-primary" style="flex: 1;">{{ quickForm.isEditing() ? '更新' : '新增交易' }}</button>
+            <button 
+              v-if="quickForm.isEditing()" 
+              type="button" 
+              @click="handleRecordAgain({ 
+                account_id: quickForm.form.value.account_id,
+                description: quickForm.form.value.description,
+                amount: quickForm.form.value.amount,
+                transaction_type: quickForm.form.value.transaction_type,
+                category: quickForm.form.value.category
+              })" 
+              class="btn" 
+              style="flex: 1; background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white;"
+            >
+              再記一筆
+            </button>
+            <button 
+              v-if="quickForm.isEditing()" 
+              type="button" 
+              @click="handleDeleteTransaction" 
+              class="btn btn-danger" 
+              style="flex: 1;"
+            >
+              刪除
+            </button>
             <button type="button" @click="closeQuickTransaction" class="btn btn-secondary" style="flex: 1;">取消</button>
           </div>
         </form>
@@ -270,6 +295,7 @@
     <DailyTransactionsModal
       v-model="showDailyModal"
       :date="selectedDate"
+      @edit-transaction="handleEditTransaction"
     />
 
     <!-- 交易搜尋彈窗 -->
@@ -359,6 +385,43 @@ const openQuickTransaction = (account: Account) => {
   quickModal.open()
 }
 
+const handleEditTransaction = (transaction: Transaction) => {
+  quickForm.setForm({
+    account_id: transaction.account_id,
+    description: transaction.description,
+    amount: transaction.amount,
+    transaction_type: transaction.transaction_type,
+    category: transaction.category || '',
+    transaction_date: dateTimeUtils.formatDateTimeForInput(transaction.transaction_date)
+  }, transaction.id)
+  showDailyModal.value = false
+  quickModal.open()
+}
+
+const handleDeleteTransaction = async () => {
+  if (!quickForm.isEditing()) return
+  
+  if (!confirm('確定要刪除此交易嗎？刪除後將無法復原。')) return
+
+  try {
+    await transactionsStore.deleteTransaction(quickForm.editingId.value!)
+    await Promise.all([
+      accountsStore.fetchAccounts(),
+      budgetsStore.fetchBudgets(),
+      fetchDescriptionHistory()
+    ])
+    
+    if (monthlyChartRef.value) {
+      await monthlyChartRef.value.refresh()
+    }
+    
+    messageModal.showSuccess('交易已刪除')
+    closeQuickTransaction()
+  } catch (error: any) {
+    messageModal.showError(error.response?.data?.detail || '刪除交易失敗')
+  }
+}
+
 const handleQuickTransaction = async () => {
   try {
     const transactionData = {
@@ -366,10 +429,22 @@ const handleQuickTransaction = async () => {
       transaction_date: dateTimeUtils.formatDateTimeForBackend(quickForm.form.value.transaction_date)
     }
 
-    await transactionsStore.createTransaction(transactionData)
-
-    // 更新敘述歷史
-    await api.updateDescriptionHistory(transactionData.description)
+    if (quickForm.isEditing()) {
+      await transactionsStore.updateTransaction(quickForm.editingId.value!, {
+        description: transactionData.description,
+        amount: transactionData.amount,
+        category: transactionData.category,
+        transaction_date: transactionData.transaction_date
+      })
+      // 更新交易時也更新敘述歷史
+      await api.updateDescriptionHistory(transactionData.description)
+      messageModal.showSuccess('交易已更新！')
+    } else {
+      await transactionsStore.createTransaction(transactionData)
+      // 新增交易後更新敘述歷史
+      await api.updateDescriptionHistory(transactionData.description)
+      messageModal.showSuccess('交易已成功新增！')
+    }
 
     // 重新載入所有資料
     await Promise.all([
@@ -383,10 +458,9 @@ const handleQuickTransaction = async () => {
       await monthlyChartRef.value.refresh()
     }
 
-    messageModal.showSuccess('交易已成功新增！')
     closeQuickTransaction()
   } catch (error: any) {
-    messageModal.showError(error.response?.data?.detail || '新增交易失敗，請稍後再試')
+    messageModal.showError(error.response?.data?.detail || (quickForm.isEditing() ? '更新交易失敗' : '新增交易失敗'))
   }
 }
 
