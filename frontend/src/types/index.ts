@@ -71,6 +71,7 @@ export interface Transaction {
   account_id: number
   created_at: string
   updated_at: string | null
+  note?: string
 }
 
 export interface TransactionCreate {
@@ -80,6 +81,7 @@ export interface TransactionCreate {
   category?: string
   transaction_date: string
   account_id: number
+  note?: string
 }
 
 export interface TransactionUpdate {
@@ -87,6 +89,7 @@ export interface TransactionUpdate {
   amount?: number
   category?: string
   transaction_date?: string
+  note?: string
 }
 
 export interface Budget {
@@ -194,6 +197,7 @@ export interface TransactionDetail {
   transaction_date: string
   account_id: number
   account_name: string
+  note?: string
 }
 
 export interface DailyTransactions {

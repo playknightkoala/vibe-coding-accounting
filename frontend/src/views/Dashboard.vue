@@ -173,77 +173,95 @@
 
     <!-- 快速記帳彈窗 -->
     <div v-if="quickModal.isOpen.value" class="modal">
-      <div class="modal-content">
-        <h2 style="color: #00d4ff;">{{ quickForm.isEditing() ? '編輯交易' : '快速記帳' }}</h2>
-        <form @submit.prevent="handleQuickTransaction">
-          <div class="form-group">
-            <label>帳戶</label>
-            <select v-model="quickForm.form.value.account_id" required>
-              <option v-for="account in accountsStore.accounts" :key="account.id" :value="account.id">
-                {{ account.name }}
-              </option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>描述</label>
-            <input v-model="quickForm.form.value.description" placeholder="交易描述" required />
-            <DescriptionHistory
-              :descriptions="historicalDescriptions"
-              @select="handleDescriptionSelect"
-            />
-          </div>
-
-          <div class="form-group">
-            <label>金額</label>
-            <div style="position: relative;">
-              <input
-                type="text"
-                v-model.number="quickForm.form.value.amount"
-                @click="showQuickCalculator = true"
-                readonly
-                required
-                style="padding-right: 40px; cursor: pointer;"
-                placeholder="點擊使用計算機輸入"
-              />
-              <button
-                type="button"
-                @click="showQuickCalculator = true"
-                style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: rgba(0, 212, 255, 0.2); border: 1px solid rgba(0, 212, 255, 0.4); border-radius: 4px; padding: 4px 8px; cursor: pointer; color: #00d4ff; font-size: 18px;"
-                title="打開計算機"
-              >
-                🧮
-              </button>
+      <div class="modal-content quick-transaction-modal">
+        <div class="modal-header">
+          <h2 style="color: #00d4ff; margin: 0;">{{ quickForm.isEditing() ? '編輯交易' : '快速記帳' }}</h2>
+        </div>
+        
+        <div class="modal-body">
+          <form id="quick-transaction-form" @submit.prevent="handleQuickTransaction">
+            <div class="form-group">
+              <label>帳戶</label>
+              <select v-model="quickForm.form.value.account_id" required>
+                <option v-for="account in accountsStore.accounts" :key="account.id" :value="account.id">
+                  {{ account.name }}
+                </option>
+              </select>
             </div>
-          </div>
+            <div class="form-group">
+              <label>描述</label>
+              <input v-model="quickForm.form.value.description" placeholder="交易描述" required />
+              <DescriptionHistory
+                :descriptions="historicalDescriptions"
+                @select="handleDescriptionSelect"
+              />
+            </div>
 
-          <div class="form-group">
-            <label>交易類型</label>
-            <select v-model="quickForm.form.value.transaction_type" required>
-              <option value="credit">收入</option>
-              <option value="debit">支出</option>
-            </select>
-          </div>
+            <div class="form-group">
+              <label>金額</label>
+              <div style="position: relative;">
+                <input
+                  type="text"
+                  v-model.number="quickForm.form.value.amount"
+                  @click="showQuickCalculator = true"
+                  readonly
+                  required
+                  style="padding-right: 40px; cursor: pointer;"
+                  placeholder="點擊使用計算機輸入"
+                />
+                <button
+                  type="button"
+                  @click="showQuickCalculator = true"
+                  style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: rgba(0, 212, 255, 0.2); border: 1px solid rgba(0, 212, 255, 0.4); border-radius: 4px; padding: 4px 8px; cursor: pointer; color: #00d4ff; font-size: 18px;"
+                  title="打開計算機"
+                >
+                  🧮
+                </button>
+              </div>
+            </div>
 
-          <CategorySelector
-            :model-value="quickForm.form.value.category || ''"
-            @update:model-value="quickForm.form.value.category = $event"
-            :categories="categoriesStore.categories"
-            @open-management="showCategoryModal = true"
-          />
+            <div class="form-group">
+              <label>交易類型</label>
+              <select v-model="quickForm.form.value.transaction_type" required>
+                <option value="credit">收入</option>
+                <option value="debit">支出</option>
+              </select>
+            </div>
 
-          <div class="form-group">
-            <label>日期時間</label>
-            <DateTimeInput v-model="quickForm.form.value.transaction_date" :required="true" />
-          </div>
+            <CategorySelector
+              :model-value="quickForm.form.value.category || ''"
+              @update:model-value="quickForm.form.value.category = $event"
+              :categories="categoriesStore.categories"
+              @open-management="showCategoryModal = true"
+            />
 
-          <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
-            <button type="submit" class="btn btn-primary" style="flex: 1;">{{ quickForm.isEditing() ? '更新' : '新增交易' }}</button>
+            <div class="form-group">
+              <label>日期時間</label>
+              <DateTimeInput v-model="quickForm.form.value.transaction_date" :required="true" />
+            </div>
+            
+            <div class="form-group">
+              <label>備註</label>
+              <textarea 
+                v-model="quickForm.form.value.note" 
+                placeholder="備註 (選填)" 
+                rows="3"
+                style="width: 100%; resize: vertical; min-height: 80px;"
+              ></textarea>
+            </div>
+          </form>
+        </div>
+
+        <div class="modal-footer">
+          <div style="display: flex; gap: 10px; width: 100%;">
+            <button type="submit" form="quick-transaction-form" class="btn btn-primary" style="flex: 1;">{{ quickForm.isEditing() ? '更新' : '新增交易' }}</button>
             <button 
               v-if="quickForm.isEditing()" 
               type="button" 
               @click="handleRecordAgain({ 
                 account_id: quickForm.form.value.account_id,
                 description: quickForm.form.value.description,
+                note: quickForm.form.value.note,
                 amount: quickForm.form.value.amount,
                 transaction_type: quickForm.form.value.transaction_type,
                 category: quickForm.form.value.category
@@ -264,7 +282,7 @@
             </button>
             <button type="button" @click="closeQuickTransaction" class="btn btn-secondary" style="flex: 1;">取消</button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
 
@@ -352,6 +370,7 @@ const initialQuickFormData: TransactionCreate = {
   amount: 0,
   category: '',
   description: '',
+  note: '',
   transaction_date: dateTimeUtils.getCurrentDateTime()
 }
 
@@ -371,7 +390,7 @@ const fetchDescriptionHistory = async () => {
 
 const handleCalendarDateSelected = (date: string) => {
   selectedDate.value = date
-  showDailyModal.value = true
+  // showDailyModal.value = true // User requested to disable this
 }
 
 const openQuickTransaction = (account: Account) => {
@@ -388,6 +407,7 @@ const handleEditTransaction = (transaction: Transaction) => {
   quickForm.setForm({
     account_id: transaction.account_id,
     description: transaction.description,
+    note: transaction.note || '',
     amount: transaction.amount,
     transaction_type: transaction.transaction_type,
     category: transaction.category || '',
@@ -431,6 +451,7 @@ const handleQuickTransaction = async () => {
     if (quickForm.isEditing()) {
       await transactionsStore.updateTransaction(quickForm.editingId.value!, {
         description: transactionData.description,
+        note: transactionData.note,
         amount: transactionData.amount,
         category: transactionData.category,
         transaction_date: transactionData.transaction_date
@@ -481,6 +502,7 @@ const handleRecordAgain = (transaction: any) => {
   quickForm.resetForm()
   quickForm.form.value.account_id = transaction.account_id
   quickForm.form.value.description = transaction.description
+  quickForm.form.value.note = '' // 重記一筆時不保留備註
   quickForm.form.value.amount = transaction.amount
   quickForm.form.value.transaction_type = transaction.transaction_type
   quickForm.form.value.category = transaction.category || ''
@@ -536,4 +558,48 @@ onMounted(async () => {
 }
 
 
+
+.quick-transaction-modal {
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh; /* Limit height to viewport height */
+  padding: 0; /* Reset padding for flex layout */
+  overflow: hidden; /* Hide overflow on container */
+}
+
+.modal-header {
+  padding: 20px;
+  border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+  flex-shrink: 0;
+}
+
+.modal-body {
+  padding: 20px;
+  overflow-y: auto; /* Scrollable content */
+  flex: 1; /* Take remaining space */
+}
+
+.modal-footer {
+  padding: 20px;
+  border-top: 1px solid rgba(0, 212, 255, 0.2);
+  background: rgba(0, 0, 0, 0.2); /* Slight background for separation */
+  flex-shrink: 0;
+}
+
+/* Ensure textarea matches other inputs */
+textarea {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 4px;
+  color: white;
+  padding: 8px 12px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: #00d4ff;
+  box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2);
+}
 </style>

@@ -7,6 +7,7 @@ class TransactionBase(BaseModel):
     amount: float
     transaction_type: str
     category: Optional[str] = None
+    note: Optional[str] = None
     transaction_date: datetime
 
 class TransactionCreate(TransactionBase):
@@ -16,6 +17,7 @@ class TransactionUpdate(BaseModel):
     description: Optional[str] = None
     amount: Optional[float] = None
     category: Optional[str] = None
+    note: Optional[str] = None
     transaction_date: Optional[datetime] = None
 
 class Transaction(TransactionBase):

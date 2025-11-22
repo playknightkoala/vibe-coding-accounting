@@ -36,7 +36,10 @@
           >
             <div class="transaction-main">
               <div class="transaction-info">
-                <div class="transaction-description">{{ transaction.description }}</div>
+                <div class="transaction-description">
+                  {{ transaction.description }}
+                  <span v-if="transaction.note" class="transaction-note">({{ transaction.note }})</span>
+                </div>
                 <div class="transaction-meta">
                   <span class="transaction-time">{{ formatTime(transaction.transaction_date) }}</span>
                   <span v-if="transaction.category" class="transaction-category">{{ transaction.category }}</span>
@@ -307,6 +310,13 @@ watch(() => props.date, (newValue) => {
   color: #fff;
   margin-bottom: 6px;
   word-break: break-word;
+}
+
+.transaction-note {
+  font-size: 14px;
+  color: #a0aec0;
+  font-weight: normal;
+  margin-left: 8px;
 }
 
 .transaction-meta {
