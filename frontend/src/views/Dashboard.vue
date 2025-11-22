@@ -311,7 +311,7 @@
     <!-- 當日交易明細彈窗 -->
     <DailyTransactionsModal
       v-model="showDailyModal"
-      :date="selectedDate"
+      :date="modalDate"
       @edit-transaction="handleEditTransaction"
     />
 
@@ -362,6 +362,7 @@ const showQuickCalculator = ref(false)
 const showSearchModal = ref(false)
 const showDailyModal = ref(false)
 const selectedDate = ref(dateTimeUtils.getTodayString())
+const modalDate = ref(dateTimeUtils.getTodayString()) // New state for modal
 const monthlyChartRef = ref<InstanceType<typeof MonthlyChart> | null>(null)
 
 const initialQuickFormData: TransactionCreate = {
@@ -391,6 +392,11 @@ const fetchDescriptionHistory = async () => {
 const handleCalendarDateSelected = (date: string) => {
   selectedDate.value = date
   // showDailyModal.value = true // User requested to disable this
+}
+
+const handleDayClick = (date: string) => {
+  modalDate.value = date // Update modal date instead of calendar date
+  showDailyModal.value = true
 }
 
 const openQuickTransaction = (account: Account) => {
