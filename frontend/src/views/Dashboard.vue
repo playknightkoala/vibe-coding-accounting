@@ -3,7 +3,23 @@
     <h1>儀表板</h1>
 
     <div class="card">
-      <h2>總覽</h2>
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 20px;">
+        <h2>總覽</h2>
+        
+        <!-- 總額統計 (移至右上角) -->
+
+        <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+          <span style="font-size: 1.1rem; color: #a0aec0; font-weight: 500;">總額統計</span>
+          <div v-for="(total, currency) in dashboard.totalByCurrency.value" :key="currency"
+               style="padding: 8px 20px; background: linear-gradient(135deg, rgba(0, 102, 255, 0.1) 0%, rgba(0, 212, 255, 0.05) 100%); border-radius: 25px; border: 1px solid rgba(0, 212, 255, 0.2); display: flex; align-items: center; gap: 12px;">
+            <span style="color: #a0aec0; font-size: 1rem;">{{ currency }}</span>
+            <span style="font-size: 1.3rem; font-weight: bold;"
+               :style="{ color: total >= 0 ? '#51cf66' : '#ff6b6b' }">
+              ${{ total.toFixed(2) }}
+            </span>
+          </div>
+        </div>
+      </div>
 
       <!-- 頁籤選單 -->
       <div class="tabs-container">
@@ -11,7 +27,7 @@
           :class="['tab-btn', activeTab === 'accounts' ? 'active' : '']"
           @click="activeTab = 'accounts'"
         >
-          帳戶狀況及總額統計
+          帳戶狀況
         </button>
         <button
           :class="['tab-btn', activeTab === 'trends' ? 'active' : '']"
@@ -21,51 +37,34 @@
         </button>
       </div>
 
-      <!-- 帳戶狀況及總額統計頁籤 -->
+      <!-- 帳戶狀況頁籤 -->
       <div v-if="activeTab === 'accounts'" class="tab-content">
-        <div style="margin-bottom: 30px;">
-          <h3 style="margin-bottom: 15px;">帳戶狀況</h3>
-          <div v-if="accountsStore.accounts.length > 0" style="display: grid; gap: 15px;">
-            <div v-for="account in accountsStore.accounts" :key="account.id"
-                 style="border: 1px solid rgba(0, 212, 255, 0.2); padding: 15px; border-radius: 8px; background: rgba(0, 212, 255, 0.03); transition: all 0.3s ease;"
-                 @mouseenter="($event.currentTarget as HTMLElement).style.borderColor = 'rgba(0, 212, 255, 0.5)'"
-                 @mouseleave="($event.currentTarget as HTMLElement).style.borderColor = 'rgba(0, 212, 255, 0.2)'">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                  <h4 style="margin: 0 0 5px 0;">{{ account.name }}</h4>
-                  <p style="margin: 0; font-size: 14px; color: #a0aec0;">
-                    {{ accountsStore.getAccountTypeText(account.account_type) }} - {{ account.currency }}
-                  </p>
-                </div>
-                <div style="text-align: right; display: flex; align-items: center; gap: 15px;">
-                  <p style="margin: 0; font-size: 24px; font-weight: bold;"
-                     :style="{ color: account.balance >= 0 ? '#51cf66' : '#ff6b6b' }">
-                    {{ account.currency }} ${{ account.balance.toFixed(2) }}
-                  </p>
-                  <button @click="openQuickTransaction(account)" class="btn"
-                          style="padding: 8px 15px; background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; white-space: nowrap;">
-                    記帳
-                  </button>
-                </div>
+        <div v-if="accountsStore.accounts.length > 0" style="display: grid; gap: 15px;">
+          <div v-for="account in accountsStore.accounts" :key="account.id"
+               style="border: 1px solid rgba(0, 212, 255, 0.2); padding: 15px; border-radius: 8px; background: rgba(0, 212, 255, 0.03); transition: all 0.3s ease;"
+               @mouseenter="($event.currentTarget as HTMLElement).style.borderColor = 'rgba(0, 212, 255, 0.5)'"
+               @mouseleave="($event.currentTarget as HTMLElement).style.borderColor = 'rgba(0, 212, 255, 0.2)'">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <h4 style="margin: 0 0 5px 0;">{{ account.name }}</h4>
+                <p style="margin: 0; font-size: 14px; color: #a0aec0;">
+                  {{ accountsStore.getAccountTypeText(account.account_type) }} - {{ account.currency }}
+                </p>
+              </div>
+              <div style="text-align: right; display: flex; align-items: center; gap: 15px;">
+                <p style="margin: 0; font-size: 24px; font-weight: bold;"
+                   :style="{ color: account.balance >= 0 ? '#51cf66' : '#ff6b6b' }">
+                  {{ account.currency }} ${{ account.balance.toFixed(2) }}
+                </p>
+                <button @click="openQuickTransaction(account)" class="btn"
+                        style="padding: 8px 15px; background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; white-space: nowrap;">
+                  記帳
+                </button>
               </div>
             </div>
           </div>
-          <p v-else style="color: #a0aec0;">尚無帳戶</p>
         </div>
-
-        <div style="border-top: 2px solid rgba(0, 212, 255, 0.2); padding-top: 20px;">
-          <h3 style="margin-bottom: 15px;">總額統計</h3>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
-            <div v-for="(total, currency) in dashboard.totalByCurrency.value" :key="currency"
-                 style="text-align: center; padding: 15px; background: linear-gradient(135deg, rgba(0, 102, 255, 0.1) 0%, rgba(0, 212, 255, 0.05) 100%); border-radius: 8px; border: 1px solid rgba(0, 212, 255, 0.2);">
-              <h4 style="margin: 0 0 10px 0; color: #a0aec0;">{{ currency }}</h4>
-              <p style="margin: 0; font-size: 28px; font-weight: bold;"
-                 :style="{ color: total >= 0 ? '#51cf66' : '#ff6b6b' }">
-                ${{ total.toFixed(2) }}
-              </p>
-            </div>
-          </div>
-        </div>
+        <p v-else style="color: #a0aec0;">尚無帳戶</p>
       </div>
 
       <!-- 收入與支出趨勢頁籤 -->
@@ -76,26 +75,26 @@
 
     <div class="card">
       <h2>預算狀態</h2>
-      <div v-if="budgetsStore.budgets.length > 0" style="display: grid; gap: 15px;">
+      <div v-if="budgetsStore.budgets.length > 0" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
         <div v-for="budget in budgetsStore.budgets" :key="budget.id"
-             style="border: 1px solid rgba(0, 212, 255, 0.2); padding: 15px; border-radius: 8px; background: rgba(0, 212, 255, 0.03);">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <h3 style="margin: 0;">{{ budget.name }}</h3>
-            <div style="display: flex; gap: 8px; align-items: center;">
+             style="border: 1px solid rgba(0, 212, 255, 0.2); padding: 12px; border-radius: 8px; background: rgba(0, 212, 255, 0.03);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <h3 style="margin: 0; font-size: 1.1rem;">{{ budget.name }}</h3>
+            <div style="display: flex; gap: 6px; align-items: center;">
               <span v-if="budget.range_mode === 'recurring'"
                     style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                           color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; white-space: nowrap;">
+                           color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; white-space: nowrap;">
                 🔄 {{ budgetsStore.getPeriodText(budget.period || '') }}
               </span>
               <span v-else
                     style="background: rgba(0, 212, 255, 0.2);
-                           color: #00d4ff; padding: 4px 10px; border-radius: 12px; font-size: 12px; border: 1px solid #00d4ff; white-space: nowrap;">
-                📅 自訂區間
+                           color: #00d4ff; padding: 2px 8px; border-radius: 10px; font-size: 11px; border: 1px solid #00d4ff; white-space: nowrap;">
+                📅 自訂
               </span>
               <span :style="{
-                padding: '4px 12px',
+                padding: '2px 8px',
                 borderRadius: '4px',
-                fontSize: '14px',
+                fontSize: '12px',
                 backgroundColor: dashboard.getBudgetStatusColor(budget),
                 color: 'white',
                 whiteSpace: 'nowrap'
@@ -104,39 +103,39 @@
               </span>
             </div>
           </div>
-          <p style="margin: 5px 0;"><strong>類別：</strong>{{ budget.category_names.join(', ') || '所有類別' }}</p>
-          <p style="margin: 5px 0;"><strong>預算：</strong>${{ budget.amount.toFixed(2) }}</p>
-          <p style="margin: 5px 0;"><strong>已使用：</strong>${{ budget.spent.toFixed(2) }}</p>
-          <p style="margin: 5px 0;"><strong>剩餘：</strong>${{ (budget.amount - budget.spent).toFixed(2) }}</p>
-          <div style="background-color: rgba(0, 0, 0, 0.3); height: 20px; border-radius: 10px; overflow: hidden; margin-top: 10px;">
+          
+          <p style="margin: 0 0 8px 0; font-size: 13px; color: #a0aec0;">{{ budget.category_names.join(', ') || '所有類別' }}</p>
+          
+          <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px;">
+            <span>預算: ${{ budget.amount.toFixed(0) }}</span>
+            <span>已用: ${{ budget.spent.toFixed(0) }}</span>
+            <span :style="{ color: (budget.amount - budget.spent) < 0 ? '#ff6b6b' : '#51cf66' }">
+              剩餘: ${{ (budget.amount - budget.spent).toFixed(0) }}
+            </span>
+          </div>
+          
+          <div style="background-color: rgba(0, 0, 0, 0.3); height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 10px;">
             <div
               :style="{
                 width: Math.min((budget.spent / budget.amount) * 100, 100) + '%',
                 backgroundColor: budget.spent > budget.amount ? '#ff6b6b' : budget.spent > budget.amount * 0.8 ? '#ffa726' : '#51cf66',
                 height: '100%',
-                transition: 'width 0.3s ease',
-                boxShadow: budget.spent > budget.amount ? '0 0 10px rgba(255, 107, 107, 0.5)' : budget.spent > budget.amount * 0.8 ? '0 0 10px rgba(255, 167, 38, 0.5)' : '0 0 10px rgba(81, 207, 102, 0.5)'
+                transition: 'width 0.3s ease'
               }"
             ></div>
           </div>
 
-          <div v-if="budget.daily_limit" style="margin-top: 15px; border-top: 1px dashed rgba(0, 212, 255, 0.2); padding-top: 10px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-              <p style="margin: 0; font-size: 14px;"><strong>今日預算：</strong>${{ budget.daily_limit.toFixed(2) }}</p>
-              <div style="text-align: right;">
-                <p style="margin: 0; font-size: 14px;">
-                  已用: <span :style="{ color: dashboard.getDailySpent(budget) > budget.daily_limit ? '#ff6b6b' : '#51cf66' }">
-                    ${{ dashboard.getDailySpent(budget).toFixed(2) }}
-                  </span>
-                </p>
-                <p style="margin: 0; font-size: 14px;">
-                  剩餘: <span :style="{ color: (budget.daily_limit - dashboard.getDailySpent(budget)) < 0 ? '#ff6b6b' : '#51cf66' }">
-                    ${{ (budget.daily_limit - dashboard.getDailySpent(budget)).toFixed(2) }}
-                  </span>
-                </p>
-              </div>
+          <div v-if="budget.daily_limit" style="border-top: 1px dashed rgba(0, 212, 255, 0.2); padding-top: 8px; margin-top: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 4px;">
+              <span>今日: ${{ budget.daily_limit.toFixed(0) }}</span>
+              <span>
+                已用: <span :style="{ color: dashboard.getDailySpent(budget) > budget.daily_limit ? '#ff6b6b' : '#51cf66' }">${{ dashboard.getDailySpent(budget).toFixed(0) }}</span>
+              </span>
+              <span>
+                剩: <span :style="{ color: (budget.daily_limit - dashboard.getDailySpent(budget)) < 0 ? '#ff6b6b' : '#51cf66' }">${{ (budget.daily_limit - dashboard.getDailySpent(budget)).toFixed(0) }}</span>
+              </span>
             </div>
-            <div style="background-color: rgba(0, 0, 0, 0.3); height: 10px; border-radius: 5px; overflow: hidden;">
+            <div style="background-color: rgba(0, 0, 0, 0.3); height: 6px; border-radius: 3px; overflow: hidden;">
               <div
                 :style="{
                   width: Math.min((dashboard.getDailySpent(budget) / budget.daily_limit) * 100, 100) + '%',
@@ -148,8 +147,8 @@
             </div>
           </div>
 
-          <p style="margin-top: 10px; font-size: 14px; color: #a0aec0;">
-            <small>{{ dateTimeUtils.formatDateTime(budget.start_date) }} - {{ dateTimeUtils.formatDateTime(budget.end_date) }}</small>
+          <p style="margin-top: 8px; font-size: 11px; color: #a0aec0; text-align: right;">
+            {{ dateTimeUtils.formatDateTime(budget.start_date).split(' ')[0] }} - {{ dateTimeUtils.formatDateTime(budget.end_date).split(' ')[0] }}
           </p>
         </div>
       </div>
@@ -535,4 +534,6 @@ onMounted(async () => {
 .tab-content {
   margin-top: 20px;
 }
+
+
 </style>
