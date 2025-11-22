@@ -38,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 
 interface Props {
   modelValue: boolean
@@ -178,9 +178,68 @@ const handleConfirm = () => {
   }
 }
 
-const handleClose = () => {
-  emit('update:modelValue', false)
+const handleKeydown = (e: KeyboardEvent) => {
+  if (!show.value) return
+
+  // Prevent default action for calculator keys to avoid side effects (like scrolling)
+  if (['+', '-', '*', '/', 'Enter', 'Escape', 'Backspace'].includes(e.key)) {
+    e.preventDefault()
+  }
+
+  // Numbers
+  if (/^[0-9]$/.test(e.key)) {
+    appendNumber(e.key)
+    return
+  }
+
+  // Operators
+  switch (e.key) {
+    case '+':
+      appendOperator('+')
+      break
+    case '-':
+      appendOperator('-')
+      break
+    case '*':
+      appendOperator('*')
+      break
+    case '/':
+      appendOperator('/')
+      break
+    case '.':
+      appendDecimal()
+      break
+    case 'Enter':
+    case '=':
+      // If Shift+Enter or just Enter, we might want different behavior?
+      // Standard calculator: Enter = Calculate/Equal
+      // But user might want Enter to Confirm if calculation is done.
+      // Let's stick to: Enter = Calculate if expression exists, otherwise Confirm
+      if (expression.value && !waitingForOperand.value) {
+        calculate()
+      } else {
+        handleConfirm()
+      }
+      break
+    case 'Escape':
+      handleClose()
+      break
+    case 'Backspace':
+      backspace()
+      break
+    case 'Delete':
+      clear()
+      break
+  }
 }
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeydown)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleKeydown)
+})
 </script>
 
 <style scoped>
