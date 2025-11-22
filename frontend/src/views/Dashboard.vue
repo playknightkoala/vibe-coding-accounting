@@ -3,7 +3,7 @@
     <h1>儀表板</h1>
 
     <div class="card">
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 20px; margin-bottom: 20px;">
         <h2>總覽</h2>
         
         <!-- 總額統計 (移至右上角) -->
