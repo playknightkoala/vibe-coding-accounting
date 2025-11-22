@@ -343,7 +343,7 @@ const showCategoryModal = ref(false)
 const showQuickCalculator = ref(false)
 const showSearchModal = ref(false)
 const showDailyModal = ref(false)
-const selectedDate = ref('')
+const selectedDate = ref(dateTimeUtils.getTodayString())
 const monthlyChartRef = ref<InstanceType<typeof MonthlyChart> | null>(null)
 
 const initialQuickFormData: TransactionCreate = {

@@ -220,8 +220,16 @@ const nextMonth = () => {
 const selectDate = (day: CalendarDay) => {
   if (day.isCurrentMonth) {
     internalSelectedDate.value = day.date
+    emit('date-selected', day.date)
   }
 }
+
+// Watch for external changes to selectedDate
+watch(() => props.selectedDate, (newDate) => {
+  if (newDate) {
+    internalSelectedDate.value = newDate
+  }
+}, { immediate: true })
 
 // Watch for transaction changes
 watch(() => props.transactions, () => {
