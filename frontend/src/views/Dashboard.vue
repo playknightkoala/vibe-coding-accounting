@@ -165,6 +165,7 @@
       </div>
       <TransactionCalendar
         :transactions="transactionsStore.transactions"
+        :budgets="budgetsStore.budgets"
         :selected-date="selectedDate"
         @date-selected="handleCalendarDateSelected"
         @edit-transaction="handleEditTransaction"

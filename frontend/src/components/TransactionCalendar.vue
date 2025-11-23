@@ -2,13 +2,25 @@
   <div class="calendar-layout">
     <div class="calendar-container">
       <div class="calendar-header">
-        <button @click="previousMonth" class="btn btn-secondary calendar-nav-btn">
-          ◄
-        </button>
-        <h3 class="calendar-title">{{ currentYear }} 年 {{ currentMonth }} 月</h3>
-        <button @click="nextMonth" class="btn btn-secondary calendar-nav-btn">
-          ►
-        </button>
+        <div class="calendar-controls">
+          <button @click="previousMonth" class="btn btn-secondary calendar-nav-btn">
+            ◄
+          </button>
+          <h3 class="calendar-title">{{ currentYear }} 年 {{ currentMonth }} 月</h3>
+          <button @click="nextMonth" class="btn btn-secondary calendar-nav-btn">
+            ►
+          </button>
+        </div>
+        <div class="calendar-legend">
+          <div class="legend-item">
+            <span class="legend-dot has-transactions"></span>
+            <span>有記帳</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot over-budget"></span>
+            <span>超出當天預算</span>
+          </div>
+        </div>
       </div>
 
       <div class="calendar-grid">
@@ -23,9 +35,11 @@
             'other-month': !day.isCurrentMonth,
             'today': day.isToday,
             'has-transactions': day.hasTransactions && day.isCurrentMonth,
-            'selected': day.date === internalSelectedDate
+            'selected': day.date === internalSelectedDate,
+            'over-budget': day.isOverBudget
           }]"
           @click="selectDate(day)"
+          :title="day.isOverBudget ? '超出預算:\n' + day.overBudgetDetails.join('\n') : ''"
         >
           <div class="day-number">{{ day.dayNumber }}</div>
         </div>
@@ -60,10 +74,11 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import type { Transaction } from '@/types'
+import type { Transaction, Budget } from '@/types'
 
 const props = defineProps<{
   transactions: Transaction[]
+  budgets?: Budget[]
   selectedDate?: string
 }>()
 
@@ -114,6 +129,8 @@ interface CalendarDay {
   hasTransactions: boolean
   transactionCount: number
   netAmount: number
+  isOverBudget: boolean
+  overBudgetDetails: string[]
 }
 
 const calendarDays = computed<CalendarDay[]>(() => {
@@ -149,7 +166,9 @@ const calendarDays = computed<CalendarDay[]>(() => {
       isToday: dateStr === todayStr,
       hasTransactions: false,
       transactionCount: 0,
-      netAmount: 0
+      netAmount: 0,
+      isOverBudget: false,
+      overBudgetDetails: []
     })
   }
 
@@ -159,13 +178,60 @@ const calendarDays = computed<CalendarDay[]>(() => {
     const dayTransactions = props.transactions.filter(t => t.transaction_date.startsWith(dateStr))
 
     let netAmount = 0
+    let totalDebit = 0
     dayTransactions.forEach(t => {
       if (t.transaction_type === 'credit') {
         netAmount += t.amount
       } else {
         netAmount -= t.amount
+        totalDebit += t.amount
       }
     })
+
+    // Check if over budget
+    let isOverBudget = false
+    const overBudgetDetails: string[] = []
+    
+    if (props.budgets && props.budgets.length > 0) {
+      const currentDate = new Date(dateStr)
+      // Check each budget
+      for (const budget of props.budgets) {
+        if (!budget.daily_limit) continue
+        
+        const startDate = new Date(budget.start_date)
+        const endDate = new Date(budget.end_date)
+        
+        // Reset time part for accurate date comparison
+        startDate.setHours(0, 0, 0, 0)
+        endDate.setHours(23, 59, 59, 999)
+        
+        if (currentDate >= startDate && currentDate <= endDate) {
+          // Filter transactions that match this budget
+          const budgetTransactions = dayTransactions.filter(t => {
+             if (t.transaction_type !== 'debit') return false
+             
+             // Check account filter
+             if (budget.account_ids && budget.account_ids.length > 0) {
+               if (!budget.account_ids.includes(t.account_id)) return false
+             }
+             
+             // Check category filter
+             if (budget.category_names && budget.category_names.length > 0) {
+               if (!t.category || !budget.category_names.includes(t.category)) return false
+             }
+             
+             return true
+          })
+          
+          const budgetDailySpent = budgetTransactions.reduce((sum, t) => sum + t.amount, 0)
+          
+          if (budgetDailySpent > budget.daily_limit) {
+            isOverBudget = true
+            overBudgetDetails.push(`${budget.name}: 已用 $${budgetDailySpent.toFixed(0)} / 上限 $${budget.daily_limit.toFixed(0)}`)
+          }
+        }
+      }
+    }
 
     days.push({
       date: dateStr,
@@ -174,7 +240,9 @@ const calendarDays = computed<CalendarDay[]>(() => {
       isToday: dateStr === todayStr,
       hasTransactions: dayTransactions.length > 0,
       transactionCount: dayTransactions.length,
-      netAmount: netAmount
+      netAmount: netAmount,
+      isOverBudget,
+      overBudgetDetails
     })
   }
 
@@ -192,7 +260,9 @@ const calendarDays = computed<CalendarDay[]>(() => {
       isToday: dateStr === todayStr,
       hasTransactions: false,
       transactionCount: 0,
-      netAmount: 0
+      netAmount: 0,
+      isOverBudget: false,
+      overBudgetDetails: []
     })
   }
 
@@ -374,6 +444,44 @@ watch(() => props.transactions, () => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.calendar-controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.calendar-legend {
+  display: flex;
+  gap: 15px;
+  font-size: 0.9rem;
+  color: #a0aec0;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.legend-dot.over-budget {
+  background: rgba(255, 107, 107, 0.1);
+  border: 2px solid #ff6b6b;
+}
+
+.legend-dot.has-transactions {
+  background: rgba(81, 207, 102, 0.1);
+  border: 2px solid #51cf66;
 }
 
 .calendar-title {
@@ -452,6 +560,21 @@ watch(() => props.transactions, () => {
   background: rgba(0, 212, 255, 0.2);
   border-color: #00d4ff;
   border-width: 2px;
+}
+
+.calendar-day.over-budget .day-number {
+  border-color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.1);
+}
+
+.calendar-day.over-budget:hover {
+  /* Keep hover effect subtle or remove if not needed, 
+     but previously we had a red hover. 
+     Let's revert to standard hover or keep a subtle red tint?
+     User asked to change the "highlight" (frame) to the circle.
+     So we should probably remove the cell-level red styling. */
+  background: rgba(0, 212, 255, 0.1);
+  border-color: #00d4ff;
 }
 
 .day-number {
