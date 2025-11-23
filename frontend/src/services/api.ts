@@ -27,7 +27,8 @@ import type {
   CategoryReport,
   RankingReport,
   AccountReport,
-  TransactionDetail
+  TransactionDetail,
+  ExchangeRate
 } from '@/types'
 
 // 使用相對路徑，讓 nginx 反向代理處理路由
@@ -61,7 +62,7 @@ api.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       // 只有在不是登入或註冊請求時才跳轉
       const isAuthRequest = error.config.url?.includes('/auth/login') ||
-                           error.config.url?.includes('/auth/register')
+        error.config.url?.includes('/auth/register')
 
       if (!isAuthRequest) {
         // Token 失效，清除登入狀態並跳轉到登入頁面
@@ -311,5 +312,10 @@ export default {
     return api.post('/description-history/update', null, {
       params: { description }
     })
+  },
+
+  // 匯率
+  getExchangeRates() {
+    return api.get<ExchangeRate[]>('/exchange-rates/latest')
   }
 }

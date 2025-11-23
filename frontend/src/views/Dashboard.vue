@@ -201,28 +201,98 @@
               />
             </div>
 
-            <div class="form-group">
-              <label>金額</label>
-              <div style="position: relative;">
-                <input
-                  type="text"
-                  v-model.number="quickForm.form.value.amount"
-                  @click="showQuickCalculator = true"
-                  readonly
-                  required
-                  style="padding-right: 40px; cursor: pointer;"
-                  placeholder="點擊使用計算機輸入"
-                />
-                <button
-                  type="button"
-                  @click="showQuickCalculator = true"
-                  style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: rgba(0, 212, 255, 0.2); border: 1px solid rgba(0, 212, 255, 0.4); border-radius: 4px; padding: 4px 8px; cursor: pointer; color: #00d4ff; font-size: 18px;"
-                  title="打開計算機"
-                >
-                  🧮
-                </button>
+              <div class="form-group">
+                <label>金額</label>
+                
+                <!-- Currency Selector (Only for Credit Card) -->
+                <div v-if="isCreditCardAccount" style="margin-bottom: 10px;">
+                  <select 
+                    v-model="quickForm.selectedCurrency.value" 
+                    @change="handleCurrencyChange"
+                    style="width: 100%; text-overflow: ellipsis;"
+                  >
+                    <option value="TWD">TWD (台幣)</option>
+                    <template v-for="rate in exchangeRatesStore.rates" :key="rate.currency_code">
+                      <option 
+                        v-if="rate.buying_rate > 0 && rate.selling_rate > 0"
+                        :value="rate.currency_code"
+                      >
+                        {{ rate.currency_code }} ({{ rate.currency_name }})
+                      </option>
+                    </template>
+                  </select>
+                </div>
+
+                <!-- Dual Inputs for Foreign Currency -->
+                <div v-if="quickForm.selectedCurrency.value !== 'TWD'" style="display: flex; gap: 10px; margin-bottom: 5px;">
+                  <!-- Account Currency (TWD) -->
+                  <div style="flex: 1;">
+                    <label style="font-size: 0.8rem; color: #a0aec0;">帳戶金額 (TWD)</label>
+                    <div style="position: relative;">
+                      <input
+                        type="text"
+                        :value="quickForm.form.value.amount"
+                        @click="() => { quickForm.activeCalculatorInput.value = 'amount'; showQuickCalculator = true; }"
+                        readonly
+                        required
+                        style="padding-right: 40px; cursor: pointer; width: 100%;"
+                        placeholder="TWD"
+                      />
+                      <button
+                        type="button"
+                        @click="() => { quickForm.activeCalculatorInput.value = 'amount'; showQuickCalculator = true; }"
+                        style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: rgba(0, 212, 255, 0.2); border: 1px solid rgba(0, 212, 255, 0.4); border-radius: 4px; padding: 4px 8px; cursor: pointer; color: #00d4ff; font-size: 18px;"
+                      >🧮</button>
+                    </div>
+                  </div>
+
+                  <!-- Foreign Currency -->
+                  <div style="flex: 1;">
+                    <label style="font-size: 0.8rem; color: #a0aec0;">外幣金額 ({{ quickForm.selectedCurrency.value }})</label>
+                    <div style="position: relative;">
+                      <input
+                        type="number"
+                        v-model.number="quickForm.foreignAmount.value"
+                        @click="() => { quickForm.activeCalculatorInput.value = 'foreignAmount'; showQuickCalculator = true; }"
+                        readonly
+                        required
+                        style="padding-right: 40px; cursor: pointer; width: 100%;"
+                        placeholder="外幣"
+                      />
+                      <button
+                        type="button"
+                        @click="() => { quickForm.activeCalculatorInput.value = 'foreignAmount'; showQuickCalculator = true; }"
+                        style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: rgba(0, 212, 255, 0.2); border: 1px solid rgba(0, 212, 255, 0.4); border-radius: 4px; padding: 4px 8px; cursor: pointer; color: #00d4ff; font-size: 18px;"
+                      >🧮</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Single Input for TWD -->
+                <div v-else style="position: relative;">
+                  <input
+                    type="text"
+                    :value="quickForm.form.value.amount"
+                    @click="() => { quickForm.activeCalculatorInput.value = 'amount'; showQuickCalculator = true; }"
+                    readonly
+                    required
+                    style="padding-right: 40px; cursor: pointer; width: 100%;"
+                    placeholder="點擊使用計算機輸入"
+                  />
+                  <button
+                    type="button"
+                    @click="() => { quickForm.activeCalculatorInput.value = 'amount'; showQuickCalculator = true; }"
+                    style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: rgba(0, 212, 255, 0.2); border: 1px solid rgba(0, 212, 255, 0.4); border-radius: 4px; padding: 4px 8px; cursor: pointer; color: #00d4ff; font-size: 18px;"
+                    title="打開計算機"
+                  >
+                    🧮
+                  </button>
+                </div>
+
+                <div v-if="quickForm.selectedCurrency.value !== 'TWD'" style="margin-top: 5px; font-size: 0.9rem; color: #a0aec0;">
+                  匯率: {{ getExchangeRate(quickForm.selectedCurrency.value) }}
+                </div>
               </div>
-            </div>
 
             <div class="form-group">
               <label>交易類型</label>
@@ -308,7 +378,7 @@
     <!-- 計算機 -->
     <Calculator
       v-model="showQuickCalculator"
-      :initial-value="quickForm.form.value.amount"
+      :initial-value="quickForm.activeCalculatorInput.value === 'amount' ? quickForm.form.value.amount : (quickForm.foreignAmount.value || 0)"
       @confirm="handleQuickCalculatorConfirm"
     />
 
@@ -344,6 +414,8 @@ import { useAccountsStore } from '@/stores/accounts'
 import { useTransactionsStore } from '@/stores/transactions'
 import { useBudgetsStore } from '@/stores/budgets'
 import { useCategoriesStore } from '@/stores/categories'
+import { useExchangeRatesStore } from '@/stores/exchangeRates'
+import { useAuthStore } from '@/stores/auth'
 import { useModal } from '@/composables/useModal'
 import { useMessage } from '@/composables/useMessage'
 import { useForm } from '@/composables/useForm'
@@ -355,6 +427,8 @@ const accountsStore = useAccountsStore()
 const transactionsStore = useTransactionsStore()
 const budgetsStore = useBudgetsStore()
 const categoriesStore = useCategoriesStore()
+const exchangeRatesStore = useExchangeRatesStore()
+const authStore = useAuthStore()
 const quickModal = useModal()
 const messageModal = useMessage()
 const dateTimeUtils = useDateTime()
@@ -366,7 +440,7 @@ const showQuickCalculator = ref(false)
 const showSearchModal = ref(false)
 const showDailyModal = ref(false)
 const selectedDate = ref(dateTimeUtils.getTodayString())
-const modalDate = ref(dateTimeUtils.getTodayString()) // New state for modal
+const modalDate = ref(dateTimeUtils.getTodayString())
 const monthlyChartRef = ref<InstanceType<typeof MonthlyChart> | null>(null)
 
 const initialQuickFormData: TransactionCreate = {
@@ -379,7 +453,84 @@ const initialQuickFormData: TransactionCreate = {
   transaction_date: dateTimeUtils.getCurrentDateTime()
 }
 
-const quickForm = useForm<TransactionCreate>(initialQuickFormData)
+// Quick Transaction Form
+const quickForm = {
+  isOpen: ref(false),
+  isExpanded: ref(false),
+  mode: ref<'create' | 'edit'>('create'),
+  editId: ref<number | null>(null),
+  form: ref<TransactionCreate>({
+    account_id: 0,
+    description: '',
+    amount: 0,
+    transaction_type: 'debit',
+    category: '',
+    transaction_date: new Date().toISOString(),
+    note: ''
+  }),
+  foreignAmount: ref<number | null>(null),
+  selectedCurrency: ref<string>('TWD'),
+  
+  reset: () => {
+    quickForm.mode.value = 'create'
+    quickForm.editId.value = null
+    quickForm.form.value = {
+      account_id: accountsStore.accounts.length > 0 ? accountsStore.accounts[0].id : 0,
+      description: '',
+      amount: 0,
+      transaction_type: 'debit',
+      category: '',
+      transaction_date: new Date().toISOString(),
+      note: ''
+    }
+    quickForm.foreignAmount.value = null
+    quickForm.selectedCurrency.value = 'TWD'
+    quickForm.activeCalculatorInput.value = 'amount'
+    quickForm.isExpanded.value = false
+  },
+  
+  isEditing: () => quickForm.mode.value === 'edit',
+  resetForm: () => quickForm.reset(),
+  setForm: (data: any, id: number) => {
+    quickForm.mode.value = 'edit'
+    quickForm.editId.value = id
+    quickForm.form.value = { ...data }
+    quickForm.foreignAmount.value = data.foreign_amount || null
+    quickForm.selectedCurrency.value = data.foreign_currency || 'TWD'
+    quickForm.isExpanded.value = true
+  },
+  editingId: computed(() => quickForm.editId.value),
+  activeCalculatorInput: ref<'amount' | 'foreignAmount'>('amount')
+}
+
+const isCreditCardAccount = computed(() => {
+  const account = accountsStore.accounts.find(a => a.id === quickForm.form.value.account_id)
+  return account?.account_type === 'credit_card'
+})
+
+// Currency Conversion Logic
+const getExchangeRate = (currencyCode: string) => {
+  const rate = exchangeRatesStore.rates.find(r => r.currency_code === currencyCode)
+  return rate?.selling_rate || rate?.buying_rate || 1
+}
+
+const handleCurrencyChange = () => {
+  // Reset amount when currency changes to avoid confusion
+  quickForm.form.value.amount = 0
+  quickForm.foreignAmount.value = null
+}
+
+const handleForeignAmountChange = () => {
+  if (quickForm.selectedCurrency.value === 'TWD' || !quickForm.foreignAmount.value) {
+    if (quickForm.selectedCurrency.value !== 'TWD') {
+        quickForm.form.value.amount = 0
+    }
+    return
+  }
+  
+  const rate = getExchangeRate(quickForm.selectedCurrency.value)
+  quickForm.form.value.amount = Math.round(quickForm.foreignAmount.value * rate)
+}
 
 // Historical descriptions from backend
 const historicalDescriptions = ref<string[]>([])
@@ -455,7 +606,9 @@ const handleQuickTransaction = async () => {
   try {
     const transactionData = {
       ...quickForm.form.value,
-      transaction_date: dateTimeUtils.formatDateTimeForBackend(quickForm.form.value.transaction_date)
+      transaction_date: dateTimeUtils.formatDateTimeForBackend(quickForm.form.value.transaction_date),
+      foreign_amount: quickForm.selectedCurrency.value !== 'TWD' ? quickForm.foreignAmount.value : null,
+      foreign_currency: quickForm.selectedCurrency.value !== 'TWD' ? quickForm.selectedCurrency.value : null
     }
 
     if (quickForm.isEditing()) {
@@ -464,12 +617,22 @@ const handleQuickTransaction = async () => {
         note: transactionData.note,
         amount: transactionData.amount,
         category: transactionData.category,
-        transaction_date: transactionData.transaction_date
+        transaction_date: transactionData.transaction_date,
+        foreign_amount: transactionData.foreign_amount,
+        foreign_currency: transactionData.foreign_currency
       })
       // 更新交易時也更新敘述歷史
       await api.updateDescriptionHistory(transactionData.description)
       messageModal.showSuccess('交易已更新！')
     } else {
+      // Append currency info to note if foreign currency used
+      // Append currency info to note if foreign currency used
+      // Note is already updated in handleQuickCalculatorConfirm, but we ensure it's there?
+      // Actually, handleQuickCalculatorConfirm handles the note update now.
+      // We just need to ensure we don't double append if user edits the note manually.
+      // Let's trust handleQuickCalculatorConfirm for the note part.
+
+
       await transactionsStore.createTransaction(transactionData)
       // 新增交易後更新敘述歷史
       await api.updateDescriptionHistory(transactionData.description)
@@ -501,7 +664,30 @@ const closeQuickTransaction = () => {
 }
 
 const handleQuickCalculatorConfirm = (value: number) => {
-  quickForm.form.value.amount = value
+  const rate = getExchangeRate(quickForm.selectedCurrency.value)
+  
+  if (quickForm.activeCalculatorInput.value === 'foreignAmount') {
+    // User edited foreign amount -> calculate account amount (TWD)
+    quickForm.foreignAmount.value = value
+    if (quickForm.selectedCurrency.value !== 'TWD') {
+      quickForm.form.value.amount = Math.round(value * rate)
+    }
+  } else {
+    // User edited account amount (TWD) -> calculate foreign amount
+    quickForm.form.value.amount = value
+    if (quickForm.selectedCurrency.value !== 'TWD' && rate > 0) {
+      quickForm.foreignAmount.value = Number((value / rate).toFixed(2))
+    }
+  }
+
+  // Update note if foreign currency is used
+  if (quickForm.selectedCurrency.value !== 'TWD' && quickForm.foreignAmount.value) {
+     // Update note with conversion details
+    const currencyNote = `[外幣: ${quickForm.foreignAmount.value} ${quickForm.selectedCurrency.value} @ ${rate}]`
+    // Remove existing currency note if any (simple check)
+    const noteWithoutCurrency = quickForm.form.value.note.replace(/\[外幣:.*?\]/, '').trim()
+    quickForm.form.value.note = noteWithoutCurrency ? `${noteWithoutCurrency} ${currencyNote}` : currencyNote
+  }
 }
 
 const handleDescriptionSelect = (description: string) => {
@@ -521,13 +707,23 @@ const handleRecordAgain = (transaction: any) => {
 }
 
 onMounted(async () => {
-  await Promise.all([
-    accountsStore.fetchAccounts(),
-    transactionsStore.fetchTransactions(),
-    budgetsStore.fetchBudgets(),
-    categoriesStore.fetchCategories(),
-    fetchDescriptionHistory()
-  ])
+  try {
+    await Promise.all([
+      accountsStore.fetchAccounts(),
+      transactionsStore.fetchTransactions(),
+      budgetsStore.fetchBudgets(),
+      categoriesStore.fetchCategories(),
+      exchangeRatesStore.fetchRates(),
+      fetchDescriptionHistory()
+    ])
+    
+    // Set initial account if available
+    if (accountsStore.accounts.length > 0) {
+      quickForm.form.value.account_id = accountsStore.accounts[0].id
+    }
+  } catch (error) {
+    console.error('Failed to initialize dashboard:', error)
+  }
 })
 </script>
 
@@ -541,19 +737,13 @@ onMounted(async () => {
 
 .tab-btn {
   padding: 10px 20px;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(0, 212, 255, 0.2);
-  border-radius: 4px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
   color: #a0aec0;
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: 15px;
-}
-
-.tab-btn:hover {
-  background: rgba(0, 212, 255, 0.1);
-  border-color: rgba(0, 212, 255, 0.4);
-  color: #fff;
 }
 
 .tab-btn.active {

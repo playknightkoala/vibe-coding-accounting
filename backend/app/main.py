@@ -4,20 +4,31 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 from app.core.database import engine, Base
 from app.core.config import settings
-from app.api import auth, accounts, transactions, budgets, users, categories, reports, description_history
+from app.api import auth, accounts, transactions, budgets, users, categories, reports, description_history, exchange_rates
+from app.core.scheduler import start_scheduler, stop_scheduler
 from starlette.middleware.base import BaseHTTPMiddleware
 import time
 from collections import defaultdict
 from datetime import datetime, timedelta
+from contextlib import asynccontextmanager
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Start scheduler
+    start_scheduler()
+    yield
+    # Stop scheduler
+    stop_scheduler()
 
 app = FastAPI(
     title="Accounting API",
     version="1.0.0",
     docs_url="/docs" if settings.ENVIRONMENT == "development" else None,
-    redoc_url="/redoc" if settings.ENVIRONMENT == "development" else None
+    redoc_url="/redoc" if settings.ENVIRONMENT == "development" else None,
+    lifespan=lifespan
 )
 
 # Rate limiting middleware
@@ -99,6 +110,7 @@ app.include_router(budgets.router, prefix="/api/budgets", tags=["budgets"])
 app.include_router(categories.router, prefix="/api/categories", tags=["categories"])
 app.include_router(reports.router, prefix="/api/reports", tags=["reports"])
 app.include_router(description_history.router, prefix="/api/description-history", tags=["description-history"])
+app.include_router(exchange_rates.router, prefix="/api/exchange-rates", tags=["exchange-rates"])
 
 @app.get("/")
 def root():

@@ -72,6 +72,8 @@ export interface Transaction {
   created_at: string
   updated_at: string | null
   note?: string
+  foreign_amount?: number
+  foreign_currency?: string
 }
 
 export interface TransactionCreate {
@@ -82,6 +84,8 @@ export interface TransactionCreate {
   transaction_date: string
   account_id: number
   note?: string
+  foreign_amount?: number
+  foreign_currency?: string
 }
 
 export interface TransactionUpdate {
@@ -90,6 +94,8 @@ export interface TransactionUpdate {
   category?: string
   transaction_date?: string
   note?: string
+  foreign_amount?: number
+  foreign_currency?: string
 }
 
 export interface Budget {
@@ -235,4 +241,13 @@ export interface RankingReport {
 export interface AccountReport {
   account_stats: AccountStats[]
   total_amount: number
+}
+
+export interface ExchangeRate {
+  id: number
+  currency_code: string
+  currency_name: string
+  buying_rate: number | null
+  selling_rate: number | null
+  updated_at: string
 }

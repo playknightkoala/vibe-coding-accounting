@@ -12,6 +12,8 @@ class Transaction(Base):
     transaction_type = Column(String, nullable=False)  # 'debit' or 'credit'
     category = Column(String)
     note = Column(String, nullable=True)
+    foreign_amount = Column(Float, nullable=True)
+    foreign_currency = Column(String, nullable=True)
     transaction_date = Column(DateTime(timezone=True), nullable=False)
     account_id = Column(Integer, ForeignKey("accounts.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -178,6 +178,10 @@ const handleConfirm = () => {
   }
 }
 
+const handleClose = () => {
+  emit('update:modelValue', false)
+}
+
 const handleKeydown = (e: KeyboardEvent) => {
   if (!show.value) return
 

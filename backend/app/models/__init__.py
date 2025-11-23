@@ -6,5 +6,6 @@ from .budget_account import BudgetAccount
 from .budget_category import BudgetCategory
 from .category import Category
 from .description_history import DescriptionHistory
+from .exchange_rate import ExchangeRate
 
-__all__ = ["User", "Account", "Transaction", "Budget", "BudgetAccount", "BudgetCategory", "Category", "DescriptionHistory"]
+__all__ = ["User", "Account", "Transaction", "Budget", "BudgetAccount", "BudgetCategory", "Category", "DescriptionHistory", "ExchangeRate"]
