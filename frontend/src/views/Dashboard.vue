@@ -131,8 +131,11 @@
               <span>
                 已用: <span :style="{ color: dashboard.getDailySpent(budget) > budget.daily_limit ? '#ff6b6b' : '#51cf66' }">${{ dashboard.getDailySpent(budget).toFixed(0) }}</span>
               </span>
-              <span>
-                剩: <span :style="{ color: (budget.daily_limit - dashboard.getDailySpent(budget)) < 0 ? '#ff6b6b' : '#51cf66' }">${{ (budget.daily_limit - dashboard.getDailySpent(budget)).toFixed(0) }}</span>
+              <span v-if="(budget.daily_limit - dashboard.getDailySpent(budget)) < 0">
+                <span style="color: #ff6b6b">已超支: ${{ (dashboard.getDailySpent(budget) - budget.daily_limit).toFixed(0) }}</span>
+              </span>
+              <span v-else>
+                剩: <span style="color: #51cf66">${{ (budget.daily_limit - dashboard.getDailySpent(budget)).toFixed(0) }}</span>
               </span>
             </div>
             <div style="background-color: rgba(0, 0, 0, 0.3); height: 6px; border-radius: 3px; overflow: hidden;">
