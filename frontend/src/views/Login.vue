@@ -26,7 +26,10 @@
         </button>
       </form>
       <p style="margin-top: 20px; text-align: center; color: #a0aec0;">
-        還沒有帳號？ <router-link to="/register" style="color: #00d4ff; text-decoration: none; font-weight: 500; transition: all 0.3s ease;">註冊</router-link>
+        還沒有帳號？ <router-link to="/register" style="color: #00d4ff; text-decoration: none; font-weight: 500;">註冊</router-link>
+      </p>
+      <p style="margin-top: 10px; text-align: center; color: #a0aec0;">
+        <router-link to="/about" style="color: #4ecdc4; text-decoration: none; font-weight: 500;">關於本系統</router-link>
       </p>
     </div>
 

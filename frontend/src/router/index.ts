@@ -9,6 +9,7 @@ import Budgets from '@/views/Budgets.vue'
 import Profile from '@/views/Profile.vue'
 import Reports from '@/views/Reports.vue'
 import TestChart from '@/views/TestChart.vue'
+import About from '@/views/About.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -55,6 +56,11 @@ const routes: RouteRecordRaw[] = [
     name: 'Reports',
     component: Reports,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/about',
+    name: 'About',
+    component: About
   },
   {
     path: '/test-chart',
