@@ -678,7 +678,7 @@ const handleQuickTransaction = async () => {
         foreign_currency: transactionData.foreign_currency
       })
       // 更新交易時也更新敘述歷史
-      await api.updateDescriptionHistory(transactionData.description)
+      // await api.updateDescriptionHistory(transactionData.description)
       messageModal.showSuccess('交易已更新！')
     } else {
       // Append currency info to note if foreign currency used
@@ -691,7 +691,7 @@ const handleQuickTransaction = async () => {
 
       await transactionsStore.createTransaction(transactionData)
       // 新增交易後更新敘述歷史
-      await api.updateDescriptionHistory(transactionData.description)
+      // await api.updateDescriptionHistory(transactionData.description)
       messageModal.showSuccess('交易已成功新增！')
     }
 
