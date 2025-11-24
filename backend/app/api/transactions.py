@@ -218,3 +218,16 @@ def get_daily_transactions(
     ).order_by(Transaction.transaction_date.desc()).all()
 
     return transactions
+@router.get("/descriptions/list", response_model=List[str])
+def get_transaction_descriptions(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all distinct transaction descriptions for the current user"""
+    descriptions = db.query(Transaction.description).join(Account).filter(
+        Account.user_id == current_user.id,
+        Transaction.description != None,
+        Transaction.description != ""
+    ).distinct().all()
+    
+    return [desc[0] for desc in descriptions]

@@ -1,8 +1,8 @@
 <template>
-  <div class="description-history">
+  <div class="description-history" v-if="filteredDescriptions.length > 0">
     <div class="history-scroll-container">
       <button
-        v-for="desc in descriptions"
+        v-for="desc in filteredDescriptions"
         :key="desc"
         @click="selectDescription(desc)"
         class="history-item"
@@ -15,13 +15,33 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import PinyinMatch from 'pinyin-match'
+
 const props = defineProps<{
   descriptions: string[]
+  currentInput?: string
 }>()
 
 const emit = defineEmits<{
   (e: 'select', description: string): void
 }>()
+
+const filteredDescriptions = computed(() => {
+  if (!props.currentInput) {
+    // If no input, show all (or maybe limit to recent ones if list is long, but for now show all)
+    return props.descriptions
+  }
+  
+  return props.descriptions.filter(desc => 
+    // PinyinMatch.match returns false if not matched, or an array of indices if matched
+    // We also exclude the exact match to avoid showing what user already typed (unless it's a partial match that completed)
+    // Actually, PinyinMatch handles English too, so we can just use it.
+    // We keep the check to exclude exact same string if desired, but usually autocomplete shows it anyway.
+    // Let's just check for match.
+    PinyinMatch.match(desc, props.currentInput)
+  )
+})
 
 const selectDescription = (description: string) => {
   emit('select', description)

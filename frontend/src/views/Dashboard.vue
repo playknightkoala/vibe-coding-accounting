@@ -197,6 +197,7 @@
               <input v-model="quickForm.form.value.description" placeholder="交易描述" required />
               <DescriptionHistory
                 :descriptions="historicalDescriptions"
+                :current-input="quickForm.form.value.description"
                 @select="handleDescriptionSelect"
               />
             </div>
@@ -588,7 +589,7 @@ const historicalDescriptions = ref<string[]>([])
 const fetchDescriptionHistory = async () => {
   try {
     const response = await api.getDescriptionHistory()
-    historicalDescriptions.value = response.data.descriptions
+    historicalDescriptions.value = response.data
   } catch (error) {
     console.error('載入敘述歷史時發生錯誤:', error)
   }
@@ -614,6 +615,7 @@ const openQuickTransaction = (account: Account) => {
   // Set default currency to account currency
   const accountCurrency = account.currency === 'NTD' ? 'TWD' : account.currency
   quickForm.selectedCurrency.value = accountCurrency
+  fetchDescriptionHistory()
   quickModal.open()
 }
 
@@ -628,6 +630,7 @@ const handleEditTransaction = (transaction: Transaction) => {
     transaction_date: dateTimeUtils.formatDateTimeForInput(transaction.transaction_date)
   }, transaction.id)
   showDailyModal.value = false
+  fetchDescriptionHistory()
   quickModal.open()
 }
 

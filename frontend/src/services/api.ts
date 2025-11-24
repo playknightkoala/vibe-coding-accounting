@@ -304,14 +304,9 @@ export default {
   },
 
   // 敘述歷史
+  // 敘述歷史
   getDescriptionHistory() {
-    return api.get<{ descriptions: string[] }>('/description-history/')
-  },
-
-  updateDescriptionHistory(description: string) {
-    return api.post('/description-history/update', null, {
-      params: { description }
-    })
+    return api.get<string[]>('/transactions/descriptions/list')
   },
 
   // 匯率
