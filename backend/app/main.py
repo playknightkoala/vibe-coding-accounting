@@ -5,12 +5,13 @@ from fastapi.responses import JSONResponse
 from app.core.database import engine, Base
 from app.core.config import settings
 from app.api import auth, accounts, transactions, budgets, users, categories, reports, description_history, exchange_rates
-from app.core.scheduler import start_scheduler, stop_scheduler
+from app.core.scheduler import start_scheduler, stop_scheduler, run_crawler_job
 from starlette.middleware.base import BaseHTTPMiddleware
 import time
 from collections import defaultdict
 from datetime import datetime, timedelta
 from contextlib import asynccontextmanager
+import threading
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -19,6 +20,10 @@ Base.metadata.create_all(bind=engine)
 async def lifespan(app: FastAPI):
     # Start scheduler
     start_scheduler()
+    
+    # Run crawler immediately on startup to ensure we have data
+    threading.Thread(target=run_crawler_job, daemon=True).start()
+    
     yield
     # Stop scheduler
     stop_scheduler()
