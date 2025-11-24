@@ -15,12 +15,20 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/login',
     name: 'Login',
-    component: Login
+    component: Login,
+    meta: { public: true }
   },
   {
     path: '/register',
     name: 'Register',
-    component: Register
+    component: Register,
+    meta: { public: true }
+  },
+  {
+    path: '/about',
+    name: 'About',
+    component: About,
+    meta: { public: true }
   },
   {
     path: '/',
@@ -58,14 +66,18 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true }
   },
   {
-    path: '/about',
-    name: 'About',
-    component: About
-  },
-  {
     path: '/test-chart',
     name: 'TestChart',
     component: TestChart
+  },
+  // Catch-all route for 404 - must be last
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    redirect: (to) => {
+      // This will be handled by beforeEach guard
+      return { path: to.path }
+    }
   }
 ]
 
@@ -76,31 +88,57 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
+  const isAuthenticated = authStore.isAuthenticated
 
-  // 需要認證的頁面
+  // Public pages that don't require authentication
+  const publicPages = ['/login', '/register', '/about']
+  const isPublicPage = publicPages.includes(to.path)
+
+  // Check if route exists (not a 404)
+  const routeExists = router.hasRoute(to.name || '')
+
+  // Handle 404 / invalid routes
+  if (to.name === 'NotFound' || !routeExists) {
+    if (isAuthenticated) {
+      // Has valid token but invalid route -> redirect to dashboard
+      next('/dashboard')
+    } else {
+      // No valid token and invalid route -> redirect to login
+      next('/login')
+    }
+    return
+  }
+
+  // Handle public pages
+  if (isPublicPage) {
+    if (to.path === '/login' || to.path === '/register') {
+      // If already authenticated, redirect to dashboard
+      if (isAuthenticated) {
+        next('/dashboard')
+      } else {
+        next()
+      }
+    } else {
+      // About page - always allow
+      next()
+    }
+    return
+  }
+
+  // Handle protected pages
   if (to.meta.requiresAuth) {
-    if (!authStore.isAuthenticated) {
-      // 未登入，導向登入頁
+    if (!isAuthenticated) {
+      // Not authenticated, redirect to login
       next('/login')
     } else {
-      // 已登入，允許訪問
+      // Authenticated, allow access
       next()
     }
+    return
   }
-  // 登入或註冊頁面
-  else if (to.name === 'Login' || to.name === 'Register') {
-    if (authStore.isAuthenticated) {
-      // 已登入，導向首頁
-      next('/')
-    } else {
-      // 未登入，允許訪問
-      next()
-    }
-  }
-  // 其他頁面
-  else {
-    next()
-  }
+
+  // Default: allow navigation
+  next()
 })
 
 export default router
