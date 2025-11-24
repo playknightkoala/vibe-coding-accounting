@@ -14,6 +14,8 @@ class AccountCreate(AccountBase):
 class AccountUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
+    account_type: Optional[str] = None
+    currency: Optional[str] = None
 
 class Account(AccountBase):
     id: int

@@ -61,7 +61,7 @@
           <div class="form-group">
             <label>幣別</label>
             <select v-model="formController.form.value.currency" required>
-              <option value="NTD">NTD</option>
+              <option value="TWD">TWD</option>
               <option value="USD">USD</option>
               <option value="JPY">JPY</option>
             </select>
@@ -120,7 +120,7 @@ const confirmDialog = useConfirm()
 const initialFormData: AccountCreate = {
   name: '',
   account_type: 'cash',
-  currency: 'NTD',
+  currency: 'TWD',
   description: '',
   initial_balance: 0
 }
@@ -153,7 +153,9 @@ const handleSubmit = async () => {
     if (formController.isEditing()) {
       await accountsStore.updateAccount(formController.editingId.value!, {
         name: formController.form.value.name,
-        description: formController.form.value.description
+        description: formController.form.value.description,
+        account_type: formController.form.value.account_type,
+        currency: formController.form.value.currency
       })
     } else {
       await accountsStore.createAccount(formController.form.value)
