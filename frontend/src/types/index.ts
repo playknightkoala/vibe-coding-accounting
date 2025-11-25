@@ -204,6 +204,8 @@ export interface TransactionDetail {
   account_id: number
   account_name: string
   note?: string
+  foreign_amount?: number
+  foreign_currency?: string
 }
 
 export interface DailyTransactions {

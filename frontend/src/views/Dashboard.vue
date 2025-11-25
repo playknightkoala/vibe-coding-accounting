@@ -627,7 +627,9 @@ const handleEditTransaction = (transaction: Transaction) => {
     amount: transaction.amount,
     transaction_type: transaction.transaction_type,
     category: transaction.category || '',
-    transaction_date: dateTimeUtils.formatDateTimeForInput(transaction.transaction_date)
+    transaction_date: dateTimeUtils.formatDateTimeForInput(transaction.transaction_date),
+    foreign_amount: transaction.foreign_amount,
+    foreign_currency: transaction.foreign_currency
   }, transaction.id)
   showDailyModal.value = false
   fetchDescriptionHistory()

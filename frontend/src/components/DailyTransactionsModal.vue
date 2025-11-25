@@ -47,7 +47,13 @@
                 </div>
               </div>
               <div class="transaction-amount" :class="transaction.transaction_type">
-                {{ transaction.transaction_type === 'credit' ? '+' : '-' }}${{ transaction.amount.toFixed(2) }}
+                <div v-if="transaction.foreign_amount" class="foreign-amount">
+                  {{ transaction.foreign_amount }} {{ transaction.foreign_currency }}
+                  <span class="exchange-rate">≈ {{ transaction.amount.toFixed(0) }} TWD</span>
+                </div>
+                <div v-else>
+                  {{ transaction.transaction_type === 'credit' ? '+' : '-' }}${{ transaction.amount.toFixed(2) }}
+                </div>
               </div>
             </div>
           </div>
@@ -374,5 +380,21 @@ watch(() => props.date, (newValue) => {
   .transaction-amount {
     align-self: flex-end;
   }
+  .transaction-amount {
+    align-self: flex-end;
+  }
+}
+
+.foreign-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 16px;
+}
+
+.exchange-rate {
+  font-size: 12px;
+  color: #a0aec0;
+  margin-top: 2px;
 }
 </style>

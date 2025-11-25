@@ -27,6 +27,8 @@ class TransactionDetail(BaseModel):
     transaction_date: datetime
     account_id: int
     account_name: str
+    foreign_amount: Optional[float] = None
+    foreign_currency: Optional[str] = None
 
 class DailyTransactions(BaseModel):
     date: str
