@@ -33,6 +33,26 @@
       </p>
     </div>
 
+    <!-- FortiGuard / Project Info Section -->
+    <div class="project-info">
+      <div class="info-card">
+        <h3>關於本專案</h3>
+        <p>
+          本網站為 <strong>個人作品集 (Portfolio Project)</strong>，旨在展示全端開發技術。
+        </p>
+        <div class="disclaimer">
+          <span class="icon">⚠️</span>
+          <span>
+            <strong>非真實金融服務</strong>：本系統僅供展示用途，請勿輸入真實的銀行帳號、密碼或任何敏感個人資訊。
+          </span>
+        </div>
+        <div class="developer-info">
+          <p>開發者: YS Hong</p>
+          <router-link to="/about" class="more-link">了解更多專案細節 &rarr;</router-link>
+        </div>
+      </div>
+    </div>
+
     <!-- 2FA 驗證彈窗 -->
     <div v-if="show2FAModal" class="modal">
       <div class="modal-content">
@@ -153,3 +173,234 @@ const cancel2FA = () => {
   }
 }
 </script>
+
+<style scoped>
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  width: 100%;
+  transition: transform 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+}
+
+h2 {
+  color: #00d4ff;
+  text-align: center;
+  margin-bottom: 30px;
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  color: #a0aec0;
+  font-size: 0.9rem;
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+input:focus {
+  outline: none;
+  border-color: #00d4ff;
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+}
+
+.btn {
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #00d4ff 0%, #00b4d8 100%);
+  color: #1a1a2e;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+
+.modal-content {
+  background: #1a1a2e;
+  padding: 30px;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 400px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+/* Project Info Section Styles */
+.project-info {
+  width: 100%;
+  max-width: 600px; /* Wider than the login card for better readability */
+  margin-top: 40px;
+  animation: fadeIn 0.8s ease-out;
+}
+
+.info-card {
+  background: rgba(0, 212, 255, 0.03);
+  border: 1px solid rgba(0, 212, 255, 0.1);
+  border-radius: 12px;
+  padding: 25px;
+  text-align: center;
+}
+
+.info-card h3 {
+  color: #4ecdc4;
+  font-size: 1.2rem;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+.info-card p {
+  color: #a0aec0;
+  line-height: 1.6;
+  margin-bottom: 15px;
+  font-size: 0.95rem;
+}
+
+.disclaimer {
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid rgba(255, 107, 107, 0.2);
+  border-radius: 8px;
+  padding: 12px;
+  margin: 20px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  text-align: left;
+}
+
+.disclaimer .icon {
+  font-size: 1.2rem;
+}
+
+.disclaimer span {
+  color: #ffcccc;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.disclaimer strong {
+  color: #ff6b6b;
+}
+
+.developer-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 15px;
+}
+
+.more-link {
+  color: #00d4ff;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.more-link:hover {
+  color: #4ecdc4;
+  text-decoration: underline;
+  transform: translateX(5px);
+  display: inline-block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive Design */
+@media (min-width: 1024px) {
+  .container {
+    flex-direction: row;
+    gap: 60px;
+    align-items: center;
+  }
+
+  .card {
+    margin: 0 !important; /* Override inline style */
+    flex: 0 0 400px;
+  }
+
+  .project-info {
+    margin-top: 0;
+    flex: 0 0 500px;
+    text-align: left;
+  }
+
+  .info-card {
+    text-align: left;
+    padding: 40px;
+  }
+  
+  .developer-info {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+</style>
