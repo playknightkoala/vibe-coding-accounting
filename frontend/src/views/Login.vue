@@ -1,57 +1,111 @@
 <template>
   <div class="container">
-    <div class="card" style="max-width: 400px; margin: 100px auto;">
-      <h2>登入</h2>
-      <form @submit.prevent="handleLogin">
-        <div class="form-group">
-          <label for="username">使用者名稱</label>
-          <input
-            type="text"
-            id="username"
-            v-model="form.username"
-            required
-          />
-        </div>
-        <div class="form-group">
-          <label for="password">密碼</label>
-          <input
-            type="password"
-            id="password"
-            v-model="form.password"
-            required
-          />
-        </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
-          登入
-        </button>
-      </form>
-      <p style="margin-top: 20px; text-align: center; color: #a0aec0;">
-        還沒有帳號？ <router-link to="/register" style="color: #00d4ff; text-decoration: none; font-weight: 500;">註冊</router-link>
-      </p>
-      <p style="margin-top: 10px; text-align: center; color: #a0aec0;">
-        <router-link to="/about" style="color: #4ecdc4; text-decoration: none; font-weight: 500;">關於本系統</router-link>
-      </p>
-    </div>
+    <div class="content-wrapper">
+      <!-- Login Form Section -->
+      <div class="card login-card">
+        <h2>登入</h2>
+        <form @submit.prevent="handleLogin">
+          <div class="form-group">
+            <label for="username">使用者名稱</label>
+            <input
+              type="text"
+              id="username"
+              v-model="form.username"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="password">密碼</label>
+            <input
+              type="password"
+              id="password"
+              v-model="form.password"
+              required
+            />
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+            登入
+          </button>
+        </form>
+        <p style="margin-top: 20px; text-align: center; color: #a0aec0;">
+          還沒有帳號？ <router-link to="/register" style="color: #00d4ff; text-decoration: none; font-weight: 500;">註冊</router-link>
+        </p>
+      </div>
 
-    <!-- FortiGuard / Project Info Section -->
-    <div class="project-info">
-      <div class="info-card">
-        <h3>關於本專案</h3>
-        <p>
-          本網站為 <strong>個人作品集 (Portfolio Project)</strong>，旨在展示全端開發技術。
-        </p>
-        <p>
-          使用技術：Python FastAPI, Vue3, TypeScript, Docker
-        </p>
-        <div class="disclaimer">
-          <span class="icon">⚠️</span>
-          <span>
-            <strong>非真實金融服務</strong>：本系統僅供展示用途，請勿輸入真實的銀行帳號、密碼或任何敏感個人資訊。
-          </span>
-        </div>
-        <div class="developer-info">
-          <p>開發者: YS Hong</p>
-          <router-link to="/about" class="more-link">了解更多專案細節 &rarr;</router-link>
+      <!-- About / Project Info Section -->
+      <div class="about-section">
+        <div class="about-content">
+          <h1>關於本專案</h1>
+          
+          <section class="section">
+            <h2>📊 專案簡介</h2>
+            <p>
+              這是一個功能完整的<strong>個人記帳與預算管理系統</strong>，旨在幫助使用者有效管理個人財務、追蹤支出、設定預算目標，並透過視覺化報表深入了解財務狀況。
+            </p>
+            <p>
+              本專案是個人全端開發作品，展示了現代 Web 應用程式開發的完整流程，從前端介面設計到後端 API 開發，再到資料庫設計與部署。
+            </p>
+          </section>
+
+          <section class="section">
+            <h2>✨ 主要功能</h2>
+            <ul>
+              <li><strong>多幣別支援</strong>：支援 TWD、USD、JPY 等多種貨幣，並提供即時匯率轉換</li>
+              <li><strong>交易管理</strong>：快速記帳、交易分類、描述自動完成（支援拼音搜尋）</li>
+              <li><strong>預算追蹤</strong>：設定月度/日度預算，即時追蹤預算使用狀況</li>
+              <li><strong>報表分析</strong>：多維度財務報表，包含類別分析、帳戶分析、排名統計等</li>
+              <li><strong>帳戶管理</strong>：支援現金、銀行、信用卡、儲值卡等多種帳戶類型</li>
+              <li><strong>安全性</strong>：使用者認證、JWT Token、2FA 雙因素驗證</li>
+            </ul>
+          </section>
+
+          <section class="section">
+            <h2>🛠️ 技術堆疊</h2>
+            <div class="tech-stack">
+              <div class="tech-category">
+                <h3>前端</h3>
+                <ul>
+                  <li>Vue 3 (Composition API)</li>
+                  <li>TypeScript</li>
+                  <li>Pinia (狀態管理)</li>
+                  <li>Vue Router</li>
+                  <li>Axios</li>
+                </ul>
+              </div>
+              <div class="tech-category">
+                <h3>後端</h3>
+                <ul>
+                  <li>Python FastAPI</li>
+                  <li>SQLAlchemy (ORM)</li>
+                  <li>PostgreSQL</li>
+                  <li>JWT Authentication</li>
+                  <li>APScheduler (排程任務)</li>
+                </ul>
+              </div>
+              <div class="tech-category">
+                <h3>部署</h3>
+                <ul>
+                  <li>Docker & Docker Compose</li>
+                  <li>Nginx (反向代理)</li>
+                  <li>SSL/TLS (HTTPS)</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>👨‍💻 開發者</h2>
+            <p>
+              <strong>YS Hong</strong> - 全端工程師
+            </p>
+            <p>
+              這個專案是我的個人作品集之一，展示了我在全端開發、系統架構設計、以及現代 Web 技術應用方面的能力。
+            </p>
+          </section>
+
+          <div class="footer-note">
+            <p>© 2025 YS Hong. 本專案為個人作品，僅供展示與學習用途。</p>
+          </div>
         </div>
       </div>
     </div>
@@ -126,7 +180,7 @@ const handleLogin = async () => {
       show2FAModal.value = true
     } else {
       // 登入成功，導向首頁
-      await router.push('/')
+      await router.push('/dashboard')
     }
   } catch (err: any) {
     // 登入失敗，確保清除任何舊的 token
@@ -154,7 +208,7 @@ const verify2FA = async () => {
     // 設定 token
     authStore.setToken(response.data.access_token)
     show2FAModal.value = false
-    router.push('/')
+    router.push('/dashboard')
   } catch (err: any) {
     const detail = err.response?.data?.detail
     if (typeof detail === 'string') {
@@ -188,6 +242,16 @@ const cancel2FA = () => {
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
 }
 
+.content-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  width: 100%;
+  max-width: 900px; /* Adjusted to match original About page width for better readability */
+  align-items: center;
+}
+
+/* Login Card Styles */
 .card {
   background: rgba(255, 255, 255, 0.05);
   padding: 40px;
@@ -196,6 +260,7 @@ const cancel2FA = () => {
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   width: 100%;
+  /* Removed max-width: 400px to let it expand */
   transition: transform 0.3s ease;
 }
 
@@ -203,7 +268,7 @@ const cancel2FA = () => {
   transform: translateY(-5px);
 }
 
-h2 {
+.login-card h2 {
   color: #00d4ff;
   text-align: center;
   margin-bottom: 30px;
@@ -268,6 +333,95 @@ input:focus {
   background: rgba(255, 255, 255, 0.2);
 }
 
+/* About Section Styles */
+.about-section {
+  width: 100%;
+  animation: fadeIn 0.8s ease-out;
+}
+
+.about-content {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 40px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.about-content h1 {
+  color: #00d4ff;
+  font-size: 2rem;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.section {
+  margin-bottom: 30px;
+}
+
+.section h2 {
+  color: #00d4ff;
+  font-size: 1.5rem;
+  margin-bottom: 15px;
+  border-bottom: 2px solid rgba(0, 212, 255, 0.3);
+  padding-bottom: 10px;
+}
+
+.section h3 {
+  color: #4ecdc4;
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+}
+
+.section p {
+  color: #e0e0e0;
+  line-height: 1.6;
+  margin-bottom: 15px;
+}
+
+.section ul {
+  color: #e0e0e0;
+  line-height: 1.6;
+  padding-left: 20px;
+}
+
+.section li {
+  margin-bottom: 8px;
+}
+
+.section strong {
+  color: #00d4ff;
+}
+
+.tech-stack {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.tech-category {
+  background: rgba(0, 212, 255, 0.05);
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+.tech-category ul {
+  padding-left: 20px;
+  margin: 0;
+}
+
+.footer-note {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+  color: #a0a0a0;
+  font-size: 0.9rem;
+}
+
+/* Modal Styles */
 .modal {
   position: fixed;
   top: 0;
@@ -292,118 +446,19 @@ input:focus {
   text-align: center;
 }
 
-/* Project Info Section Styles */
-.project-info {
-  width: 100%;
-  max-width: 600px; /* Wider than the login card for better readability */
-  margin-top: 40px;
-  animation: fadeIn 0.8s ease-out;
-}
-
-.info-card {
-  background: rgba(0, 212, 255, 0.03);
-  border: 1px solid rgba(0, 212, 255, 0.1);
-  border-radius: 12px;
-  padding: 25px;
-  text-align: center;
-}
-
-.info-card h3 {
-  color: #4ecdc4;
-  font-size: 1.2rem;
-  margin-bottom: 15px;
-  font-weight: 600;
-}
-
-.info-card p {
-  color: #a0aec0;
-  line-height: 1.6;
-  margin-bottom: 15px;
-  font-size: 0.95rem;
-}
-
-.disclaimer {
-  background: rgba(255, 107, 107, 0.1);
-  border: 1px solid rgba(255, 107, 107, 0.2);
-  border-radius: 8px;
-  padding: 12px;
-  margin: 20px 0;
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  text-align: left;
-}
-
-.disclaimer .icon {
-  font-size: 1.2rem;
-}
-
-.disclaimer span {
-  color: #ffcccc;
-  font-size: 0.9rem;
-  line-height: 1.5;
-}
-
-.disclaimer strong {
-  color: #ff6b6b;
-}
-
-.developer-info {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 15px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  padding-top: 15px;
-}
-
-.more-link {
-  color: #00d4ff;
-  text-decoration: none;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
-}
-
-.more-link:hover {
-  color: #4ecdc4;
-  text-decoration: underline;
-  transform: translateX(5px);
-  display: inline-block;
-}
-
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 /* Responsive Design */
-@media (min-width: 1024px) {
-  .container {
-    flex-direction: row;
-    gap: 60px;
-    align-items: center;
-  }
-
-  .card {
-    margin: 0 !important; /* Override inline style */
-    flex: 0 0 400px;
-  }
-
-  .project-info {
-    margin-top: 0;
-    flex: 0 0 500px;
-    text-align: left;
-  }
-
-  .info-card {
-    text-align: left;
-    padding: 40px;
+@media (max-width: 768px) {
+  .content-wrapper {
+    padding: 20px;
   }
   
-  .developer-info {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
+  .card, .about-content {
+    padding: 20px;
   }
 }
 </style>

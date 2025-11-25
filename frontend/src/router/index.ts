@@ -9,11 +9,10 @@ import Budgets from '@/views/Budgets.vue'
 import Profile from '@/views/Profile.vue'
 import Reports from '@/views/Reports.vue'
 import TestChart from '@/views/TestChart.vue'
-import About from '@/views/About.vue'
 
 const routes: RouteRecordRaw[] = [
   {
-    path: '/login',
+    path: '/',
     name: 'Login',
     component: Login,
     meta: { public: true }
@@ -23,16 +22,6 @@ const routes: RouteRecordRaw[] = [
     name: 'Register',
     component: Register,
     meta: { public: true }
-  },
-  {
-    path: '/about',
-    name: 'About',
-    component: About,
-    meta: { public: true }
-  },
-  {
-    path: '/',
-    redirect: '/dashboard'
   },
   {
     path: '/dashboard',
@@ -73,11 +62,7 @@ const routes: RouteRecordRaw[] = [
   // Catch-all route for 404 - must be last
   {
     path: '/:pathMatch(.*)*',
-    name: 'NotFound',
-    redirect: (to) => {
-      // This will be handled by beforeEach guard
-      return { path: to.path }
-    }
+    redirect: '/'
   }
 ]
 
@@ -86,32 +71,17 @@ const router = createRouter({
   routes
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore()
   const isAuthenticated = authStore.isAuthenticated
 
   // Public pages that don't require authentication
-  const publicPages = ['/login', '/register', '/about']
+  const publicPages = ['/', '/register']
   const isPublicPage = publicPages.includes(to.path)
-
-  // Check if route exists (not a 404)
-  const routeExists = router.hasRoute(to.name || '')
-
-  // Handle 404 / invalid routes
-  if (to.name === 'NotFound' || !routeExists) {
-    if (isAuthenticated) {
-      // Has valid token but invalid route -> redirect to dashboard
-      next('/dashboard')
-    } else {
-      // No valid token and invalid route -> redirect to login
-      next('/login')
-    }
-    return
-  }
 
   // Handle public pages
   if (isPublicPage) {
-    if (to.path === '/login' || to.path === '/register') {
+    if (to.path === '/' || to.path === '/register') {
       // If already authenticated, redirect to dashboard
       if (isAuthenticated) {
         next('/dashboard')
@@ -119,7 +89,6 @@ router.beforeEach((to, from, next) => {
         next()
       }
     } else {
-      // About page - always allow
       next()
     }
     return
@@ -129,7 +98,7 @@ router.beforeEach((to, from, next) => {
   if (to.meta.requiresAuth) {
     if (!isAuthenticated) {
       // Not authenticated, redirect to login
-      next('/login')
+      next('/')
     } else {
       // Authenticated, allow access
       next()
