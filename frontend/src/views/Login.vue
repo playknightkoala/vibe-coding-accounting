@@ -40,6 +40,9 @@
         <p>
           本網站為 <strong>個人作品集 (Portfolio Project)</strong>，旨在展示全端開發技術。
         </p>
+        <p>
+          使用技術：Python FastAPI, Vue3, TypeScript, Docker
+        </p>
         <div class="disclaimer">
           <span class="icon">⚠️</span>
           <span>
