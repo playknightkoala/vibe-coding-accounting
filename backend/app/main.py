@@ -86,8 +86,15 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             # response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
         return response
 
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
+
+# ...
+
 # Add security headers middleware
 app.add_middleware(SecurityHeadersMiddleware)
+
+# Add ProxyHeadersMiddleware to trust X-Forwarded-Proto from Nginx/Synology
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 # Add SessionMiddleware for OAuth
 app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
