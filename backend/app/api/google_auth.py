@@ -4,6 +4,7 @@ from authlib.integrations.starlette_client import OAuth, OAuthError
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import create_access_token
+from app.core.timezone import get_taipei_now
 from app.models.user import User
 from app.models.account import Account
 from app.schemas.user import Token
@@ -60,8 +61,19 @@ async def auth_google_callback(request: Request, db: Session = Depends(get_db)):
         
     # Check if user exists
     user = db.query(User).filter(User.username == email).first()
-    
+
     if not user:
+        # 檢查是否是被封鎖的 email
+        blocked_user = db.query(User).filter(
+            User.username == email,
+            User.is_blocked == True
+        ).first()
+        if blocked_user:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="此電子郵件已被封鎖,無法登入"
+            )
+
         # Create new user
         user = User(
             username=email,
@@ -72,7 +84,7 @@ async def auth_google_callback(request: Request, db: Session = Depends(get_db)):
         db.add(user)
         db.commit()
         db.refresh(user)
-        
+
         # Create default accounts
         default_accounts = [
             Account(
@@ -95,7 +107,18 @@ async def auth_google_callback(request: Request, db: Session = Depends(get_db)):
         for account in default_accounts:
             db.add(account)
         db.commit()
-        
+    else:
+        # 檢查現有使用者是否被封鎖
+        if user.is_blocked:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="此帳號已被封鎖,無法登入"
+            )
+
+    # 更新最後登入時間
+    user.last_login_at = get_taipei_now()
+    db.commit()
+
     # Generate JWT token
     access_token = create_access_token(data={"sub": user.username})
     

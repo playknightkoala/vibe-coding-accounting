@@ -33,7 +33,10 @@ class User(BaseModel):
     id: int
     email: EmailStr = Field(validation_alias=AliasChoices('email', 'username'))
     is_google_user: bool = False
+    is_admin: bool = False
+    is_blocked: bool = False
     two_factor_enabled: bool
+    last_login_at: Optional[datetime] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -81,3 +84,18 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     email: Optional[str] = None
+
+# Admin schemas
+class UserAdminInfo(User):
+    """管理員查看的使用者完整資訊"""
+    transaction_count: int = 0
+    budget_count: int = 0
+    account_count: int = 0
+
+class AdminUserUpdate(BaseModel):
+    """管理員更新使用者資訊"""
+    email: Optional[EmailStr] = None
+    password: Optional[str] = None
+    is_admin: Optional[bool] = None
+    is_blocked: Optional[bool] = None
+    two_factor_enabled: Optional[bool] = None

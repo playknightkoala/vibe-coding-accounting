@@ -5,6 +5,7 @@ from datetime import timedelta
 from app.core.database import get_db
 from app.core.security import verify_password, get_password_hash, create_access_token
 from app.core.config import settings
+from app.core.timezone import get_taipei_now
 from app.models.user import User
 from app.models.account import Account
 from app.schemas.user import UserCreate, User as UserSchema, Token, TwoFactorVerify, TwoFactorLogin
@@ -34,6 +35,9 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
 
     db_user = db.query(User).filter(User.username == user.email).first()
     if db_user:
+        # 如果帳號被封鎖,不允許重新註冊
+        if db_user.is_blocked:
+            raise HTTPException(status_code=403, detail="此電子郵件已被封鎖,無法註冊")
         raise HTTPException(status_code=400, detail="Email already registered")
 
     hashed_password = get_password_hash(user.password)
@@ -84,6 +88,17 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # 檢查帳號是否被封鎖
+    if user.is_blocked:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="此帳號已被封鎖,無法登入"
+        )
+
+    # 更新最後登入時間
+    user.last_login_at = get_taipei_now()
+    db.commit()
+
     # 如果啟用了 2FA，返回需要 2FA 驗證的標記
     if user.two_factor_enabled:
         # 創建臨時 token（包含 pending_2fa 標記）
@@ -110,6 +125,13 @@ def verify_2fa_login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # 檢查帳號是否被封鎖
+    if user.is_blocked:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="此帳號已被封鎖,無法登入"
+        )
+
     if not user.two_factor_enabled or not user.two_factor_secret:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -123,6 +145,10 @@ def verify_2fa_login(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid 2FA code"
         )
+
+    # 更新最後登入時間
+    user.last_login_at = get_taipei_now()
+    db.commit()
 
     # 創建正常的 access token
     access_token = create_access_token(data={"sub": user.username})

@@ -10,6 +10,7 @@
           <router-link to="/reports">報表</router-link>
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
+          <router-link v-if="isAdmin" to="/admin">管理員</router-link>
           <router-link to="/profile">個人設定</router-link>
           <button @click="handleLogout" class="btn btn-secondary">登出</button>
         </div>
@@ -28,9 +29,14 @@ const authStore = useAuthStore()
 const router = useRouter()
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
+const isAdmin = computed(() => authStore.user?.is_admin || false)
 
 const handleLogout = () => {
   authStore.logout()
   router.push('/')
 }
 </script>
+
+<style scoped>
+
+</style>

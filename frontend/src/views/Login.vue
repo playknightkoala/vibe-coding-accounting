@@ -215,7 +215,9 @@ const handleLogin = async () => {
     if (response && response.requires_2fa) {
       show2FAModal.value = true
     } else {
-      // 登入成功，導向首頁
+      // 登入成功，獲取使用者資訊
+      await authStore.fetchUser()
+      // 導向首頁
       await router.push('/dashboard')
     }
   } catch (err: any) {
@@ -243,6 +245,8 @@ const verify2FA = async () => {
     const response = await api.verify2FA(form.value, twoFactorCode.value)
     // 設定 token
     authStore.setToken(response.data.access_token)
+    // 獲取使用者資訊
+    await authStore.fetchUser()
     show2FAModal.value = false
     router.push('/dashboard')
   } catch (err: any) {

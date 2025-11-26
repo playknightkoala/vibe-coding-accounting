@@ -26,4 +26,20 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if user is None:
         raise credentials_exception
 
+    # 檢查使用者是否被封鎖
+    if user.is_blocked:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="此帳號已被封鎖，無法登入"
+        )
+
     return user
+
+def get_current_admin(current_user: User = Depends(get_current_user)) -> User:
+    """檢查當前使用者是否為管理員"""
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="需要管理員權限"
+        )
+    return current_user

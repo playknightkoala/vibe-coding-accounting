@@ -31,6 +31,19 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('token', accessToken)
   }
 
+  async function fetchUser() {
+    try {
+      const response = await api.getCurrentUser()
+      user.value = response.data
+      return response.data
+    } catch (error) {
+      console.error('Failed to fetch user:', error)
+      // 如果獲取失敗,清除登入狀態
+      logout()
+      throw error
+    }
+  }
+
   function logout() {
     user.value = null
     token.value = null
@@ -44,6 +57,7 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     login,
     setToken,
+    fetchUser,
     logout
   }
 })

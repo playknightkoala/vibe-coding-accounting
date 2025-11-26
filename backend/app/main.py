@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
 from app.core.database import engine, Base
 from app.core.config import settings
-from app.api import auth, accounts, transactions, budgets, users, categories, reports, description_history, exchange_rates, password_reset, google_auth
+from app.api import auth, accounts, transactions, budgets, users, categories, reports, description_history, exchange_rates, password_reset, google_auth, admin
 from app.core.scheduler import start_scheduler, stop_scheduler, run_crawler_job
 from starlette.middleware.base import BaseHTTPMiddleware
 import time
@@ -129,6 +129,7 @@ app.include_router(reports.router, prefix="/api/reports", tags=["reports"])
 app.include_router(description_history.router, prefix="/api/description-history", tags=["description-history"])
 app.include_router(exchange_rates.router, prefix="/api/exchange-rates", tags=["exchange-rates"])
 app.include_router(password_reset.router, prefix="/api/password-reset", tags=["password-reset"])
+app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 
 @app.get("/")
 def root():

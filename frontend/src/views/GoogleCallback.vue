@@ -16,12 +16,15 @@ const authStore = useAuthStore()
 
 onMounted(async () => {
   const token = route.query.token as string
-  
+
   if (token) {
     try {
       // Store token
       authStore.setToken(token)
-      
+
+      // Fetch user data to get is_admin and other fields
+      await authStore.fetchUser()
+
       // Redirect to dashboard
       await router.push('/dashboard')
     } catch (error) {

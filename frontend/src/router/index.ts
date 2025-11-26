@@ -13,6 +13,7 @@ import Budgets from '@/views/Budgets.vue'
 import Profile from '@/views/Profile.vue'
 import Reports from '@/views/Reports.vue'
 import TestChart from '@/views/TestChart.vue'
+import Admin from '@/views/Admin.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -89,6 +90,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/admin',
+    name: 'Admin',
+    component: Admin,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
     path: '/test-chart',
     name: 'TestChart',
     component: TestChart
@@ -105,7 +112,7 @@ const router = createRouter({
   routes
 })
 
-router.beforeEach((to, _from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
   const isAuthenticated = authStore.isAuthenticated
 
@@ -130,10 +137,25 @@ router.beforeEach((to, _from, next) => {
     if (!isAuthenticated) {
       // Not authenticated, redirect to login
       next('/')
-    } else {
-      // Authenticated, allow access
-      next()
+      return
     }
+
+    // Check admin permission
+    if (to.meta.requiresAdmin) {
+      // Ensure user data is loaded
+      if (!authStore.user) {
+        await authStore.fetchUser()
+      }
+
+      if (!authStore.user?.is_admin) {
+        // Not an admin, redirect to dashboard
+        next('/dashboard')
+        return
+      }
+    }
+
+    // Authenticated and authorized, allow access
+    next()
     return
   }
 

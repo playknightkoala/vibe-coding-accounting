@@ -2,9 +2,26 @@ export interface User {
   id: number
   email: string
   is_google_user: boolean
+  is_admin: boolean
+  is_blocked: boolean
   two_factor_enabled: boolean
+  last_login_at: string | null
   created_at: string
   updated_at: string | null
+}
+
+export interface UserAdminInfo extends User {
+  transaction_count: number
+  budget_count: number
+  account_count: number
+}
+
+export interface AdminUserUpdate {
+  email?: string
+  password?: string
+  is_admin?: boolean
+  is_blocked?: boolean
+  two_factor_enabled?: boolean
 }
 
 export interface UserCreate {

@@ -5,6 +5,8 @@ import type {
   UserLogin,
   UserUpdate,
   User,
+  UserAdminInfo,
+  AdminUserUpdate,
   Token,
   TwoFactorSetup,
   TwoFactorVerify,
@@ -100,7 +102,7 @@ export default {
   },
 
   // 使用者設定
-  getUserProfile() {
+  getCurrentUser() {
     return api.get<User>('/users/me')
   },
 
@@ -331,5 +333,43 @@ export default {
       token,
       new_password: newPassword
     })
+  },
+
+  // 管理員 API
+  admin: {
+    // 列出所有使用者
+    listUsers() {
+      return api.get<UserAdminInfo[]>('/admin/users')
+    },
+
+    // 獲取特定使用者資訊
+    getUser(userId: number) {
+      return api.get<UserAdminInfo>(`/admin/users/${userId}`)
+    },
+
+    // 更新使用者
+    updateUser(userId: number, data: AdminUserUpdate) {
+      return api.patch<UserAdminInfo>(`/admin/users/${userId}`, data)
+    },
+
+    // 刪除使用者
+    deleteUser(userId: number) {
+      return api.delete(`/admin/users/${userId}`)
+    },
+
+    // 重置使用者資料
+    resetUserData(userId: number) {
+      return api.post(`/admin/users/${userId}/reset-data`)
+    },
+
+    // 封鎖使用者
+    blockUser(userId: number) {
+      return api.post(`/admin/users/${userId}/block`)
+    },
+
+    // 解除封鎖
+    unblockUser(userId: number) {
+      return api.post(`/admin/users/${userId}/unblock`)
+    }
   }
 }
