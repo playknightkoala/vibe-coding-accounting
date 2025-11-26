@@ -10,6 +10,7 @@ from app.models.account import Account
 from app.models.transaction import Transaction
 from app.schemas.transaction import Transaction as TransactionSchema, TransactionCreate, TransactionUpdate, MonthlyStats, DailyStats
 from app.api.deps import get_current_user
+from app.core.timezone import from_iso_string, to_utc, to_taipei_time, TAIPEI_TZ
 
 router = APIRouter()
 
@@ -38,7 +39,15 @@ def create_transaction(
     if not account:
         raise HTTPException(status_code=404, detail="Account not found")
 
-    db_transaction = Transaction(**transaction.dict())
+    # 將前端傳來的台北時間轉換為 UTC 儲存
+    transaction_data = transaction.dict()
+    if isinstance(transaction_data['transaction_date'], str):
+        transaction_data['transaction_date'] = from_iso_string(transaction_data['transaction_date'])
+    elif transaction_data['transaction_date']:
+        # 如果是 datetime 物件，確保為台北時間
+        transaction_data['transaction_date'] = to_utc(transaction_data['transaction_date'])
+
+    db_transaction = Transaction(**transaction_data)
     db.add(db_transaction)
 
     # Update account balance
@@ -82,7 +91,16 @@ def update_transaction(
     old_amount = transaction.amount
     old_type = transaction.transaction_type
 
-    for key, value in transaction_update.dict(exclude_unset=True).items():
+    update_data = transaction_update.dict(exclude_unset=True)
+
+    # 處理交易時間的時區轉換
+    if 'transaction_date' in update_data and update_data['transaction_date']:
+        if isinstance(update_data['transaction_date'], str):
+            update_data['transaction_date'] = from_iso_string(update_data['transaction_date'])
+        else:
+            update_data['transaction_date'] = to_utc(update_data['transaction_date'])
+
+    for key, value in update_data.items():
         setattr(transaction, key, value)
 
     # Update account balance if amount changed

@@ -1,6 +1,7 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_serializer
 from datetime import datetime, date
 from typing import Optional, List, Dict
+from app.core.timezone import format_for_frontend
 
 class TransactionBase(BaseModel):
     description: str
@@ -29,6 +30,11 @@ class Transaction(TransactionBase):
     account_id: int
     created_at: datetime
     updated_at: Optional[datetime] = None
+
+    @field_serializer('transaction_date', 'created_at', 'updated_at')
+    def serialize_datetime(self, dt: Optional[datetime], _info) -> Optional[str]:
+        """序列化日期時間為台北時間的 ISO 格式字串"""
+        return format_for_frontend(dt) if dt else None
 
     class Config:
         from_attributes = True

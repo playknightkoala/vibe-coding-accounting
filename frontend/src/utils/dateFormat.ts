@@ -1,5 +1,6 @@
 /**
- * 將 ISO 格式的日期時間轉換為顯示格式
+ * 將後端傳來的日期時間轉換為顯示格式
+ * 後端已經將時間轉換為台北時間,直接顯示即可
  * @param dateString - ISO 格式的日期時間字符串 (如: "2025-11-19T00:00:00" 或 "2025-11-19T00:00:00Z")
  * @returns 格式化後的日期時間字符串 (如: "2025-11-19 00:00:00")
  */
@@ -15,6 +16,7 @@ export function formatDateTime(dateString: string): string {
 
 /**
  * 將 datetime-local 輸入格式轉換為後端需要的格式
+ * 前端輸入的時間視為台北時間,後端會自動處理時區轉換
  * @param dateTimeLocal - datetime-local 輸入的值 (如: "2025-11-19T14:30")
  * @returns ISO 格式的日期時間字符串 (如: "2025-11-19T14:30:00")
  */
