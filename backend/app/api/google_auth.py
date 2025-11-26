@@ -26,7 +26,7 @@ oauth.register(
 async def login_google(request: Request):
     redirect_uri = request.url_for('auth_google_callback')
     # Force HTTPS in production or if behind a proxy that terminates SSL
-    if settings.ENVIRONMENT == "production" in str(redirect_uri):
+    if settings.ENVIRONMENT == "production" or "yshongcode.com" in str(redirect_uri):
         redirect_uri = str(redirect_uri).replace("http://", "https://")
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
@@ -35,7 +35,7 @@ async def auth_google_callback(request: Request, db: Session = Depends(get_db)):
     try:
         # Manually construct redirect_uri to match what we sent
         redirect_uri = request.url_for('auth_google_callback')
-        if settings.ENVIRONMENT == "production" in str(redirect_uri):
+        if settings.ENVIRONMENT == "production" or "yshongcode.com" in str(redirect_uri):
              redirect_uri = str(redirect_uri).replace("http://", "https://")
              
         token = await oauth.google.authorize_access_token(request, redirect_uri=redirect_uri)
