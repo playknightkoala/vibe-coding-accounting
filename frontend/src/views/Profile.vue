@@ -5,12 +5,13 @@
     <!-- 使用者資訊 -->
     <div class="card">
       <h2>帳號資訊</h2>
-      <p><strong>使用者名稱：</strong>{{ user?.username }}</p>
-      <p><strong>2FA 狀態：</strong>{{ user?.two_factor_enabled ? '已啟用' : '未啟用' }}</p>
+      <p><strong>電子郵件：</strong>{{ user?.email }}</p>
+      <p v-if="user?.is_google_user"><strong>登入方式：</strong>Google 帳號</p>
+      <p v-if="!user?.is_google_user"><strong>2FA 狀態：</strong>{{ user?.two_factor_enabled ? '已啟用' : '未啟用' }}</p>
     </div>
 
-    <!-- 變更密碼 -->
-    <div class="card">
+    <!-- 變更密碼 (僅一般帳號) -->
+    <div v-if="!user?.is_google_user" class="card">
       <h2>變更密碼</h2>
       <form @submit.prevent="handlePasswordChange">
         <div class="form-group">
@@ -40,8 +41,8 @@
       </form>
     </div>
 
-    <!-- 2FA 設定 -->
-    <div class="card">
+    <!-- 2FA 設定 (僅一般帳號) -->
+    <div v-if="!user?.is_google_user" class="card">
       <h2>雙因素認證 (2FA)</h2>
       <p style="margin-bottom: 15px; color: #a0aec0;">
         使用手機驗證器應用程式（如 Google Authenticator、Microsoft Authenticator）來增加帳號安全性

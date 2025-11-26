@@ -4,6 +4,8 @@ import Login from '@/views/Login.vue'
 import Register from '@/views/Register.vue'
 import ForgotPassword from '@/views/ForgotPassword.vue'
 import ResetPassword from '@/views/ResetPassword.vue'
+import Privacy from '@/views/Privacy.vue'
+import Terms from '@/views/Terms.vue'
 import Dashboard from '@/views/Dashboard.vue'
 import Accounts from '@/views/Accounts.vue'
 
@@ -41,6 +43,18 @@ const routes: RouteRecordRaw[] = [
     path: '/google-callback',
     name: 'GoogleCallback',
     component: () => import('@/views/GoogleCallback.vue'),
+    meta: { public: true }
+  },
+  {
+    path: '/privacy',
+    name: 'Privacy',
+    component: Privacy,
+    meta: { public: true }
+  },
+  {
+    path: '/terms',
+    name: 'Terms',
+    component: Terms,
     meta: { public: true }
   },
   {

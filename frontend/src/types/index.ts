@@ -1,6 +1,7 @@
 export interface User {
   id: number
   email: string
+  is_google_user: boolean
   two_factor_enabled: boolean
   created_at: string
   updated_at: string | null

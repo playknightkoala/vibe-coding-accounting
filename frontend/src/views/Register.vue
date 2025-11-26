@@ -59,6 +59,20 @@
       <p style="margin-top: 20px; text-align: center; color: #a0aec0;">
         已經有帳號了？ <router-link to="/login" style="color: #00d4ff; text-decoration: none; font-weight: 500; transition: all 0.3s ease;">登入</router-link>
       </p>
+      <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.1); text-align: center;">
+        <p style="font-size: 12px; color: #a0aec0; margin-bottom: 8px;">
+          點擊註冊即表示您同意我們的
+        </p>
+        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+          <router-link to="/terms" style="color: #00d4ff; text-decoration: none; font-size: 12px; opacity: 0.9; transition: opacity 0.3s ease;">
+            服務條款
+          </router-link>
+          <span style="color: #a0aec0; font-size: 12px;">·</span>
+          <router-link to="/privacy" style="color: #00d4ff; text-decoration: none; font-size: 12px; opacity: 0.9; transition: opacity 0.3s ease;">
+            隱私權政策
+          </router-link>
+        </div>
+      </div>
     </div>
 
     <div v-if="showSuccessModal" class="modal">

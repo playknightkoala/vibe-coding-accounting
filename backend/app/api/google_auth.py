@@ -42,7 +42,8 @@ async def auth_google_callback(request: Request, db: Session = Depends(get_db)):
         # This is required because Authlib restores it from session, and if we pass it as kwarg
         # it causes a collision in fetch_access_token(**params, **kwargs)
         # The key format is usually '{name}_authorize_redirect_uri'
-        request.session['google_authorize_redirect_uri'] = redirect_uri
+        # Convert to string for JSON serialization
+        request.session['google_authorize_redirect_uri'] = str(redirect_uri)
              
         token = await oauth.google.authorize_access_token(request)
     except OAuthError as error:
@@ -65,6 +66,7 @@ async def auth_google_callback(request: Request, db: Session = Depends(get_db)):
         user = User(
             username=email,
             hashed_password=None, # No password for OAuth users
+            is_google_user=True,
             two_factor_enabled=False
         )
         db.add(user)

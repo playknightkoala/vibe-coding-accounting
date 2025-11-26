@@ -32,6 +32,7 @@ class UserLogin(BaseModel):
 class User(BaseModel):
     id: int
     email: EmailStr = Field(validation_alias=AliasChoices('email', 'username'))
+    is_google_user: bool = False
     two_factor_enabled: bool
     created_at: datetime
     updated_at: Optional[datetime] = None
