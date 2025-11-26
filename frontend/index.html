@@ -54,63 +54,49 @@
 
 <body>
   <div id="app">
-    <!-- Static Content for SEO and Loading State -->
-    <div
-      style="font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #e0e0e0; background: #1a1a2e; padding: 40px; max-width: 800px; margin: 0 auto;">
-      <h1 style="color: #00d4ff; text-align: center; margin-bottom: 40px;">會計與預算系統</h1>
+    <style>
+      .app-loading {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
 
-      <section style="margin-bottom: 40px;">
-        <h2 style="color: #00d4ff; border-bottom: 2px solid rgba(0, 212, 255, 0.3); padding-bottom: 10px;">📊 專案簡介</h2>
-        <p>這是一個功能完整的<strong>個人記帳與預算管理系統</strong>，旨在幫助使用者有效管理個人財務、追蹤支出、設定預算目標，並透過視覺化報表深入了解財務狀況。</p>
-        <p>本專案是個人全端開發作品，展示了現代 Web 應用程式開發的完整流程，從前端介面設計到後端 API 開發，再到資料庫設計與部署。</p>
-      </section>
+      .app-loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 3px solid rgba(0, 212, 255, 0.1);
+        border-radius: 50%;
+        border-top-color: #00d4ff;
+        animation: app-spin 1s ease-in-out infinite;
+        margin-bottom: 20px;
+      }
 
-      <section style="margin-bottom: 40px;">
-        <h2 style="color: #00d4ff; border-bottom: 2px solid rgba(0, 212, 255, 0.3); padding-bottom: 10px;">✨ 主要功能</h2>
-        <ul style="padding-left: 20px;">
-          <li style="margin-bottom: 10px;"><strong>多幣別支援</strong>：支援 TWD、USD、JPY 等多種貨幣，並提供即時匯率轉換</li>
-          <li style="margin-bottom: 10px;"><strong>交易管理</strong>：快速記帳、交易分類、描述自動完成</li>
-          <li style="margin-bottom: 10px;"><strong>預算追蹤</strong>：設定月度/日度預算，即時追蹤預算使用狀況</li>
-          <li style="margin-bottom: 10px;"><strong>報表分析</strong>：多維度財務報表，包含類別分析、帳戶分析、排名統計等</li>
-          <li style="margin-bottom: 10px;"><strong>安全性</strong>：使用者認證、JWT Token、2FA 雙因素驗證</li>
-        </ul>
-      </section>
+      .app-loading-text {
+        color: #00d4ff;
+        font-size: 14px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        font-weight: 500;
+      }
 
-      <section style="margin-bottom: 40px;">
-        <h2 style="color: #00d4ff; border-bottom: 2px solid rgba(0, 212, 255, 0.3); padding-bottom: 10px;">🛠️ 技術堆疊</h2>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
-          <div>
-            <h3 style="color: #4ecdc4;">前端</h3>
-            <ul style="padding-left: 20px;">
-              <li>Vue 3 (Composition API)</li>
-              <li>TypeScript</li>
-              <li>Pinia (狀態管理)</li>
-            </ul>
-          </div>
-          <div>
-            <h3 style="color: #4ecdc4;">後端</h3>
-            <ul style="padding-left: 20px;">
-              <li>Python FastAPI</li>
-              <li>SQLAlchemy (ORM)</li>
-              <li>PostgreSQL</li>
-            </ul>
-          </div>
-          <div>
-            <h3 style="color: #4ecdc4;">部署</h3>
-            <ul style="padding-left: 20px;">
-              <li>Docker & Docker Compose</li>
-              <li>Nginx (反向代理)</li>
-              <li>SSL/TLS (HTTPS)</li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      <footer
-        style="text-align: center; margin-top: 60px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.1); color: #a0a0a0;">
-        <p>© 2025 YS Hong. 本專案為個人作品，僅供展示與學習用途。</p>
-        <p>Loading application...</p>
-      </footer>
+      @keyframes app-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+    <div class="app-loading">
+      <div class="app-loading-spinner"></div>
+      <div class="app-loading-text">Loading</div>
     </div>
   </div>
   <script type="module" src="/src/main.ts"></script>
