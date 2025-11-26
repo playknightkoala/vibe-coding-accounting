@@ -44,6 +44,12 @@
             </p>
           </div>
         </div>
+        
+        <!-- Cloudflare Turnstile -->
+        <div class="turnstile-container">
+          <div class="cf-turnstile" data-sitekey="0x4AAAAAACC-mUaMHVOOnOgS" data-callback="onTurnstileSuccess" data-expired-callback="onTurnstileExpired"></div>
+        </div>
+
         <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;" :disabled="!isFormValid">
           註冊
         </button>
@@ -101,6 +107,8 @@ const passwordRules = ref({
   special: false
 })
 
+const turnstileToken = ref('')
+
 const validateUsername = () => {
   if (form.value.username.length < 3) {
     usernameError.value = '使用者名稱至少需要 3 個字元'
@@ -135,7 +143,8 @@ const isFormValid = computed(() => {
     passwordRules.value.uppercase &&
     passwordRules.value.lowercase &&
     passwordRules.value.number &&
-    passwordRules.value.special
+    passwordRules.value.special &&
+    turnstileToken.value !== ''
 })
 
 const handleRegister = async () => {
@@ -144,13 +153,16 @@ const handleRegister = async () => {
   }
 
   if (!isFormValid.value) {
-    errorMessage.value = '請確保所有密碼要求都已滿足'
+    errorMessage.value = '請確保所有密碼要求都已滿足且完成驗證'
     showErrorModal.value = true
     return
   }
 
   try {
-    await authStore.register(form.value)
+    await authStore.register({
+      ...form.value,
+      turnstile_token: turnstileToken.value
+    })
     showSuccessModal.value = true
   } catch (err: any) {
     const detail = err.response?.data?.detail
@@ -162,10 +174,44 @@ const handleRegister = async () => {
       errorMessage.value = '註冊失敗，請稍後再試'
     }
     showErrorModal.value = true
+    // 重置 Turnstile
+    if (window.turnstile) {
+      window.turnstile.reset()
+      turnstileToken.value = ''
+    }
   }
 }
 
 const goToLogin = () => {
   router.push('/login')
 }
+
+// Load Turnstile script
+import { onMounted } from 'vue'
+
+onMounted(() => {
+  const script = document.createElement('script')
+  script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js'
+  script.async = true
+  script.defer = true
+  document.head.appendChild(script)
+
+  // Define callback function globally
+  window.onTurnstileSuccess = (token: string) => {
+    turnstileToken.value = token
+  }
+  
+  window.onTurnstileExpired = () => {
+    turnstileToken.value = ''
+  }
+})
 </script>
+
+<style scoped>
+/* Add styles for Turnstile container if needed */
+.turnstile-container {
+  margin: 20px 0;
+  display: flex;
+  justify-content: center;
+}
+</style>

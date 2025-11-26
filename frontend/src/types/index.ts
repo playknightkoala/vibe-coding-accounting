@@ -9,6 +9,7 @@ export interface User {
 export interface UserCreate {
   username: string
   password: string
+  turnstile_token?: string
 }
 
 export interface UserLogin {

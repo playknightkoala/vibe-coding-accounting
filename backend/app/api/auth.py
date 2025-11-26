@@ -12,8 +12,26 @@ import pyotp
 
 router = APIRouter()
 
+import httpx
+
 @router.post("/register", response_model=UserSchema)
-def register(user: UserCreate, db: Session = Depends(get_db)):
+async def register(user: UserCreate, db: Session = Depends(get_db)):
+    # Cloudflare Turnstile Verification
+    if not user.turnstile_token:
+        raise HTTPException(status_code=400, detail="Turnstile token is missing")
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+            data={
+                "secret": "0x4AAAAAACC-mV0Jt1nfhCOQXwmW5eCThiY",
+                "response": user.turnstile_token
+            }
+        )
+        result = response.json()
+        if not result.get("success"):
+            raise HTTPException(status_code=400, detail="Turnstile verification failed")
+
     db_user = db.query(User).filter(User.username == user.username).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Username already taken")
