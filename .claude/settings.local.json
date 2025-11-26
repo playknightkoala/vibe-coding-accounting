@@ -20,7 +20,11 @@
       "Bash(python -m py_compile:*)",
       "Bash(/dev/null)",
       "Bash(timeout 10 bash:*)",
-      "Bash(timeout 15 bash -c 'docker-compose logs -f frontend 2>&1 | grep -m 1 \"\"ready in\"\"')"
+      "Bash(timeout 15 bash -c 'docker-compose logs -f frontend 2>&1 | grep -m 1 \"\"ready in\"\"')",
+      "Bash(lsof:*)",
+      "Bash(psql:*)",
+      "Bash(nc:*)",
+      "Bash(docker ps:*)"
     ],
     "deny": [],
     "ask": []

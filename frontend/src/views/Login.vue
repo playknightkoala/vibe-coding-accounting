@@ -6,11 +6,12 @@
         <h2>登入</h2>
         <form @submit.prevent="handleLogin">
           <div class="form-group">
-            <label for="username">使用者名稱</label>
+            <label for="email">電子郵件</label>
             <input
-              type="text"
-              id="username"
-              v-model="form.username"
+              type="email"
+              id="email"
+              v-model="form.email"
+              placeholder="example@email.com"
               required
             />
           </div>
@@ -27,7 +28,17 @@
             登入
           </button>
         </form>
-        <p style="margin-top: 20px; text-align: center; color: #a0aec0;">
+        <div style="margin-top: 15px; text-align: center;">
+          <router-link
+            to="/forgot-password"
+            style="color: #00d4ff; text-decoration: none; font-size: 14px; opacity: 0.9; transition: opacity 0.3s ease;"
+            @mouseover="(e) => e.target.style.opacity = '1'"
+            @mouseleave="(e) => e.target.style.opacity = '0.9'"
+          >
+            忘記密碼？
+          </router-link>
+        </div>
+        <p style="margin-top: 15px; text-align: center; color: #a0aec0;">
           還沒有帳號？ <router-link to="/register" style="color: #00d4ff; text-decoration: none; font-weight: 500;">註冊</router-link>
         </p>
       </div>
@@ -162,7 +173,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const form = ref({
-  username: '',
+  email: '',
   password: ''
 })
 
@@ -190,7 +201,7 @@ const handleLogin = async () => {
     if (typeof detail === 'string') {
       errorMessage.value = detail
     } else {
-      errorMessage.value = '登入失敗，請檢查您的使用者名稱和密碼'
+      errorMessage.value = '登入失敗，請檢查您的電子郵件和密碼'
     }
     showErrorModal.value = true
   }
@@ -225,7 +236,7 @@ const cancel2FA = () => {
   show2FAModal.value = false
   twoFactorCode.value = ''
   form.value = {
-    username: '',
+    email: '',
     password: ''
   }
 }

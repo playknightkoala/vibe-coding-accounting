@@ -517,8 +517,7 @@ const currentAccount = computed(() => {
 })
 
 const currentAccountCurrency = computed(() => {
-  const currency = currentAccount.value?.currency || 'TWD'
-  return currency === 'NTD' ? 'TWD' : currency
+  return currentAccount.value?.currency || 'TWD'
 })
 
 const isCreditCardAccount = computed(() => {
@@ -613,8 +612,7 @@ const openQuickTransaction = (account: Account) => {
     quickForm.form.value.category = categoriesStore.categories[0].name
   }
   // Set default currency to account currency
-  const accountCurrency = account.currency === 'NTD' ? 'TWD' : account.currency
-  quickForm.selectedCurrency.value = accountCurrency
+  quickForm.selectedCurrency.value = account.currency
   fetchDescriptionHistory()
   quickModal.open()
 }

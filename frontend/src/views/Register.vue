@@ -4,16 +4,17 @@
       <h2>註冊</h2>
       <form @submit.prevent="handleRegister">
         <div class="form-group">
-          <label for="username">使用者名稱</label>
+          <label for="email">電子郵件</label>
           <input
-            type="text"
-            id="username"
-            v-model="form.username"
-            @blur="validateUsername"
+            type="email"
+            id="email"
+            v-model="form.email"
+            @blur="validateEmail"
+            placeholder="example@email.com"
             required
           />
-          <p v-if="usernameError" style="margin-top: 5px; font-size: 12px; color: #ff6b6b;">
-            {{ usernameError }}
+          <p v-if="emailError" style="margin-top: 5px; font-size: 12px; color: #ff6b6b;">
+            {{ emailError }}
           </p>
         </div>
         <div class="form-group">
@@ -91,11 +92,11 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const form = ref({
-  username: '',
+  email: '',
   password: ''
 })
 
-const usernameError = ref('')
+const emailError = ref('')
 const showSuccessModal = ref(false)
 const showErrorModal = ref(false)
 const errorMessage = ref('')
@@ -111,20 +112,17 @@ const passwordRules = ref({
 const turnstileToken = ref('')
 const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY
 
-const validateUsername = () => {
-  if (form.value.username.length < 3) {
-    usernameError.value = '使用者名稱至少需要 3 個字元'
+const validateEmail = () => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!form.value.email) {
+    emailError.value = '請輸入電子郵件'
     return false
   }
-  if (form.value.username.length > 20) {
-    usernameError.value = '使用者名稱不能超過 20 個字元'
+  if (!emailRegex.test(form.value.email)) {
+    emailError.value = '請輸入有效的電子郵件格式'
     return false
   }
-  if (!/^[a-zA-Z0-9_]+$/.test(form.value.username)) {
-    usernameError.value = '使用者名稱只能包含英文字母、數字和底線'
-    return false
-  }
-  usernameError.value = ''
+  emailError.value = ''
   return true
 }
 
@@ -140,7 +138,8 @@ const validatePassword = () => {
 }
 
 const isFormValid = computed(() => {
-  return form.value.username.length >= 3 &&
+  return form.value.email.length > 0 &&
+    emailError.value === '' &&
     passwordRules.value.length &&
     passwordRules.value.uppercase &&
     passwordRules.value.lowercase &&
@@ -150,7 +149,7 @@ const isFormValid = computed(() => {
 })
 
 const handleRegister = async () => {
-  if (!validateUsername()) {
+  if (!validateEmail()) {
     return
   }
 

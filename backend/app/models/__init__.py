@@ -7,5 +7,6 @@ from .budget_category import BudgetCategory
 from .category import Category
 from .description_history import DescriptionHistory
 from .exchange_rate import ExchangeRate
+from .password_reset import PasswordResetToken
 
-__all__ = ["User", "Account", "Transaction", "Budget", "BudgetAccount", "BudgetCategory", "Category", "DescriptionHistory", "ExchangeRate"]
+__all__ = ["User", "Account", "Transaction", "Budget", "BudgetAccount", "BudgetCategory", "Category", "DescriptionHistory", "ExchangeRate", "PasswordResetToken"]

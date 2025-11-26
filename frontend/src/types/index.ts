@@ -1,19 +1,19 @@
 export interface User {
   id: number
-  username: string
+  email: string
   two_factor_enabled: boolean
   created_at: string
   updated_at: string | null
 }
 
 export interface UserCreate {
-  username: string
+  email: string
   password: string
   turnstile_token?: string
 }
 
 export interface UserLogin {
-  username: string
+  email: string
   password: string
 }
 

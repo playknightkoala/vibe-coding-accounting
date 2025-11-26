@@ -84,7 +84,7 @@ export default {
 
   login(credentials: UserLogin) {
     const formData = new FormData()
-    formData.append('username', credentials.username)
+    formData.append('username', credentials.email)  // OAuth2 標準使用 'username' 欄位，但傳遞 email 值
     formData.append('password', credentials.password)
     return api.post<Token>('/auth/login', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
@@ -93,7 +93,7 @@ export default {
 
   verify2FA(credentials: UserLogin, token: string) {
     return api.post<Token>('/auth/login/2fa/verify', {
-      username: credentials.username,
+      email: credentials.email,
       password: credentials.password,
       token: token
     })
@@ -312,5 +312,24 @@ export default {
   // 匯率
   getExchangeRates() {
     return api.get<ExchangeRate[]>('/exchange-rates/latest')
+  },
+
+  // 密碼重設
+  requestPasswordReset(email: string, turnstileToken?: string) {
+    return api.post('/password-reset/request', {
+      email,
+      turnstile_token: turnstileToken
+    })
+  },
+
+  verifyResetToken(token: string) {
+    return api.get<{ valid: boolean; message: string }>(`/password-reset/verify-token/${token}`)
+  },
+
+  confirmPasswordReset(token: string, newPassword: string) {
+    return api.post('/password-reset/confirm', {
+      token,
+      new_password: newPassword
+    })
   }
 }

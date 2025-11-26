@@ -2,6 +2,8 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import Login from '@/views/Login.vue'
 import Register from '@/views/Register.vue'
+import ForgotPassword from '@/views/ForgotPassword.vue'
+import ResetPassword from '@/views/ResetPassword.vue'
 import Dashboard from '@/views/Dashboard.vue'
 import Accounts from '@/views/Accounts.vue'
 
@@ -21,6 +23,18 @@ const routes: RouteRecordRaw[] = [
     path: '/register',
     name: 'Register',
     component: Register,
+    meta: { public: true }
+  },
+  {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: ForgotPassword,
+    meta: { public: true }
+  },
+  {
+    path: '/reset-password',
+    name: 'ResetPassword',
+    component: ResetPassword,
     meta: { public: true }
   },
   {
@@ -76,18 +90,15 @@ router.beforeEach((to, _from, next) => {
   const isAuthenticated = authStore.isAuthenticated
 
   // Public pages that don't require authentication
-  const publicPages = ['/', '/register']
+  const publicPages = ['/', '/register', '/forgot-password', '/reset-password']
   const isPublicPage = publicPages.includes(to.path)
 
   // Handle public pages
   if (isPublicPage) {
-    if (to.path === '/' || to.path === '/register') {
-      // If already authenticated, redirect to dashboard
-      if (isAuthenticated) {
-        next('/dashboard')
-      } else {
-        next()
-      }
+    // Only redirect to dashboard from login/register pages if authenticated
+    // Allow forgot-password and reset-password pages even when authenticated
+    if ((to.path === '/' || to.path === '/register') && isAuthenticated) {
+      next('/dashboard')
     } else {
       next()
     }

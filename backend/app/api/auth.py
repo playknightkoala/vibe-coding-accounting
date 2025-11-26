@@ -32,13 +32,13 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
         if not result.get("success"):
             raise HTTPException(status_code=400, detail="Turnstile verification failed")
 
-    db_user = db.query(User).filter(User.username == user.username).first()
+    db_user = db.query(User).filter(User.username == user.email).first()
     if db_user:
-        raise HTTPException(status_code=400, detail="Username already taken")
+        raise HTTPException(status_code=400, detail="Email already registered")
 
     hashed_password = get_password_hash(user.password)
     db_user = User(
-        username=user.username,
+        username=user.email,  # 儲存 email 作為 username
         hashed_password=hashed_password,
         two_factor_enabled=False,
         two_factor_secret=None
@@ -52,7 +52,7 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
         Account(
             name="現金",
             account_type="cash",
-            currency="NTD",
+            currency="TWD",
             description="預設現金帳戶",
             balance=0.0,
             user_id=db_user.id
@@ -60,7 +60,7 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
         Account(
             name="預設銀行",
             account_type="bank",
-            currency="NTD",
+            currency="TWD",
             description="預設銀行帳戶",
             balance=0.0,
             user_id=db_user.id
@@ -102,11 +102,11 @@ def verify_2fa_login(
     db: Session = Depends(get_db)
 ):
     """驗證 2FA 並完成登入"""
-    user = db.query(User).filter(User.username == login_data.username).first()
+    user = db.query(User).filter(User.username == login_data.email).first()
     if not user or not verify_password(login_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
 

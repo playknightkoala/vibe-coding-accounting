@@ -1,10 +1,10 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, field_serializer, EmailStr, computed_field, Field, AliasChoices
 from datetime import datetime
 from typing import Optional
 import re
 
 class UserBase(BaseModel):
-    username: str
+    email: EmailStr = Field(validation_alias=AliasChoices('email', 'username'))
 
 class UserCreate(UserBase):
     password: str
@@ -26,17 +26,19 @@ class UserCreate(UserBase):
         return v
 
 class UserLogin(BaseModel):
-    username: str
+    email: EmailStr
     password: str
 
-class User(UserBase):
+class User(BaseModel):
     id: int
+    email: EmailStr = Field(validation_alias=AliasChoices('email', 'username'))
     two_factor_enabled: bool
     created_at: datetime
     updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
+        populate_by_name = True
 
 class UserUpdate(BaseModel):
     current_password: Optional[str] = None
@@ -67,7 +69,7 @@ class TwoFactorVerify(BaseModel):
     token: str
 
 class TwoFactorLogin(BaseModel):
-    username: str
+    email: EmailStr
     password: str
     token: str
 
@@ -77,4 +79,4 @@ class Token(BaseModel):
     requires_2fa: bool = False
 
 class TokenData(BaseModel):
-    username: Optional[str] = None
+    email: Optional[str] = None
