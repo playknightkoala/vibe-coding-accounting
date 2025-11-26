@@ -230,7 +230,7 @@ const message = ref('')
 
 const loadUserProfile = async () => {
   try {
-    const response = await api.getUserProfile()
+    const response = await api.getCurrentUser()
     user.value = response.data
   } catch (error) {
     console.error('載入使用者資料失敗:', error)
