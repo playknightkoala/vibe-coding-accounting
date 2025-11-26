@@ -17,7 +17,13 @@ export default defineConfig(({ mode }) => {
       host: true,
       allowedHosts: env.VITE_ALLOWED_HOSTS
         ? env.VITE_ALLOWED_HOSTS.split(',').map((host: string) => host.trim())
-        : ['localhost', '127.0.0.1']
+        : ['localhost', '127.0.0.1'],
+      hmr: env.VITE_HMR_CLIENT_PORT === 'false' ? false : {
+        // Configure HMR for production if needed
+        clientPort: env.VITE_HMR_CLIENT_PORT ? parseInt(env.VITE_HMR_CLIENT_PORT) : undefined,
+        host: env.VITE_HMR_HOST || undefined,
+        protocol: env.VITE_HMR_PROTOCOL || undefined
+      }
     }
   }
 })

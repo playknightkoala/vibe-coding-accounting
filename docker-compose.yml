@@ -50,6 +50,11 @@ services:
       # Vite allowed hosts for DNS rebinding protection
       - VITE_ALLOWED_HOSTS=${VITE_ALLOWED_HOSTS:-localhost,127.0.0.1}
       - VITE_TURNSTILE_SITE_KEY=${WEBSITE_TURNSTILE_KEY}
+      # HMR configuration (leave empty for local development to enable HMR)
+      # Set VITE_HMR_CLIENT_PORT=false in production
+      - VITE_HMR_CLIENT_PORT=${VITE_HMR_CLIENT_PORT:-}
+      - VITE_HMR_HOST=${VITE_HMR_HOST:-}
+      - VITE_HMR_PROTOCOL=${VITE_HMR_PROTOCOL:-}
     # Expose port only internally to nginx
     expose:
       - "5173"

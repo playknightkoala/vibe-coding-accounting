@@ -8,6 +8,22 @@ Full-stack accounting and budgeting application with FastAPI backend, Vue 3 fron
 
 ## Development Commands
 
+### Environment Setup
+
+**Quick Start:**
+```bash
+# For local development
+cp .env.development .env
+docker-compose up --build
+
+# For production deployment
+cp .env.production .env
+# Edit .env to add real credentials
+docker-compose -f docker-compose.prod.yml up -d --build
+```
+
+See `DEPLOYMENT.md` for detailed deployment instructions.
+
 ### Running the Application
 
 ```bash
@@ -30,12 +46,17 @@ docker-compose logs -f [backend|frontend|db]
 docker-compose logs --tail 50 backend
 ```
 
-**Access Points:**
+**Access Points (Development):**
 - Frontend: http://localhost (nginx proxy to Vite dev server)
-- Frontend Direct (dev): http://localhost:5173
+- Frontend Direct (dev): http://localhost:5173 (with HMR enabled)
 - Backend API: http://localhost:8000
 - API Docs (Swagger): http://localhost:8000/docs (development only)
 - Database: localhost:5432 (user: accounting_user, db: accounting_db)
+
+**Access Points (Production):**
+- Application: https://accounting.yshongcode.com
+- Backend API: https://accounting.yshongcode.com/api
+- Database: Internal only (not exposed)
 
 ### Installing Dependencies in Running Containers
 

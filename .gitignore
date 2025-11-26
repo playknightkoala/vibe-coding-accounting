@@ -16,8 +16,13 @@ node_modules/
 dist/
 *.local
 
-# Environment
+# Environment files
 .env
+.env.local
+# Keep template files in git
+!.env.example
+!.env.development
+!.env.production
 
 # IDE
 .vscode/
