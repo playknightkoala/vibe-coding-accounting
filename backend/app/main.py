@@ -14,7 +14,8 @@ from datetime import datetime, timedelta
 from contextlib import asynccontextmanager
 import threading
 
-# Create database tables
+# Create database tables from SQLAlchemy models
+# This will create all tables defined in models if they don't exist
 Base.metadata.create_all(bind=engine)
 
 @asynccontextmanager

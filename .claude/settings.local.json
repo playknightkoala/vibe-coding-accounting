@@ -27,7 +27,8 @@
       "Bash(docker ps:*)",
       "Bash(=2024.1)",
       "Bash(timeout 15 bash:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(pip install:*)"
     ],
     "deny": [],
     "ask": []
