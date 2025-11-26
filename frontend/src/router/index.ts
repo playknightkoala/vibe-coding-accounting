@@ -38,6 +38,12 @@ const routes: RouteRecordRaw[] = [
     meta: { public: true }
   },
   {
+    path: '/google-callback',
+    name: 'GoogleCallback',
+    component: () => import('@/views/GoogleCallback.vue'),
+    meta: { public: true }
+  },
+  {
     path: '/dashboard',
     name: 'Dashboard',
     component: Dashboard,

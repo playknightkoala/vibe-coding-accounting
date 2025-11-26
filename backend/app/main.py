@@ -2,9 +2,10 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
+from starlette.middleware.sessions import SessionMiddleware
 from app.core.database import engine, Base
 from app.core.config import settings
-from app.api import auth, accounts, transactions, budgets, users, categories, reports, description_history, exchange_rates, password_reset
+from app.api import auth, accounts, transactions, budgets, users, categories, reports, description_history, exchange_rates, password_reset, google_auth
 from app.core.scheduler import start_scheduler, stop_scheduler, run_crawler_job
 from starlette.middleware.base import BaseHTTPMiddleware
 import time
@@ -88,6 +89,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 # Add security headers middleware
 app.add_middleware(SecurityHeadersMiddleware)
 
+# Add SessionMiddleware for OAuth
+app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
+
 # Add rate limiting middleware
 if settings.RATE_LIMIT_ENABLED:
     app.add_middleware(
@@ -108,6 +112,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth.router, prefix="/api/auth", tags=["authentication"])
+app.include_router(google_auth.router, prefix="/api", tags=["google-auth"])
 app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(accounts.router, prefix="/api/accounts", tags=["accounts"])
 app.include_router(transactions.router, prefix="/api/transactions", tags=["transactions"])

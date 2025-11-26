@@ -27,6 +27,17 @@
           <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
             登入
           </button>
+          
+          <div style="margin-top: 20px; display: flex; align-items: center; gap: 10px;">
+            <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.1);"></div>
+            <span style="color: #a0aec0; font-size: 14px;">或</span>
+            <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.1);"></div>
+          </div>
+
+          <a href="/api/login/google" class="btn btn-google" style="width: 100%; margin-top: 20px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" style="width: 20px; height: 20px;">
+            <span>使用 Google 帳號登入</span>
+          </a>
         </form>
         <div style="margin-top: 15px; text-align: center;">
           <router-link
@@ -342,6 +353,19 @@ input:focus {
 
 .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+.btn-google {
+  background: #fff;
+  color: #333;
+  border: 1px solid #ddd;
+  transition: all 0.3s ease;
+}
+
+.btn-google:hover {
+  background: #f5f5f5;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 /* About Section Styles */

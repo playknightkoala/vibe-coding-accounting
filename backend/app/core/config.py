@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     # Cloudflare Turnstile
     TURNSTILE_SECRET_KEY: str = "CHANGE_THIS_TURNSTILE_SECRET_KEY_MIN_32_CHARS"
 
+    # Google OAuth2
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+
     # Data Encryption Key (用於加密匯出的資料)
     DATA_ENCRYPTION_KEY: str = "CHANGE_THIS_DATA_ENCRYPTION_KEY_MIN_32_CHARS"
 
