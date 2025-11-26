@@ -37,8 +37,14 @@ async def auth_google_callback(request: Request, db: Session = Depends(get_db)):
         redirect_uri = request.url_for('auth_google_callback')
         if settings.ENVIRONMENT == "production" or "yshongcode.com" in str(redirect_uri):
              redirect_uri = str(redirect_uri).replace("http://", "https://")
+        
+        # Update the redirect_uri in the session to match the one we used
+        # This is required because Authlib restores it from session, and if we pass it as kwarg
+        # it causes a collision in fetch_access_token(**params, **kwargs)
+        # The key format is usually '{name}_authorize_redirect_uri'
+        request.session['google_authorize_redirect_uri'] = redirect_uri
              
-        token = await oauth.google.authorize_access_token(request, redirect_uri=redirect_uri)
+        token = await oauth.google.authorize_access_token(request)
     except OAuthError as error:
         raise HTTPException(status_code=400, detail=f"OAuth Error: {error.description}")
     
