@@ -97,7 +97,16 @@ app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 # Add SessionMiddleware for OAuth
-app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
+# IMPORTANT: max_age=3600 (1 hour) ensures sessions persist during OAuth flow
+# same_site="lax" allows cookies to work with OAuth redirects
+# https_only should be True in production (Synology handles HTTPS)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.SECRET_KEY,
+    max_age=3600,  # 1 hour session lifetime
+    same_site="lax",  # Allow OAuth redirects
+    https_only=settings.ENVIRONMENT == "production"  # HTTPS cookies in production
+)
 
 # Add rate limiting middleware
 if settings.RATE_LIMIT_ENABLED:
