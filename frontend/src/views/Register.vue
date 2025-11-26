@@ -46,8 +46,9 @@
         </div>
         
         <!-- Cloudflare Turnstile -->
+        <!-- Cloudflare Turnstile -->
         <div class="turnstile-container">
-          <div class="cf-turnstile" data-sitekey="0x4AAAAAACC-mUaMHVOOnOgS" data-callback="onTurnstileSuccess" data-expired-callback="onTurnstileExpired"></div>
+          <div ref="turnstileContainer"></div>
         </div>
 
         <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;" :disabled="!isFormValid">
@@ -108,6 +109,7 @@ const passwordRules = ref({
 })
 
 const turnstileToken = ref('')
+const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY
 
 const validateUsername = () => {
   if (form.value.username.length < 3) {
@@ -187,22 +189,47 @@ const goToLogin = () => {
 }
 
 // Load Turnstile script
-import { onMounted } from 'vue'
+// Load Turnstile script
+import { onMounted, onBeforeUnmount } from 'vue'
+
+const turnstileContainer = ref<HTMLElement | null>(null)
+const widgetId = ref<string | null>(null)
+
+const renderTurnstile = () => {
+  if (window.turnstile && turnstileContainer.value) {
+    // 如果已經有 widget，先移除
+    if (widgetId.value) {
+      window.turnstile.remove(widgetId.value)
+    }
+    
+    widgetId.value = window.turnstile.render(turnstileContainer.value, {
+      sitekey: siteKey,
+      callback: (token: string) => {
+        turnstileToken.value = token
+      },
+      'expired-callback': () => {
+        turnstileToken.value = ''
+      }
+    })
+  }
+}
 
 onMounted(() => {
-  const script = document.createElement('script')
-  script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js'
-  script.async = true
-  script.defer = true
-  document.head.appendChild(script)
-
-  // Define callback function globally
-  window.onTurnstileSuccess = (token: string) => {
-    turnstileToken.value = token
+  if (window.turnstile) {
+    renderTurnstile()
+  } else {
+    const script = document.createElement('script')
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
+    script.async = true
+    script.defer = true
+    script.onload = renderTurnstile
+    document.head.appendChild(script)
   }
-  
-  window.onTurnstileExpired = () => {
-    turnstileToken.value = ''
+})
+
+onBeforeUnmount(() => {
+  if (window.turnstile && widgetId.value) {
+    window.turnstile.remove(widgetId.value)
   }
 })
 </script>

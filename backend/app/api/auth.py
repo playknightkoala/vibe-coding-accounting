@@ -24,7 +24,7 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
         response = await client.post(
             "https://challenges.cloudflare.com/turnstile/v0/siteverify",
             data={
-                "secret": "0x4AAAAAACC-mV0Jt1nfhCOQXwmW5eCThiY",
+                "secret": settings.TURNSTILE_SECRET_KEY,
                 "response": user.turnstile_token
             }
         )
