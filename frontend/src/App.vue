@@ -2,18 +2,27 @@
   <div id="app">
     <nav v-if="isAuthenticated" class="navbar">
       <div class="navbar-content">
-        <div>
-          <router-link to="/dashboard">儀表板</router-link>
-          <router-link to="/accounts">帳戶</router-link>
+        <!-- Hamburger Menu Button (Mobile Only) -->
+        <button class="navbar-toggle" @click="toggleMenu" :class="{ active: isMenuOpen }">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
 
-          <router-link to="/budgets">預算</router-link>
-          <router-link to="/reports">報表</router-link>
-          <router-link to="/exchange-rates">匯率</router-link>
-        </div>
-        <div style="display: flex; gap: 10px; align-items: center;">
-          <router-link v-if="isAdmin" to="/admin">管理員</router-link>
-          <router-link to="/profile">個人設定</router-link>
-          <button @click="handleLogout" class="btn btn-secondary">登出</button>
+        <!-- Navigation Links -->
+        <div class="navbar-menu" :class="{ active: isMenuOpen }">
+          <div class="navbar-links">
+            <router-link to="/dashboard" @click="closeMenu">儀表板</router-link>
+            <router-link to="/accounts" @click="closeMenu">帳戶</router-link>
+            <router-link to="/budgets" @click="closeMenu">預算</router-link>
+            <router-link to="/reports" @click="closeMenu">報表</router-link>
+            <router-link to="/exchange-rates" @click="closeMenu">匯率</router-link>
+          </div>
+          <div class="navbar-actions">
+            <router-link v-if="isAdmin" to="/admin" @click="closeMenu">管理員</router-link>
+            <router-link to="/profile" @click="closeMenu">個人設定</router-link>
+            <button @click="handleLogout" class="btn btn-secondary">登出</button>
+          </div>
         </div>
       </div>
     </nav>
@@ -22,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
@@ -31,8 +40,18 @@ const router = useRouter()
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isAdmin = computed(() => authStore.user?.is_admin || false)
+const isMenuOpen = ref(false)
+
+const toggleMenu = () => {
+  isMenuOpen.value = !isMenuOpen.value
+}
+
+const closeMenu = () => {
+  isMenuOpen.value = false
+}
 
 const handleLogout = () => {
+  closeMenu()
   authStore.logout()
   router.push('/')
 }
@@ -49,5 +68,136 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* Hamburger Menu Button */
+.navbar-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: space-around;
+  width: 30px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  z-index: 1001;
+}
 
+.navbar-toggle span {
+  width: 100%;
+  height: 3px;
+  background: #00d4ff;
+  border-radius: 3px;
+  transition: all 0.3s ease;
+}
+
+.navbar-toggle.active span:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+
+.navbar-toggle.active span:nth-child(2) {
+  opacity: 0;
+}
+
+.navbar-toggle.active span:nth-child(3) {
+  transform: rotate(-45deg) translate(7px, -6px);
+}
+
+/* Desktop Navigation */
+.navbar-menu {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex: 1;
+  gap: 20px;
+}
+
+.navbar-links {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.navbar-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+  .navbar-content {
+    justify-content: flex-end;
+  }
+
+  .navbar-toggle {
+    display: flex;
+    margin-left: auto;
+  }
+
+  .navbar-menu {
+    position: fixed;
+    top: 60px;
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, rgba(10, 14, 39, 0.98) 0%, rgba(26, 31, 58, 0.98) 100%);
+    backdrop-filter: blur(10px);
+    flex-direction: column;
+    padding: 20px;
+    gap: 0;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+    border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+  }
+
+  .navbar-menu.active {
+    max-height: 500px;
+    opacity: 1;
+  }
+
+  .navbar-links,
+  .navbar-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 0;
+  }
+
+  .navbar-links {
+    border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+  }
+
+  .navbar-menu a,
+  .navbar-menu button {
+    width: 100%;
+    text-align: left;
+    padding: 12px 15px;
+    margin: 0 !important;
+    border-radius: 5px;
+    transition: background 0.3s ease;
+  }
+
+  .navbar-menu a:hover {
+    background: rgba(0, 212, 255, 0.1);
+  }
+
+  .navbar-menu a::after {
+    display: none;
+  }
+
+  .navbar-menu button {
+    margin-top: 10px !important;
+    justify-content: center;
+  }
+}
+
+/* Prevent body scroll when menu is open */
+@media (max-width: 768px) {
+  body:has(.navbar-menu.active) {
+    overflow: hidden;
+  }
+}
 </style>

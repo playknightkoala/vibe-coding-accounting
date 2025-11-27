@@ -324,6 +324,9 @@ body {
   border-bottom: 1px solid rgba(0, 212, 255, 0.2);
   backdrop-filter: blur(10px);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
 
 .navbar-content {
@@ -332,8 +335,6 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
 }
 
 .navbar a {
@@ -365,30 +366,12 @@ body {
   width: 100%;
 }
 
-@media (max-width: 768px) {
-  .navbar {
-    padding: 12px 15px;
-  }
-
-  .navbar a {
-    margin: 0 10px;
-    font-size: 14px;
-  }
+.navbar a.router-link-active {
+  color: #00d4ff;
 }
 
-@media (max-width: 480px) {
-  .navbar {
-    padding: 10px;
-  }
-
-  .navbar a {
-    margin: 0 8px;
-    font-size: 13px;
-  }
-
-  .navbar-content {
-    gap: 5px;
-  }
+.navbar a.router-link-active::after {
+  width: 100%;
 }
 
 .modal {
