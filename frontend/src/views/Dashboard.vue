@@ -593,7 +593,7 @@ const historicalDescriptions = ref<string[]>([])
 const fetchDescriptionHistory = async () => {
   try {
     const response = await api.getDescriptionHistory()
-    historicalDescriptions.value = response.data
+    historicalDescriptions.value = response.data.descriptions
   } catch (error) {
     console.error('載入敘述歷史時發生錯誤:', error)
   }

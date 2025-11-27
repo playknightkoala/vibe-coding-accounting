@@ -27,6 +27,17 @@ export const useTransactionsStore = defineStore('transactions', () => {
     error.value = null
     try {
       await api.createTransaction(transactionData)
+
+      // 更新描述歷史記錄，將此描述移到最前面
+      if (transactionData.description && transactionData.description.trim()) {
+        try {
+          await api.updateDescriptionHistory(transactionData.description.trim())
+        } catch (err) {
+          console.error('更新描述歷史失敗:', err)
+          // 不影響交易建立的成功，所以不拋出錯誤
+        }
+      }
+
       await fetchTransactions()
     } catch (err: any) {
       error.value = err.response?.data?.detail || '建立交易失敗'
@@ -41,6 +52,17 @@ export const useTransactionsStore = defineStore('transactions', () => {
     error.value = null
     try {
       await api.updateTransaction(id, transactionData)
+
+      // 更新描述歷史記錄，將此描述移到最前面
+      if (transactionData.description && transactionData.description.trim()) {
+        try {
+          await api.updateDescriptionHistory(transactionData.description.trim())
+        } catch (err) {
+          console.error('更新描述歷史失敗:', err)
+          // 不影響交易更新的成功，所以不拋出錯誤
+        }
+      }
+
       await fetchTransactions()
     } catch (err: any) {
       error.value = err.response?.data?.detail || '更新交易失敗'

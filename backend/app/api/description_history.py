@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.api import deps
 from app.models.user import User
@@ -57,14 +57,14 @@ def update_description_history(
 
     if existing:
         # 更新 last_used_at 讓它排到最前面
-        existing.last_used_at = datetime.utcnow()
+        existing.last_used_at = datetime.now(timezone.utc)
         db.commit()
     else:
         # 新增新記錄
         new_history = DescriptionHistory(
             user_id=current_user.id,
             description=description,
-            last_used_at=datetime.utcnow()
+            last_used_at=datetime.now(timezone.utc)
         )
         db.add(new_history)
         db.commit()
