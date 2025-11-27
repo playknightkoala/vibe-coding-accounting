@@ -84,11 +84,63 @@
         font-family: system-ui, -apple-system, sans-serif;
       }
 
-      .app-loading-logo {
-        width: 120px;
-        height: 120px;
-        margin-bottom: 30px;
+      .skeleton-container {
+        max-width: 500px;
+        width: 90%;
+        text-align: center;
+      }
+
+      .skeleton-header {
+        margin-bottom: 40px;
+      }
+
+      .skeleton-logo {
+        width: 250px;
+        height: 232px;
+        margin: 0 auto 20px;
         animation: app-logo-pulse 2s ease-in-out infinite;
+      }
+
+      .skeleton-title {
+        color: #ffffff;
+        font-size: 28px;
+        font-weight: 600;
+        margin: 15px 0 10px;
+        letter-spacing: 1px;
+      }
+
+      .skeleton-subtitle {
+        color: #a0aec0;
+        font-size: 16px;
+        margin: 0;
+      }
+
+      .skeleton-content {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        padding: 30px;
+        margin-bottom: 30px;
+      }
+
+      .skeleton-box {
+        height: 120px;
+        background: rgba(0, 212, 255, 0.1);
+        border-radius: 8px;
+        margin-bottom: 20px;
+        animation: skeleton-pulse 1.5s ease-in-out infinite;
+      }
+
+      .skeleton-line {
+        height: 16px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        margin-bottom: 12px;
+        animation: skeleton-pulse 1.5s ease-in-out infinite;
+      }
+
+      .skeleton-line.short {
+        width: 60%;
+        margin: 0 auto;
       }
 
       @keyframes app-logo-pulse {
@@ -97,8 +149,17 @@
           transform: scale(1);
         }
         50% {
+          opacity: 0.9;
+          transform: scale(0.98);
+        }
+      }
+
+      @keyframes skeleton-pulse {
+        0%, 100% {
+          opacity: 0.4;
+        }
+        50% {
           opacity: 0.8;
-          transform: scale(0.95);
         }
       }
 
@@ -109,15 +170,7 @@
         border-radius: 50%;
         border-top-color: #00d4ff;
         animation: app-spin 1s ease-in-out infinite;
-        margin-bottom: 20px;
-      }
-
-      .app-loading-text {
-        color: #00d4ff;
-        font-size: 14px;
-        letter-spacing: 2px;
-        text-transform: uppercase;
-        font-weight: 500;
+        margin: 0 auto;
       }
 
       @keyframes app-spin {
@@ -127,9 +180,20 @@
       }
     </style>
     <div class="app-loading">
-      <img src="/LOGO.webp" alt="Logo" class="app-loading-logo" width="120" height="120" fetchpriority="high">
-      <div class="app-loading-spinner"></div>
-      <div class="app-loading-text">載入中...</div>
+      <!-- Skeleton screen with larger LCP element -->
+      <div class="skeleton-container">
+        <div class="skeleton-header">
+          <img src="/FullLOGO.webp" alt="會計與預算系統" class="skeleton-logo" width="250" height="232" fetchpriority="high">
+          <h1 class="skeleton-title">會計與預算系統</h1>
+          <p class="skeleton-subtitle">個人財務管理工具</p>
+        </div>
+        <div class="skeleton-content">
+          <div class="skeleton-box"></div>
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line short"></div>
+        </div>
+        <div class="app-loading-spinner"></div>
+      </div>
     </div>
   </div>
   <script type="module" src="/src/main.ts"></script>
