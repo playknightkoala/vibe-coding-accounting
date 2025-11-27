@@ -4,9 +4,8 @@
       <!-- Login Form Section -->
       <div class="card login-card">
         <div class="logo-container">
-          <img src="/FullLOGO.png" alt="Logo" class="full-logo">
+          <img src="/FullLOGO.webp" alt="Logo" class="full-logo" width="250" height="232" fetchpriority="high">
         </div>
-        <h2>登入</h2>
         <form @submit.prevent="handleLogin">
           <div class="form-group">
             <label for="email">電子郵件</label>
@@ -192,12 +191,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 
 const form = ref({
@@ -209,6 +209,17 @@ const show2FAModal = ref(false)
 const showErrorModal = ref(false)
 const errorMessage = ref('')
 const twoFactorCode = ref('')
+
+// Check for error message from OAuth redirect
+onMounted(() => {
+  const error = route.query.error as string
+  if (error) {
+    errorMessage.value = error
+    showErrorModal.value = true
+    // Remove error from URL
+    router.replace({ query: {} })
+  }
+})
 
 const handleLogin = async () => {
   try {

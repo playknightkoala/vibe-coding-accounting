@@ -4,7 +4,7 @@
       <div class="navbar-content">
         <!-- Logo (Desktop Only) -->
         <div class="navbar-logo">
-          <img src="/LOGO.png" alt="Logo" class="logo-image">
+          <img src="/LOGO.webp" alt="Logo" class="logo-image" width="120" height="120" fetchpriority="high">
         </div>
 
         <!-- Hamburger Menu Button (Mobile Only) -->

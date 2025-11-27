@@ -29,7 +29,8 @@
       "Bash(timeout 15 bash:*)",
       "Bash(git restore:*)",
       "Bash(pip install:*)",
-      "WebFetch(domain:www.esunbank.com)"
+      "WebFetch(domain:www.esunbank.com)",
+      "Bash(python resize_images.py:*)"
     ],
     "deny": [],
     "ask": []

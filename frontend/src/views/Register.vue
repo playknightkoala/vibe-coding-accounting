@@ -2,7 +2,7 @@
   <div class="container">
     <div class="card" style="max-width: 400px; margin: 100px auto;">
       <div class="logo-container">
-        <img src="/FullLOGO.png" alt="Logo" class="full-logo">
+        <img src="/FullLOGO.webp" alt="Logo" class="full-logo" width="250" height="232" fetchpriority="high">
       </div>
       <h2>註冊</h2>
       <form @submit.prevent="handleRegister">

@@ -33,22 +33,63 @@ async def login_google(request: Request):
 
 @router.get("/auth/google/callback", name="auth_google_callback")
 async def auth_google_callback(request: Request, db: Session = Depends(get_db)):
+    # Check if user cancelled the OAuth flow or other OAuth errors occurred
+    if request.query_params.get('error'):
+        error = request.query_params.get('error')
+        error_description = request.query_params.get('error_description', '')
+        frontend_url = settings.FRONTEND_URL or "http://localhost:5173"
+
+        # Map OAuth 2.0 error codes to user-friendly messages (based on RFC 6749 and Google's implementation)
+        error_messages = {
+            # Standard OAuth 2.0 errors
+            'access_denied': '您已取消 Google 登入授權',
+            'invalid_request': '登入請求格式錯誤,請重試',
+            'unauthorized_client': '應用程式未獲授權使用此登入方式',
+            'unsupported_response_type': '不支援的回應類型',
+            'invalid_scope': '請求的權限範圍無效',
+            'server_error': 'Google 伺服器發生錯誤,請稍後再試',
+            'temporarily_unavailable': 'Google 服務暫時無法使用,請稍後再試',
+
+            # Google-specific errors
+            'invalid_client': '應用程式設定錯誤,請聯絡管理員',
+            'invalid_grant': '授權碼已過期或無效,請重新登入',
+            'redirect_uri_mismatch': '重定向網址不符,請聯絡管理員',
+            'unsupported_grant_type': '不支援的授權類型',
+
+            # Additional errors
+            'org_internal': '此 Google 帳號僅限組織內部使用',
+            'disallowed_useragent': '不支援的瀏覽器或裝置,請使用其他瀏覽器',
+            'admin_policy_enforced': '組織政策限制了此登入方式',
+            'invalid_token': '無效的授權令牌',
+            'token_expired': '授權令牌已過期,請重新登入',
+        }
+
+        error_message = error_messages.get(error, f'Google 登入失敗: {error}')
+
+        # If there's a detailed description and it's not a user cancellation, include it
+        if error_description and error != 'access_denied':
+            error_message = f"{error_message} ({error_description})"
+
+        return RedirectResponse(url=f"{frontend_url}/login?error={error_message}")
+
     try:
         # Manually construct redirect_uri to match what we sent
         redirect_uri = request.url_for('auth_google_callback')
         if settings.ENVIRONMENT == "production" or "yshongcode.com" in str(redirect_uri):
              redirect_uri = str(redirect_uri).replace("http://", "https://")
-        
+
         # Update the redirect_uri in the session to match the one we used
         # This is required because Authlib restores it from session, and if we pass it as kwarg
         # it causes a collision in fetch_access_token(**params, **kwargs)
         # The key format is usually '{name}_authorize_redirect_uri'
         # Convert to string for JSON serialization
         request.session['google_authorize_redirect_uri'] = str(redirect_uri)
-             
+
         token = await oauth.google.authorize_access_token(request)
     except OAuthError as error:
-        raise HTTPException(status_code=400, detail=f"OAuth Error: {error.description}")
+        frontend_url = settings.FRONTEND_URL or "http://localhost:5173"
+        error_message = f"Google 登入失敗: {error.description}"
+        return RedirectResponse(url=f"{frontend_url}/login?error={error_message}")
     
     user_info = token.get('userinfo')
     if not user_info:
