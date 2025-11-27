@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <!-- Page Loading Spinner -->
-    <LoadingSpinner :show="isLoading" text="載入儀表板資料..." />
+    <LoadingSpinner :show="isLoading" text="載入中..." />
 
     <h1>儀表板</h1>
 
