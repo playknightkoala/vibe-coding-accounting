@@ -26,7 +26,15 @@
         </div>
       </div>
     </nav>
-    <router-view />
+
+    <!-- Route Loading Spinner -->
+    <LoadingSpinner :show="isRouteLoading" text="載入中..." />
+
+    <router-view v-slot="{ Component }">
+      <transition name="fade" mode="out-in">
+        <component :is="Component" />
+      </transition>
+    </router-view>
   </div>
 </template>
 
@@ -34,6 +42,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import LoadingSpinner from '@/components/LoadingSpinner.vue'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -41,6 +50,26 @@ const router = useRouter()
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isAdmin = computed(() => authStore.user?.is_admin || false)
 const isMenuOpen = ref(false)
+const isRouteLoading = ref(false)
+
+let loadingTimer: number | null = null
+
+// Track route changes for loading state
+router.beforeEach(() => {
+  // Show loading after 150ms to avoid flash for fast transitions
+  loadingTimer = window.setTimeout(() => {
+    isRouteLoading.value = true
+  }, 150)
+})
+
+router.afterEach(() => {
+  // Clear timer and hide loading
+  if (loadingTimer) {
+    clearTimeout(loadingTimer)
+    loadingTimer = null
+  }
+  isRouteLoading.value = false
+})
 
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value
@@ -200,4 +229,16 @@ onMounted(async () => {
     overflow: hidden;
   }
 }
+
+/* Route transition animations */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
 </style>
+

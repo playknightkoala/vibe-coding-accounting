@@ -1,5 +1,8 @@
 <template>
   <div class="container">
+    <!-- Page Loading Spinner -->
+    <LoadingSpinner :show="isLoading" text="載入儀表板資料..." />
+
     <h1>儀表板</h1>
 
     <div class="card">
@@ -423,6 +426,7 @@ import DailyTransactionsModal from '@/components/DailyTransactionsModal.vue'
 import DescriptionHistory from '@/components/DescriptionHistory.vue'
 import TransactionCalendar from '@/components/TransactionCalendar.vue'
 import TransactionsSearchModal from '@/components/TransactionsSearchModal.vue'
+import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import { useAccountsStore } from '@/stores/accounts'
 import { useTransactionsStore } from '@/stores/transactions'
 import { useBudgetsStore } from '@/stores/budgets'
@@ -434,6 +438,7 @@ import { useMessage } from '@/composables/useMessage'
 import { useForm } from '@/composables/useForm'
 import { useDateTime } from '@/composables/useDateTime'
 import { useDashboard } from '@/composables/useDashboard'
+import { useLoading } from '@/composables/useLoading'
 import api from '@/services/api'
 
 const accountsStore = useAccountsStore()
@@ -446,6 +451,7 @@ const quickModal = useModal()
 const messageModal = useMessage()
 const dateTimeUtils = useDateTime()
 const dashboard = useDashboard()
+const { isLoading, withLoading } = useLoading()
 
 const activeTab = ref('accounts')
 const showCategoryModal = ref(false)
@@ -801,23 +807,25 @@ const handleRecordAgain = (transaction: any) => {
 }
 
 onMounted(async () => {
-  try {
-    await Promise.all([
-      accountsStore.fetchAccounts(),
-      transactionsStore.fetchTransactions(),
-      budgetsStore.fetchBudgets(),
-      categoriesStore.fetchCategories(),
-      exchangeRatesStore.fetchRates(),
-      fetchDescriptionHistory()
-    ])
-    
-    // Set initial account if available
-    if (accountsStore.accounts.length > 0) {
-      quickForm.form.value.account_id = accountsStore.accounts[0].id
+  await withLoading(async () => {
+    try {
+      await Promise.all([
+        accountsStore.fetchAccounts(),
+        transactionsStore.fetchTransactions(),
+        budgetsStore.fetchBudgets(),
+        categoriesStore.fetchCategories(),
+        exchangeRatesStore.fetchRates(),
+        fetchDescriptionHistory()
+      ])
+
+      // Set initial account if available
+      if (accountsStore.accounts.length > 0) {
+        quickForm.form.value.account_id = accountsStore.accounts[0].id
+      }
+    } catch (error) {
+      console.error('Failed to initialize dashboard:', error)
     }
-  } catch (error) {
-    console.error('Failed to initialize dashboard:', error)
-  }
+  })
 })
 </script>
 
