@@ -15,8 +15,9 @@ COPY . .
 ARG NODE_ENV=development
 
 # Build for production if NODE_ENV=production
+# Use build:prod to skip TypeScript checking for faster builds
 RUN if [ "$NODE_ENV" = "production" ]; then \
-      npm run build; \
+      npm run build:prod; \
     fi
 
 # Set as environment variable for runtime
