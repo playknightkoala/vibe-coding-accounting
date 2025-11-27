@@ -1,6 +1,9 @@
 <template>
   <div class="container">
     <div class="card" style="max-width: 400px; margin: 100px auto;">
+      <div class="logo-container">
+        <img src="/FullLOGO.png" alt="Logo" class="full-logo">
+      </div>
       <h2>註冊</h2>
       <form @submit.prevent="handleRegister">
         <div class="form-group">
@@ -248,6 +251,17 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.logo-container {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.full-logo {
+  max-width: 250px;
+  width: 100%;
+  height: auto;
+}
+
 /* Add styles for Turnstile container if needed */
 .turnstile-container {
   margin: 20px 0;

@@ -2,6 +2,11 @@
   <div id="app">
     <nav v-if="isAuthenticated" class="navbar">
       <div class="navbar-content">
+        <!-- Logo (Desktop Only) -->
+        <div class="navbar-logo">
+          <img src="/LOGO.png" alt="Logo" class="logo-image">
+        </div>
+
         <!-- Hamburger Menu Button (Mobile Only) -->
         <button class="navbar-toggle" @click="toggleMenu" :class="{ active: isMenuOpen }">
           <span></span>
@@ -97,6 +102,24 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* Navbar Logo */
+.navbar-logo {
+  display: flex;
+  align-items: center;
+  margin-right: 20px;
+}
+
+.logo-image {
+  height: 40px;
+  width: auto;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.logo-image:hover {
+  transform: scale(1.05);
+}
+
 /* Hamburger Menu Button */
 .navbar-toggle {
   display: none;
@@ -155,12 +178,19 @@ onMounted(async () => {
 /* Mobile Styles */
 @media (max-width: 768px) {
   .navbar-content {
-    justify-content: flex-end;
+    justify-content: space-between;
+  }
+
+  .navbar-logo {
+    margin-right: 0;
+  }
+
+  .logo-image {
+    height: 35px;
   }
 
   .navbar-toggle {
     display: flex;
-    margin-left: auto;
   }
 
   .navbar-menu {

@@ -4,6 +4,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Favicons -->
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/LOGO.png">
+  <link rel="apple-touch-icon" href="/LOGO.png">
+
   <meta name="google-site-verification" content="xJmjTERltp34o0DssjBx1BL9MhZs-iQGPP46D6TBeL0" />
 
   <!-- Resource Hints for Performance -->
@@ -26,14 +32,16 @@
   <meta property="og:url" content="https://accounting.yshongcode.com/">
   <meta property="og:title" content="會計與預算系統 - 個人財務管理工具">
   <meta property="og:description" content="功能完整的個人記帳與預算管理系統，支援多幣別、交易分類、預算追蹤、報表分析等功能。">
+  <meta property="og:image" content="https://accounting.yshongcode.com/FullLOGO.png">
   <meta property="og:site_name" content="YS Hong Portfolio">
   <meta property="og:locale" content="zh_TW">
 
   <!-- Twitter -->
-  <meta property="twitter:card" content="summary">
+  <meta property="twitter:card" content="summary_large_image">
   <meta property="twitter:url" content="https://accounting.yshongcode.com/">
   <meta property="twitter:title" content="會計與預算系統 - 個人財務管理工具">
   <meta property="twitter:description" content="功能完整的個人記帳與預算管理系統，支援多幣別、交易分類、預算追蹤、報表分析等功能。">
+  <meta property="twitter:image" content="https://accounting.yshongcode.com/FullLOGO.png">
 
   <!-- Structured Data -->
   <script type="application/ld+json">
@@ -76,6 +84,24 @@
         font-family: system-ui, -apple-system, sans-serif;
       }
 
+      .app-loading-logo {
+        width: 120px;
+        height: 120px;
+        margin-bottom: 30px;
+        animation: app-logo-pulse 2s ease-in-out infinite;
+      }
+
+      @keyframes app-logo-pulse {
+        0%, 100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.8;
+          transform: scale(0.95);
+        }
+      }
+
       .app-loading-spinner {
         width: 50px;
         height: 50px;
@@ -101,6 +127,7 @@
       }
     </style>
     <div class="app-loading">
+      <img src="/LOGO.png" alt="Logo" class="app-loading-logo">
       <div class="app-loading-spinner"></div>
       <div class="app-loading-text">載入中...</div>
     </div>

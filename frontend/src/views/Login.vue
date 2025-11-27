@@ -3,6 +3,9 @@
     <div class="content-wrapper">
       <!-- Login Form Section -->
       <div class="card login-card">
+        <div class="logo-container">
+          <img src="/FullLOGO.png" alt="Logo" class="full-logo">
+        </div>
         <h2>登入</h2>
         <form @submit.prevent="handleLogin">
           <div class="form-group">
@@ -272,6 +275,17 @@ const cancel2FA = () => {
 </script>
 
 <style scoped>
+.logo-container {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.full-logo {
+  max-width: 250px;
+  width: 100%;
+  height: auto;
+}
+
 .container {
   display: flex;
   flex-direction: column;
