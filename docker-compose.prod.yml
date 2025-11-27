@@ -80,6 +80,8 @@ services:
         - NODE_ENV=production
     restart: always
     environment:
+      # Set NODE_ENV for runtime
+      - NODE_ENV=production
       # Vite allowed hosts for DNS rebinding protection
       - VITE_ALLOWED_HOSTS=${VITE_ALLOWED_HOSTS:-localhost,127.0.0.1}
       - VITE_TURNSTILE_SITE_KEY=${WEBSITE_TURNSTILE_KEY}
