@@ -22,7 +22,7 @@ cp .env.production .env
 docker-compose -f docker-compose.prod.yml up -d --build
 ```
 
-See `DEPLOYMENT.md` for detailed deployment instructions.
+For production deployment, see docker-compose.prod.yml and Environment Configuration section below.
 
 ### Running the Application
 
@@ -93,6 +93,9 @@ npm run dev
 
 # Build for production
 npm run build
+
+# Run E2E tests (Playwright)
+npm run test:e2e
 ```
 
 ## Architecture Overview
@@ -123,6 +126,16 @@ npm run build
 - Verification: `/api/users/me/2fa/verify` with 6-digit code
 - Login flow: `/api/auth/login` → `/api/auth/login/2fa/verify` (if 2FA enabled)
 - Compatible with Google Authenticator, Microsoft Authenticator, etc.
+
+**Google OAuth Integration:**
+- Uses Authlib for OAuth2 authentication with Google
+- Login endpoint: `/api/login/google` (initiates OAuth flow)
+- Callback endpoint: `/api/auth/google/callback` (handles OAuth response)
+- Auto-creates users with `is_google_user=True` flag (no password required)
+- Auto-creates default accounts (現金, 預設銀行) for new Google users
+- Environment variables: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+- HTTPS redirect handling for production environments
+- Redirects to frontend with JWT token: `{FRONTEND_URL}/google-callback?token={token}`
 
 **Database Relationships:**
 - `User` → one-to-many → `Account` (via user_id)
@@ -168,7 +181,14 @@ Enforced on backend via Pydantic validators in `schemas/user.py`:
 - `useForm.ts`: Generic form state management with editing support
 - `useBudgetForm.ts`: Budget-specific form logic (date range, range mode)
 - `useDashboard.ts`: Dashboard calculations (totals, budget status, daily spending)
-- `useDateTime.ts`: Centralized date/time formatting utilities
+- `useDateTime.ts`: Wrapper composable that exports date utilities from `utils/dateFormat.ts`
+
+**Date/Time Utilities:**
+- Location: `frontend/src/utils/dateFormat.ts`
+- `formatDateTime()`: Display format (removes Z marker, milliseconds, replaces T with space)
+- `formatDateTimeForBackend()`: Backend format (adds :00 seconds if missing)
+- `formatDateTimeForInput()`: datetime-local input format (truncates to minutes)
+- Also exported through `useDateTime()` composable for convenience
 
 **Architectural Pattern:**
 Views import stores and composables to avoid code duplication. All business logic lives in stores or composables, not in components.
@@ -384,6 +404,72 @@ Comprehensive reporting endpoints at `/api/reports` provide data analytics for s
 - Supports filtering by category and account
 - Data formatted for frontend charts and visualizations
 
+### Password Reset System
+
+**Overview:**
+Full password reset functionality using Gmail SMTP with secure one-time tokens.
+
+**Key Features:**
+- Secure token-based password reset (30-minute expiration by default)
+- HTML email templates matching app design (dark theme, cyan accents)
+- Gmail SMTP integration with app passwords
+- Anti-enumeration protection (same response regardless of email existence)
+
+**Implementation:**
+- Model: `PasswordResetToken` (backend/app/models/password_reset_token.py)
+- Endpoints:
+  - `POST /api/password-reset/request` - Request reset email
+  - `GET /api/password-reset/verify-token/{token}` - Validate token
+  - `POST /api/password-reset/confirm` - Set new password
+- Email service: `backend/app/core/email.py` (SMTP configuration)
+
+**Setup:**
+See `PASSWORD_RESET_GUIDE.md` for detailed Gmail SMTP configuration, including:
+- How to enable Google 2-step verification
+- How to generate app passwords
+- Environment variable setup
+
+**Environment Variables:**
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`
+- `SMTP_FROM_EMAIL`, `SMTP_FROM_NAME`
+- `FRONTEND_URL` (for generating reset links)
+- `PASSWORD_RESET_TOKEN_EXPIRE_MINUTES` (default: 30)
+
+**Security:**
+- Tokens generated with `secrets.token_urlsafe(32)` (43 characters, high entropy)
+- One-time use tokens (marked `is_used=true` after consumption)
+- Automatic expiration tracking in database
+- Password strength validation on reset (same rules as registration)
+
+### Exchange Rate Crawler
+
+**Overview:**
+Automated exchange rate fetching from Taiwan Bank of Taiwan website.
+
+**Implementation:**
+- Service: `backend/app/services/crawler.py`
+- Uses BeautifulSoup to scrape BOT exchange rate table
+- Stores rates in `ExchangeRate` model (currency_code, currency_name, buying_rate, selling_rate)
+- Updates existing rates or creates new entries
+
+**Data Source:**
+- URL: https://rate.bot.com.tw/xrt?Lang=zh-TW
+- Extracts spot buying/selling rates (即期匯率)
+- Handles currencies without spot rates gracefully
+
+**Usage:**
+Called by scheduled tasks or can be triggered manually. Enables multi-currency account balance calculations.
+
+### Background Tasks
+
+**Location:** `backend/app/tasks/`
+
+**Budget Recurring Tasks** (`budget_recurring.py`):
+- Auto-generates next period budgets for recurring budgets
+- Copies account bindings and category bindings from previous period
+- Triggered by scheduler (APScheduler) or manually
+- Handles monthly, quarterly, and yearly recurring budgets
+
 ## Reusable Components
 
 ### Calculator Component
@@ -521,6 +607,19 @@ Tables auto-created on backend startup via `Base.metadata.create_all(bind=engine
 `Category`:
 - id, name, order_index
 - user_id (FK), created_at, updated_at
+
+`PasswordResetToken`:
+- id, email, token (unique), is_used, created_at, expires_at
+- Used for password reset functionality
+
+`ExchangeRate`:
+- id, currency_code, currency_name, buying_rate, selling_rate, updated_at
+- Stores exchange rates from Taiwan Bank of Taiwan
+
+**Additional User Fields:**
+- `is_google_user` (Boolean): Indicates OAuth user (no password)
+- `is_blocked` (Boolean): Admin can block users
+- `last_login_at` (DateTime): Tracks last login timestamp
 
 ## Common Development Workflows
 
@@ -662,6 +761,12 @@ formatDateTime(dateString)
 - `RATE_LIMIT_ENABLED`: Enable rate limiting (default: true)
 - `RATE_LIMIT_PER_MINUTE`: Requests per minute per IP (default: 60)
 - `ENABLE_SECURITY_HEADERS`: Enable security headers (default: true)
+- `FRONTEND_URL`: Frontend URL for OAuth callbacks and password reset links
+- `GOOGLE_CLIENT_ID`: Google OAuth client ID
+- `GOOGLE_CLIENT_SECRET`: Google OAuth client secret
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`: Gmail SMTP configuration
+- `SMTP_FROM_EMAIL`, `SMTP_FROM_NAME`: Email sender information
+- `PASSWORD_RESET_TOKEN_EXPIRE_MINUTES`: Password reset token expiration (default: 30)
 
 **CORS Origins:**
 Configured via `ALLOWED_ORIGINS` environment variable, parsed in `backend/app/core/config.py`:
@@ -725,6 +830,7 @@ When `ENABLE_SECURITY_HEADERS=true`, the following headers are added:
 - Use `formatDateTime()` utility from `frontend/src/utils/dateFormat.ts`
 - This function properly removes UTC markers and milliseconds
 - Always use centralized formatting utilities, not manual string replacement
+- The `useDateTime()` composable re-exports these utilities for convenience
 
 **Transaction operations not updating budget spent amounts:**
 - After creating/updating/deleting transactions, both accounts AND budgets must be refreshed
@@ -742,3 +848,9 @@ await Promise.all([
 - Should use `category_names IN (...)` for multi-category support
 - Empty `category_names` list means "all categories"
 - Never include uncategorized transactions in category-specific budgets
+
+**Google OAuth redirect issues:**
+- Ensure `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set in .env
+- In production, redirect URIs must use HTTPS
+- The callback URL must be registered in Google Cloud Console
+- Frontend must handle `/google-callback?token={token}` route to extract JWT and store in localStorage

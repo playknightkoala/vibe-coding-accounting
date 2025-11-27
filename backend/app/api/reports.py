@@ -287,12 +287,14 @@ def get_monthly_category_report(
         else:
             category_totals[cat]['debit'] += t.amount
 
-    total_amount = sum(amounts['debit'] for amounts in category_totals.values())
+    total_debit = sum(amounts['debit'] for amounts in category_totals.values())
+    total_credit = sum(amounts['credit'] for amounts in category_totals.values())
 
     category_stats = []
     for cat, amounts in category_totals.items():
+        # Use debit amount for main sorting and percentage (backward compatible)
         amount = amounts['debit']
-        percentage = (amount / total_amount * 100) if total_amount > 0 else 0
+        percentage = (amount / total_debit * 100) if total_debit > 0 else 0
         category_stats.append(CategoryStats(
             category=cat,
             amount=amount,
@@ -301,11 +303,14 @@ def get_monthly_category_report(
             debit=amounts['debit']
         ))
 
-    category_stats.sort(key=lambda x: x.amount, reverse=True)
+    # Sort by total amount (debit + credit) to show most active categories first
+    category_stats.sort(key=lambda x: x.debit + x.credit, reverse=True)
 
     return CategoryReport(
         category_stats=category_stats,
-        total_amount=total_amount
+        total_amount=total_debit,  # Backward compatible
+        total_credit=total_credit,
+        total_debit=total_debit
     )
 
 @router.get("/category/daily", response_model=CategoryReport)
@@ -334,12 +339,14 @@ def get_daily_category_report(
         else:
             category_totals[cat]['debit'] += t.amount
 
-    total_amount = sum(amounts['debit'] for amounts in category_totals.values())
+    total_debit = sum(amounts['debit'] for amounts in category_totals.values())
+    total_credit = sum(amounts['credit'] for amounts in category_totals.values())
 
     category_stats = []
     for cat, amounts in category_totals.items():
+        # Use debit amount for main sorting and percentage (backward compatible)
         amount = amounts['debit']
-        percentage = (amount / total_amount * 100) if total_amount > 0 else 0
+        percentage = (amount / total_debit * 100) if total_debit > 0 else 0
         category_stats.append(CategoryStats(
             category=cat,
             amount=amount,
@@ -348,11 +355,14 @@ def get_daily_category_report(
             debit=amounts['debit']
         ))
 
-    category_stats.sort(key=lambda x: x.amount, reverse=True)
+    # Sort by total amount (debit + credit) to show most active categories first
+    category_stats.sort(key=lambda x: x.debit + x.credit, reverse=True)
 
     return CategoryReport(
         category_stats=category_stats,
-        total_amount=total_amount
+        total_amount=total_debit,  # Backward compatible
+        total_credit=total_credit,
+        total_debit=total_debit
     )
 
 @router.get("/ranking/monthly", response_model=RankingReport)

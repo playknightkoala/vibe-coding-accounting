@@ -3,19 +3,59 @@
     <div v-if="loading" class="loading">載入中...</div>
     <div v-else-if="error" class="error">{{ error }}</div>
     <div v-else-if="reportData">
-      <!-- 圓餅圖 -->
-      <div class="card">
-        <h2>類別統計</h2>
-        <div v-if="reportData.category_stats.length > 0" ref="chartContainer" class="chart-container"></div>
-        <p v-else class="empty-message">本期沒有支出記錄</p>
+      <!-- 頁籤切換（放在最上方中間） -->
+      <div v-if="hasDebitOrCredit" class="category-tabs-container">
+        <div class="category-tabs">
+          <button
+            :class="['category-tab-btn', categoryTab === 'debit' ? 'active' : '']"
+            @click="categoryTab = 'debit'"
+          >
+            <span class="tab-icon">📊</span>
+            支出類別
+            <span class="tab-amount">${{ reportData.total_debit.toFixed(2) }}</span>
+          </button>
+          <button
+            :class="['category-tab-btn', categoryTab === 'credit' ? 'active' : '']"
+            @click="categoryTab = 'credit'"
+          >
+            <span class="tab-icon">💰</span>
+            收入類別
+            <span class="tab-amount">${{ reportData.total_credit.toFixed(2) }}</span>
+          </button>
+        </div>
       </div>
 
-      <!-- 各類別收支總覽 -->
+      <!-- 圓餅圖 -->
       <div class="card">
-        <h2>類別收支</h2>
-        <div class="category-list">
+        <h2>{{ categoryTab === 'debit' ? '支出' : '收入' }}類別統計</h2>
+
+        <!-- 圖表顯示區域 -->
+        <div v-if="hasDebitOrCredit" class="chart-display">
+          <!-- 支出圓餅圖 -->
+          <div v-show="categoryTab === 'debit'" class="chart-wrapper">
+            <div v-if="reportData.total_debit > 0" ref="debitChartContainer" class="chart-container"></div>
+            <p v-else class="empty-message">本期沒有支出記錄</p>
+          </div>
+
+          <!-- 收入圓餅圖 -->
+          <div v-show="categoryTab === 'credit'" class="chart-wrapper">
+            <div v-if="reportData.total_credit > 0" ref="creditChartContainer" class="chart-container"></div>
+            <p v-else class="empty-message">本期沒有收入記錄</p>
+          </div>
+        </div>
+
+        <p v-else class="empty-message">本期沒有任何交易記錄</p>
+      </div>
+
+      <!-- 各類別收支明細（跟隨頁籤切換） -->
+      <div class="card">
+        <h2>{{ categoryTab === 'debit' ? '支出' : '收入' }}類別明細</h2>
+        <p v-if="filteredCategories.length === 0" class="empty-message">
+          本期沒有{{ categoryTab === 'debit' ? '支出' : '收入' }}記錄
+        </p>
+        <div v-else class="category-list">
           <div
-            v-for="category in reportData.category_stats"
+            v-for="category in filteredCategories"
             :key="category.category"
             :ref="el => setCategoryItemRef(el, category.category)"
             class="category-item"
@@ -24,9 +64,10 @@
             <div class="category-header">
               <div class="category-name">{{ category.category }}</div>
               <div class="category-amounts">
-                <span class="credit">收入: ${{ category.credit.toFixed(2) }}</span>
-                <span class="debit">支出: ${{ category.debit.toFixed(2) }}</span>
-                <span class="percentage">({{ category.percentage.toFixed(1) }}%)</span>
+                <span :class="categoryTab === 'debit' ? 'debit' : 'credit'">
+                  {{ categoryTab === 'debit' ? '支出' : '收入' }}: ${{ currentAmount(category).toFixed(2) }}
+                </span>
+                <span class="percentage">({{ currentPercentage(category).toFixed(1) }}%)</span>
               </div>
               <div class="expand-icon">{{ expandedCategory === category.category ? '▼' : '▶' }}</div>
             </div>
@@ -59,7 +100,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import api from '@/services/api'
 import type { CategoryReport as CategoryReportType, TransactionDetail } from '@/types'
@@ -76,8 +117,11 @@ const props = defineProps<Props>()
 const reportData = ref<CategoryReportType | null>(null)
 const loading = ref(false)
 const error = ref('')
-const chartContainer = ref<HTMLElement | null>(null)
-let chartInstance: echarts.ECharts | null = null
+const categoryTab = ref<'debit' | 'credit'>('debit')
+const debitChartContainer = ref<HTMLElement | null>(null)
+const creditChartContainer = ref<HTMLElement | null>(null)
+let debitChartInstance: echarts.ECharts | null = null
+let creditChartInstance: echarts.ECharts | null = null
 
 const expandedCategory = ref<string>('')
 const categoryTransactions = ref<TransactionDetail[]>([])
@@ -87,6 +131,44 @@ const chartColors = [
   '#9966ff', '#ff9933', '#33ccff', '#ffcc00', '#ff6699',
   '#66ff99', '#ff6666', '#6699ff', '#ffcc99', '#cc99ff'
 ]
+
+const hasDebitOrCredit = computed(() => {
+  if (!reportData.value) return false
+  return reportData.value.total_debit > 0 || reportData.value.total_credit > 0
+})
+
+// 根據當前頁籤過濾類別（只顯示有對應類型交易的類別）
+const filteredCategories = computed(() => {
+  if (!reportData.value) return []
+
+  return reportData.value.category_stats.filter(cat => {
+    if (categoryTab.value === 'debit') {
+      return cat.debit > 0
+    } else {
+      return cat.credit > 0
+    }
+  }).sort((a, b) => {
+    // 根據當前頁籤類型排序
+    const amountA = categoryTab.value === 'debit' ? a.debit : a.credit
+    const amountB = categoryTab.value === 'debit' ? b.debit : b.credit
+    return amountB - amountA
+  })
+})
+
+// 獲取當前類型的金額
+const currentAmount = (category: any) => {
+  return categoryTab.value === 'debit' ? category.debit : category.credit
+}
+
+// 計算當前類型的百分比
+const currentPercentage = (category: any) => {
+  const total = categoryTab.value === 'debit'
+    ? reportData.value?.total_debit || 0
+    : reportData.value?.total_credit || 0
+
+  const amount = currentAmount(category)
+  return total > 0 ? (amount / total * 100) : 0
+}
 
 const setCategoryItemRef = (el: any, categoryName: string) => {
   if (el) {
@@ -108,9 +190,16 @@ const fetchReport = async () => {
     }
     reportData.value = response.data
 
+    // 智能設置初始頁籤：如果只有一種類型有數據，切換到該頁籤
+    if (reportData.value.total_debit === 0 && reportData.value.total_credit > 0) {
+      categoryTab.value = 'credit'
+    } else {
+      categoryTab.value = 'debit'
+    }
+
     loading.value = false
     await nextTick()
-    renderPieChart()
+    renderPieCharts()
   } catch (err: any) {
     loading.value = false
     error.value = err.response?.data?.detail || '載入報表失敗'
@@ -118,36 +207,85 @@ const fetchReport = async () => {
   }
 }
 
-const renderPieChart = () => {
-  if (!chartContainer.value || !reportData.value || reportData.value.category_stats.length === 0) {
+const renderPieCharts = () => {
+  if (!reportData.value || reportData.value.category_stats.length === 0) {
     return
   }
 
-  if (chartInstance) {
-    chartInstance.dispose()
-    chartInstance = null
+  // Render debit chart
+  renderChart(
+    debitChartContainer,
+    debitChartInstance,
+    'debit',
+    reportData.value.total_debit,
+    '#ff6b6b',
+    '支出'
+  )
+
+  // Render credit chart
+  renderChart(
+    creditChartContainer,
+    creditChartInstance,
+    'credit',
+    reportData.value.total_credit,
+    '#51cf66',
+    '收入'
+  )
+}
+
+const renderChart = (
+  containerRef: any,
+  chartInstanceRef: echarts.ECharts | null,
+  type: 'debit' | 'credit',
+  totalAmount: number,
+  themeColor: string,
+  label: string
+) => {
+  if (!containerRef.value || !reportData.value || totalAmount === 0) {
+    return
   }
 
-  chartInstance = echarts.init(chartContainer.value)
+  // Dispose existing chart
+  if (chartInstanceRef) {
+    chartInstanceRef.dispose()
+    chartInstanceRef = null
+  }
 
-  const chartData = reportData.value.category_stats.map((cat, index) => ({
+  // Filter categories that have this type of transaction
+  const filteredStats = reportData.value.category_stats.filter(cat =>
+    type === 'debit' ? cat.debit > 0 : cat.credit > 0
+  )
+
+  if (filteredStats.length === 0) {
+    return
+  }
+
+  // Create new chart instance
+  const newChartInstance = echarts.init(containerRef.value)
+
+  // Update the ref based on type
+  if (type === 'debit') {
+    debitChartInstance = newChartInstance
+  } else {
+    creditChartInstance = newChartInstance
+  }
+
+  const chartData = filteredStats.map((cat, index) => ({
     name: cat.category,
-    value: cat.debit,
+    value: type === 'debit' ? cat.debit : cat.credit,
     itemStyle: {
       color: chartColors[index % chartColors.length]
     }
   }))
 
-  const totalAmount = reportData.value.total_amount
-
   const option: echarts.EChartsOption = {
     title: {
-      text: `總金額\n$${totalAmount.toFixed(2)}`,
+      text: `總${label}\n$${totalAmount.toFixed(2)}`,
       left: 'center',
       top: 'center',
       textStyle: {
-        color: '#00d4ff',
-        fontSize: 20,
+        color: themeColor,
+        fontSize: 18,
         fontWeight: 'bold'
       },
       subtextStyle: {
@@ -159,7 +297,7 @@ const renderPieChart = () => {
       trigger: 'item',
       formatter: '{b}: ${c} ({d}%)',
       backgroundColor: 'rgba(0, 0, 0, 0.8)',
-      borderColor: '#00d4ff',
+      borderColor: themeColor,
       borderWidth: 1,
       textStyle: {
         color: '#fff'
@@ -169,7 +307,8 @@ const renderPieChart = () => {
       orient: 'horizontal',
       bottom: 10,
       textStyle: {
-        color: '#fff'
+        color: '#fff',
+        fontSize: 11
       }
     },
     series: [
@@ -187,18 +326,18 @@ const renderPieChart = () => {
           show: true,
           formatter: '{b}\n{d}%',
           color: '#fff',
-          fontSize: 12
+          fontSize: 11
         },
         emphasis: {
           label: {
             show: true,
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: 'bold'
           },
           itemStyle: {
             shadowBlur: 10,
             shadowOffsetX: 0,
-            shadowColor: 'rgba(0, 212, 255, 0.5)'
+            shadowColor: `rgba(${type === 'debit' ? '255, 107, 107' : '81, 207, 102'}, 0.5)`
           }
         },
         data: chartData
@@ -206,22 +345,22 @@ const renderPieChart = () => {
     ]
   }
 
-  chartInstance.setOption(option)
+  newChartInstance.setOption(option)
 
-  chartInstance.on('click', (params) => {
+  newChartInstance.on('click', (params) => {
     if (params.componentType === 'series') {
       const category = params.name
       const value = params.value as number
       const percent = params.percent
-      
+
       // Update title
-      chartInstance?.setOption({
+      newChartInstance?.setOption({
         title: {
           text: `${category}\n$${value.toFixed(2)}`,
           subtext: `${percent}%`
         }
       })
-      
+
       // Expand list item
       if (expandedCategory.value !== category) {
         toggleCategory(category)
@@ -229,26 +368,21 @@ const renderPieChart = () => {
     }
   })
 
-  // Reset title when clicking on empty area (zrender event)
-  chartInstance.getZr().on('click', (params) => {
+  // Reset title when clicking on empty area
+  newChartInstance.getZr().on('click', (params) => {
     if (!params.target) {
-      chartInstance?.setOption({
+      newChartInstance?.setOption({
         title: {
-          text: `總金額\n$${totalAmount.toFixed(2)}`,
+          text: `總${label}\n$${totalAmount.toFixed(2)}`,
           subtext: ''
         }
       })
-      
+
       if (expandedCategory.value) {
-        toggleCategory(expandedCategory.value) // Toggle off
+        toggleCategory(expandedCategory.value)
       }
     }
   })
-
-  const handleResize = () => {
-    chartInstance?.resize()
-  }
-  window.addEventListener('resize', handleResize)
 }
 
 const toggleCategory = async (category: string) => {
@@ -297,16 +431,33 @@ watch([() => props.reportType, () => props.year, () => props.month, () => props.
   fetchReport()
 })
 
+// 當切換頁籤時，調整圖表大小
+watch(categoryTab, async () => {
+  await nextTick()
+  if (categoryTab.value === 'debit' && debitChartInstance) {
+    debitChartInstance.resize()
+  } else if (categoryTab.value === 'credit' && creditChartInstance) {
+    creditChartInstance.resize()
+  }
+})
+
 onMounted(() => {
   fetchReport()
 })
 
 onBeforeUnmount(() => {
-  if (chartInstance) {
-    chartInstance.dispose()
-    chartInstance = null
+  if (debitChartInstance) {
+    debitChartInstance.dispose()
+    debitChartInstance = null
   }
-  window.removeEventListener('resize', () => chartInstance?.resize())
+  if (creditChartInstance) {
+    creditChartInstance.dispose()
+    creditChartInstance = null
+  }
+  window.removeEventListener('resize', () => {
+    debitChartInstance?.resize()
+    creditChartInstance?.resize()
+  })
 })
 </script>
 
@@ -328,10 +479,120 @@ onBeforeUnmount(() => {
   color: #ff6b6b;
 }
 
+/* 頁籤容器 - 居中顯示 */
+.category-tabs-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+/* 頁籤切換樣式 */
+.category-tabs {
+  display: inline-flex;
+  gap: 15px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+.category-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 24px;
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  color: #a0aec0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.category-tab-btn:hover {
+  background: rgba(0, 212, 255, 0.1);
+  color: #fff;
+  border-color: rgba(0, 212, 255, 0.3);
+}
+
+.category-tab-btn.active {
+  background: linear-gradient(135deg, rgba(0, 102, 255, 0.4) 0%, rgba(0, 212, 255, 0.4) 100%);
+  border-color: #00d4ff;
+  color: #00d4ff;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+}
+
+.tab-icon {
+  font-size: 20px;
+}
+
+.tab-amount {
+  margin-left: auto;
+  padding: 4px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.category-tab-btn.active .tab-amount {
+  background: rgba(0, 212, 255, 0.2);
+  color: #00d4ff;
+}
+
+/* 圖表顯示區域 */
+.chart-display {
+  margin-top: 20px;
+}
+
+.chart-wrapper {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .chart-container {
   width: 100%;
-  height: 500px;
-  min-height: 400px;
+  height: 550px;
+  min-height: 450px;
+}
+
+@media (max-width: 768px) {
+  .category-tabs-container {
+    padding: 0 10px;
+  }
+
+  .category-tabs {
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .category-tab-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .chart-container {
+    height: 400px;
+    min-height: 350px;
+  }
+
+  .tab-amount {
+    margin-left: 10px;
+  }
 }
 
 .empty-message {

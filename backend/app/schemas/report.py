@@ -52,6 +52,8 @@ class DetailsReport(BaseModel):
 class CategoryReport(BaseModel):
     category_stats: List[CategoryStats]
     total_amount: float
+    total_credit: float
+    total_debit: float
 
 class RankingReport(BaseModel):
     expense_ranking: List[TransactionDetail]

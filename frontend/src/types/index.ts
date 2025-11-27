@@ -252,6 +252,8 @@ export interface DetailsReport {
 export interface CategoryReport {
   category_stats: CategoryStats[]
   total_amount: number
+  total_credit: number
+  total_debit: number
 }
 
 export interface RankingReport {
