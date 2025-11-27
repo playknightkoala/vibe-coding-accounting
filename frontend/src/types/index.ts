@@ -84,7 +84,7 @@ export interface Transaction {
   id: number
   description: string
   amount: number
-  transaction_type: 'credit' | 'debit'
+  transaction_type: 'credit' | 'debit' | 'installment'
   category: string | null
   transaction_date: string
   account_id: number
@@ -93,18 +93,31 @@ export interface Transaction {
   note?: string
   foreign_amount?: number
   foreign_currency?: string
+  // Installment fields
+  is_installment: boolean
+  installment_group_id?: string
+  installment_number?: number
+  total_installments?: number
+  total_amount?: number
+  remaining_amount?: number
+  exclude_from_budget: boolean
 }
 
 export interface TransactionCreate {
   description: string
   amount: number
-  transaction_type: 'credit' | 'debit'
+  transaction_type: 'credit' | 'debit' | 'installment'
   category?: string
   transaction_date: string
   account_id: number
   note?: string
   foreign_amount?: number
   foreign_currency?: string
+  exclude_from_budget?: boolean
+  // Installment specific fields
+  is_installment?: boolean
+  total_installments?: number
+  billing_day?: number
 }
 
 export interface TransactionUpdate {

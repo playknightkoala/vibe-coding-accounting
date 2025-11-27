@@ -55,11 +55,26 @@
           <div v-for="transaction in selectedDateTransactions" :key="transaction.id" class="transaction-item" @click="emit('edit-transaction', transaction)">
             <div class="transaction-info">
               <div class="transaction-time">{{ formatTime(transaction.transaction_date) }}</div>
-              <div class="transaction-description">{{ transaction.description }}</div>
-              <div class="transaction-category">{{ transaction.category || '無類別' }}</div>
+              <div class="transaction-description">
+                {{ transaction.description }}
+              </div>
+              <div class="transaction-category">
+                {{ transaction.category || '無類別' }}
+                <span v-if="transaction.is_installment" style="color: #00d4ff; font-size: 0.85rem; margin-left: 8px;">
+                  ({{ transaction.installment_number }}/{{ transaction.total_installments }})
+                </span>
+                <span v-if="transaction.is_installment && transaction.installment_group_id" style="color: #ff9800; font-size: 0.75rem; margin-left: 5px;" title="點擊交易可刪除整組分期">
+                  [分期]
+                </span>
+              </div>
             </div>
-            <div :class="['transaction-amount', transaction.transaction_type]">
-              {{ transaction.transaction_type === 'credit' ? '+' : '-' }}${{ transaction.amount.toFixed(2) }}
+            <div style="display: flex; flex-direction: column; align-items: flex-end;">
+              <div :class="['transaction-amount', transaction.transaction_type === 'credit' ? 'credit' : 'debit']">
+                {{ transaction.transaction_type === 'credit' ? '+' : '-' }}${{ transaction.amount }}
+              </div>
+              <div v-if="transaction.is_installment && transaction.remaining_amount" style="color: #a0aec0; font-size: 0.75rem; margin-top: 2px;">
+                剩餘 ${{ Math.floor(transaction.remaining_amount) }}
+              </div>
             </div>
           </div>
         </div>

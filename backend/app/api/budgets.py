@@ -23,15 +23,17 @@ def calculate_budget_spent(db: Session, budget: Budget, category_names: List[str
     - 如果預算綁定了帳戶：只計算這些帳戶的支出
     - 如果預算沒有綁定類別（空列表）：計算所有類別的支出
     - 如果預算綁定了類別：只計算這些類別的交易
+    - 排除 exclude_from_budget=True 的交易
     """
     # 獲取預算綁定的帳戶ID列表
     account_ids = [acc.id for acc in budget.accounts]
 
-    # 建立基礎查詢
+    # 建立基礎查詢 - 包含 debit 和 installment 類型
     query = db.query(func.sum(Transaction.amount)).filter(
-        Transaction.transaction_type == 'debit',  # 只計算支出
+        Transaction.transaction_type.in_(['debit', 'installment']),  # 計算支出和分期
         Transaction.transaction_date >= budget.start_date,
-        Transaction.transaction_date <= budget.end_date
+        Transaction.transaction_date <= budget.end_date,
+        Transaction.exclude_from_budget == False  # 排除不計入預算的交易
     )
 
     # 如果有綁定帳戶，只計算這些帳戶的交易

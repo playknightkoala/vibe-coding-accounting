@@ -11,6 +11,7 @@
           <option value="">所有類型</option>
           <option value="credit">收入</option>
           <option value="debit">支出</option>
+          <option value="installment">分期</option>
         </select>
         <div class="date-range-wrapper">
           <input type="date" v-model="localSearchStartDate" class="date-input" />
@@ -36,8 +37,15 @@
             <tbody>
               <tr v-for="transaction in searchResults" :key="transaction.id">
                 <td>{{ formatDateTime(transaction.transaction_date) }}</td>
-                <td>{{ transaction.description }}</td>
-                <td>{{ transaction.transaction_type === 'credit' ? '收入' : '支出' }}</td>
+                <td>
+                  {{ transaction.description }}
+                  <span v-if="transaction.is_installment" style="color: #00d4ff; font-size: 0.85rem; margin-left: 5px;">
+                    ({{ transaction.installment_number }}/{{ transaction.total_installments }})
+                  </span>
+                </td>
+                <td>
+                  {{ transaction.transaction_type === 'credit' ? '收入' : (transaction.transaction_type === 'installment' ? '分期' : '支出') }}
+                </td>
                 <td>{{ transaction.category || '無' }}</td>
                 <td :style="{ color: transaction.transaction_type === 'credit' ? '#51cf66' : '#ff6b6b' }">
                   ${{ transaction.amount.toFixed(2) }}

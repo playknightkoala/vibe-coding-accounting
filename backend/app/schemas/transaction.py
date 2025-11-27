@@ -12,9 +12,14 @@ class TransactionBase(BaseModel):
     foreign_amount: Optional[float] = None
     foreign_currency: Optional[str] = None
     transaction_date: datetime
+    exclude_from_budget: Optional[bool] = False
 
 class TransactionCreate(TransactionBase):
     account_id: int
+    # Installment specific fields
+    is_installment: Optional[bool] = False
+    total_installments: Optional[int] = None
+    billing_day: Optional[int] = None  # Day of month for billing (1-31)
 
 class TransactionUpdate(BaseModel):
     description: Optional[str] = None
@@ -30,6 +35,13 @@ class Transaction(TransactionBase):
     account_id: int
     created_at: datetime
     updated_at: Optional[datetime] = None
+    # Installment fields
+    is_installment: bool = False
+    installment_group_id: Optional[str] = None
+    installment_number: Optional[int] = None
+    total_installments: Optional[int] = None
+    total_amount: Optional[float] = None
+    remaining_amount: Optional[float] = None
 
     @field_serializer('transaction_date', 'created_at', 'updated_at')
     def serialize_datetime(self, dt: Optional[datetime], _info) -> Optional[str]:

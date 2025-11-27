@@ -67,7 +67,7 @@ def get_monthly_overview(
 
     # Calculate totals
     total_credit = sum(t.amount for t in transactions if t.transaction_type == 'credit')
-    total_debit = sum(t.amount for t in transactions if t.transaction_type == 'debit')
+    total_debit = sum(t.amount for t in transactions if t.transaction_type in ['debit', 'installment'])
     net_amount = total_credit - total_debit
 
     # Calculate category stats
@@ -102,7 +102,7 @@ def get_monthly_overview(
     )[:5]
 
     top_five_expense = sorted(
-        [t for t in transactions if t.transaction_type == 'debit'],
+        [t for t in transactions if t.transaction_type in ['debit', 'installment']],
         key=lambda x: x.amount,
         reverse=True
     )[:5]
@@ -135,7 +135,7 @@ def get_daily_overview(
 
     # Calculate totals
     total_credit = sum(t.amount for t in transactions if t.transaction_type == 'credit')
-    total_debit = sum(t.amount for t in transactions if t.transaction_type == 'debit')
+    total_debit = sum(t.amount for t in transactions if t.transaction_type in ['debit', 'installment'])
     net_amount = total_credit - total_debit
 
     # Calculate category stats
@@ -170,7 +170,7 @@ def get_daily_overview(
     )[:5]
 
     top_five_expense = sorted(
-        [t for t in transactions if t.transaction_type == 'debit'],
+        [t for t in transactions if t.transaction_type in ['debit', 'installment']],
         key=lambda x: x.amount,
         reverse=True
     )[:5]
@@ -221,7 +221,7 @@ def get_monthly_details(
         ))
 
     total_credit = sum(t.amount for t in transactions if t.transaction_type == 'credit')
-    total_debit = sum(t.amount for t in transactions if t.transaction_type == 'debit')
+    total_debit = sum(t.amount for t in transactions if t.transaction_type in ['debit', 'installment'])
 
     return DetailsReport(
         daily_transactions=daily_transactions,
@@ -247,7 +247,7 @@ def get_daily_details(
     transactions = get_user_transactions(db, current_user.id, start_date, end_date)
 
     total_credit = sum(t.amount for t in transactions if t.transaction_type == 'credit')
-    total_debit = sum(t.amount for t in transactions if t.transaction_type == 'debit')
+    total_debit = sum(t.amount for t in transactions if t.transaction_type in ['debit', 'installment'])
 
     daily_transactions = [DailyTransactions(
         date=date_str,
@@ -382,7 +382,7 @@ def get_monthly_ranking(
     transactions = get_user_transactions(db, current_user.id, start_date, end_date)
 
     expense_ranking = sorted(
-        [t for t in transactions if t.transaction_type == 'debit'],
+        [t for t in transactions if t.transaction_type in ['debit', 'installment']],
         key=lambda x: x.amount,
         reverse=True
     )
@@ -416,7 +416,7 @@ def get_daily_ranking(
     transactions = get_user_transactions(db, current_user.id, start_date, end_date)
 
     expense_ranking = sorted(
-        [t for t in transactions if t.transaction_type == 'debit'],
+        [t for t in transactions if t.transaction_type in ['debit', 'installment']],
         key=lambda x: x.amount,
         reverse=True
     )

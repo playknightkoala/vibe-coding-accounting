@@ -172,6 +172,10 @@ export default {
     return api.delete(`/transactions/${id}`)
   },
 
+  deleteInstallmentGroup(groupId: string) {
+    return api.delete(`/transactions/installments/group/${groupId}`)
+  },
+
   getMonthlyStats(year: number, month: number) {
     return api.get<MonthlyStats>('/transactions/stats/monthly', {
       params: { year, month }

@@ -4,6 +4,8 @@ from sqlalchemy import func, extract
 from typing import List
 from datetime import datetime, date
 from calendar import monthrange
+from dateutil.relativedelta import relativedelta
+import uuid
 from app.core.database import get_db
 from app.models.user import User
 from app.models.account import Account
@@ -39,8 +41,13 @@ def create_transaction(
     if not account:
         raise HTTPException(status_code=404, detail="Account not found")
 
+    # Handle installment transactions
+    if transaction.is_installment and transaction.total_installments and transaction.billing_day:
+        return create_installment_transactions(transaction, account, db)
+
+    # Regular transaction
     # 將前端傳來的台北時間轉換為 UTC 儲存
-    transaction_data = transaction.dict()
+    transaction_data = transaction.dict(exclude={'is_installment', 'total_installments', 'billing_day'})
     if isinstance(transaction_data['transaction_date'], str):
         transaction_data['transaction_date'] = from_iso_string(transaction_data['transaction_date'])
     elif transaction_data['transaction_date']:
@@ -53,12 +60,112 @@ def create_transaction(
     # Update account balance
     if transaction.transaction_type == "credit":
         account.balance += transaction.amount
-    else:
+    elif transaction.transaction_type in ["debit", "installment"]:
         account.balance -= transaction.amount
 
     db.commit()
     db.refresh(db_transaction)
     return db_transaction
+
+
+def create_installment_transactions(
+    transaction: TransactionCreate,
+    account: Account,
+    db: Session
+) -> TransactionSchema:
+    """Create multiple installment transactions"""
+    total_amount = transaction.amount
+    num_installments = transaction.total_installments
+    billing_day = transaction.billing_day
+
+    # Calculate installment amounts (integer division, no decimals)
+    base_amount = int(total_amount / num_installments)
+    remainder = int(total_amount - (base_amount * num_installments))
+    first_installment_amount = base_amount + remainder
+
+    # Generate group ID for all installments
+    group_id = str(uuid.uuid4())
+
+    # Parse transaction date
+    if isinstance(transaction.transaction_date, str):
+        base_date = from_iso_string(transaction.transaction_date)
+    else:
+        base_date = to_utc(transaction.transaction_date)
+
+    # Calculate first billing date (next month on billing_day)
+    first_billing_date = base_date.replace(day=1) + relativedelta(months=1)
+    # Adjust to billing day, handling month-end cases
+    try:
+        first_billing_date = first_billing_date.replace(day=billing_day)
+    except ValueError:
+        # Day doesn't exist in month (e.g., Feb 30), use last day of month
+        last_day = monthrange(first_billing_date.year, first_billing_date.month)[1]
+        first_billing_date = first_billing_date.replace(day=last_day)
+
+    created_transactions = []
+    first_transaction = None
+
+    for i in range(num_installments):
+        # Calculate this installment's amount
+        installment_amount = first_installment_amount if i == 0 else base_amount
+
+        # Calculate remaining amount BEFORE this installment
+        remaining_before = total_amount - (base_amount * i + (remainder if i > 0 else 0))
+
+        # Calculate billing date
+        billing_date = first_billing_date + relativedelta(months=i)
+
+        # Adjust for month-end edge cases
+        try:
+            billing_date = billing_date.replace(day=billing_day)
+        except ValueError:
+            last_day = monthrange(billing_date.year, billing_date.month)[1]
+            billing_date = billing_date.replace(day=last_day)
+
+        # Keep the time from original transaction
+        billing_date = billing_date.replace(
+            hour=base_date.hour,
+            minute=base_date.minute,
+            second=base_date.second
+        )
+
+        # Create installment transaction
+        db_transaction = Transaction(
+            description=transaction.description,
+            amount=installment_amount,
+            transaction_type="installment",
+            category=transaction.category,
+            note=transaction.note,
+            foreign_amount=transaction.foreign_amount,
+            foreign_currency=transaction.foreign_currency,
+            transaction_date=billing_date,
+            account_id=transaction.account_id,
+            is_installment=True,
+            installment_group_id=group_id,
+            installment_number=i + 1,
+            total_installments=num_installments,
+            total_amount=total_amount,
+            remaining_amount=remaining_before,
+            exclude_from_budget=transaction.exclude_from_budget
+        )
+
+        db.add(db_transaction)
+        created_transactions.append(db_transaction)
+
+        if i == 0:
+            first_transaction = db_transaction
+
+    # Update account balance (deduct total installment amount)
+    account.balance -= total_amount
+
+    db.commit()
+
+    # Refresh and return first transaction
+    if first_transaction:
+        db.refresh(first_transaction)
+        return first_transaction
+
+    raise HTTPException(status_code=500, detail="Failed to create installments")
 
 @router.get("/{transaction_id}", response_model=TransactionSchema)
 def get_transaction(
@@ -136,12 +243,41 @@ def delete_transaction(
     account = transaction.account
     if transaction.transaction_type == "credit":
         account.balance -= transaction.amount
-    else:
+    elif transaction.transaction_type in ["debit", "installment"]:
         account.balance += transaction.amount
 
     db.delete(transaction)
     db.commit()
     return {"message": "Transaction deleted successfully"}
+
+
+@router.delete("/installments/group/{group_id}")
+def delete_installment_group(
+    group_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete all transactions in an installment group"""
+    # Get all transactions in the group
+    transactions = db.query(Transaction).join(Account).filter(
+        Transaction.installment_group_id == group_id,
+        Account.user_id == current_user.id
+    ).all()
+
+    if not transactions:
+        raise HTTPException(status_code=404, detail="Installment group not found")
+
+    # Update account balance by reversing all installment amounts
+    account = transactions[0].account
+    total_to_reverse = sum(t.amount for t in transactions)
+    account.balance += total_to_reverse
+
+    # Delete all transactions
+    for transaction in transactions:
+        db.delete(transaction)
+
+    db.commit()
+    return {"message": f"Deleted {len(transactions)} installment transactions successfully"}
 
 @router.get("/stats/monthly", response_model=MonthlyStats)
 def get_monthly_stats(

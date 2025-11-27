@@ -315,7 +315,50 @@
               <select v-model="quickForm.form.value.transaction_type" required>
                 <option value="credit">收入</option>
                 <option value="debit">支出</option>
+                <option value="installment">分期</option>
               </select>
+            </div>
+
+            <!-- 分期相關欄位 (只在新建時顯示) -->
+            <div v-if="quickForm.form.value.transaction_type === 'installment' && !quickForm.isEditing()" style="background: rgba(0, 212, 255, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+              <div class="form-group">
+                <label>分期期數 (必填)</label>
+                <input
+                  type="number"
+                  v-model.number="quickForm.installmentPeriods.value"
+                  min="2"
+                  max="60"
+                  required
+                  placeholder="輸入期數 (例如: 12)"
+                />
+              </div>
+
+              <div class="form-group">
+                <label>結帳日 (必填)</label>
+                <select v-model.number="quickForm.billingDay.value" required>
+                  <option v-for="day in 31" :key="day" :value="day">每月 {{ day }} 號</option>
+                </select>
+              </div>
+
+              <!-- 試算結果 -->
+              <div v-if="installmentCalculation" style="background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 5px; margin-top: 10px;">
+                <p style="margin: 5px 0; font-size: 0.9rem;">
+                  <strong>第一期:</strong> {{ installmentCalculation.firstAmount }} 元
+                </p>
+                <p v-if="installmentCalculation.otherAmount !== installmentCalculation.firstAmount" style="margin: 5px 0; font-size: 0.9rem;">
+                  <strong>其餘各期:</strong> {{ installmentCalculation.otherAmount }} 元
+                </p>
+                <p v-else style="margin: 5px 0; font-size: 0.9rem;">
+                  <strong>每期:</strong> {{ installmentCalculation.otherAmount }} 元
+                </p>
+              </div>
+
+              <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 8px;">
+                  <input type="checkbox" v-model="quickForm.excludeFromBudget.value" style="width: auto; margin: 0;" />
+                  不計入預算
+                </label>
+              </div>
             </div>
 
             <CategorySelector
@@ -382,6 +425,59 @@
       :type="messageModal.type.value"
       :message="messageModal.message.value"
     />
+
+    <!-- 刪除確認彈窗 -->
+    <div v-if="showDeleteConfirm" class="modal">
+      <div class="modal-content" style="max-width: 500px;">
+        <h2 style="color: #ff6b6b; margin-bottom: 20px;">刪除交易</h2>
+        <p style="margin-bottom: 20px;">{{ deleteConfirmMessage }}</p>
+
+        <div v-if="deleteConfirmType === 'group'" style="margin-bottom: 20px;">
+          <p style="color: #ffd43b; margin-bottom: 15px;">請選擇刪除方式：</p>
+          <div style="display: flex; gap: 10px; flex-direction: column;">
+            <button
+              @click="confirmDelete('group')"
+              class="btn"
+              style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); color: white; width: 100%;"
+            >
+              刪除整組分期 (所有 {{ currentDeletingTransaction?.total_installments }} 期)
+            </button>
+            <button
+              @click="confirmDelete('single')"
+              class="btn"
+              style="background: linear-gradient(135deg, #ffa94d 0%, #ff922b 100%); color: white; width: 100%;"
+            >
+              僅刪除此筆交易 (第 {{ currentDeletingTransaction?.installment_number }} 期)
+            </button>
+          </div>
+        </div>
+        <div v-else style="display: flex; gap: 10px;">
+          <button
+            @click="confirmDelete('single')"
+            class="btn btn-danger"
+            style="flex: 1;"
+          >
+            確定刪除
+          </button>
+          <button
+            @click="showDeleteConfirm = false"
+            class="btn btn-secondary"
+            style="flex: 1;"
+          >
+            取消
+          </button>
+        </div>
+
+        <button
+          v-if="deleteConfirmType === 'group'"
+          @click="showDeleteConfirm = false"
+          class="btn btn-secondary"
+          style="margin-top: 10px; width: 100%;"
+        >
+          取消
+        </button>
+      </div>
+    </div>
 
     <!-- 類別管理彈窗 -->
     <CategoryManagementModal
@@ -462,6 +558,12 @@ const selectedDate = ref(dateTimeUtils.getTodayString())
 const modalDate = ref(dateTimeUtils.getTodayString())
 const monthlyChartRef = ref<InstanceType<typeof MonthlyChart> | null>(null)
 
+// Delete confirmation modal state
+const showDeleteConfirm = ref(false)
+const deleteConfirmMessage = ref('')
+const deleteConfirmType = ref<'single' | 'group' | 'installment-single'>('single')
+const currentDeletingTransaction = ref<any>(null)
+
 const initialQuickFormData: TransactionCreate = {
   account_id: 0,
   transaction_type: 'debit',
@@ -489,7 +591,10 @@ const quickForm = {
   }),
   foreignAmount: ref<number | null>(null),
   selectedCurrency: ref<string>('TWD'),
-  
+  installmentPeriods: ref<number>(12),
+  billingDay: ref<number>(5),
+  excludeFromBudget: ref<boolean>(false),
+
   reset: () => {
     quickForm.mode.value = 'create'
     quickForm.editId.value = null
@@ -504,6 +609,9 @@ const quickForm = {
     }
     quickForm.foreignAmount.value = null
     quickForm.selectedCurrency.value = 'TWD'
+    quickForm.installmentPeriods.value = 12
+    quickForm.billingDay.value = 5
+    quickForm.excludeFromBudget.value = false
     quickForm.activeCalculatorInput.value = 'amount'
     quickForm.isExpanded.value = false
   },
@@ -533,6 +641,31 @@ const currentAccountCurrency = computed(() => {
 
 const isCreditCardAccount = computed(() => {
   return currentAccount.value?.account_type === 'credit_card'
+})
+
+// Installment Calculation
+const installmentCalculation = computed(() => {
+  if (quickForm.form.value.transaction_type !== 'installment' || !quickForm.installmentPeriods.value || quickForm.form.value.amount <= 0) {
+    return null
+  }
+
+  const totalAmount = quickForm.form.value.amount
+  const periods = quickForm.installmentPeriods.value
+
+  // Calculate base amount per period (integer division, no decimals)
+  const baseAmount = Math.floor(totalAmount / periods)
+
+  // Calculate remainder
+  const remainder = totalAmount - (baseAmount * periods)
+
+  // First installment gets the remainder
+  const firstAmount = baseAmount + remainder
+
+  return {
+    firstAmount: firstAmount,
+    otherAmount: baseAmount,
+    totalPeriods: periods
+  }
 })
 
 // Currency Conversion Logic
@@ -645,37 +778,75 @@ const handleEditTransaction = (transaction: Transaction) => {
   quickModal.open()
 }
 
-const handleDeleteTransaction = async () => {
+const handleDeleteTransaction = () => {
   if (!quickForm.isEditing()) return
-  
-  if (!confirm('確定要刪除此交易嗎？刪除後將無法復原。')) return
+
+  // Find the transaction being edited
+  const transaction = transactionsStore.transactions.find(t => t.id === quickForm.editingId.value)
+  currentDeletingTransaction.value = transaction
+
+  // Check if it's an installment transaction
+  if (transaction?.is_installment && transaction.installment_group_id) {
+    deleteConfirmMessage.value = `此交易為分期交易 (第 ${transaction.installment_number} 期，共 ${transaction.total_installments} 期)`
+    deleteConfirmType.value = 'group'
+    showDeleteConfirm.value = true
+  } else {
+    deleteConfirmMessage.value = '確定要刪除此交易嗎？刪除後將無法復原。'
+    deleteConfirmType.value = 'single'
+    showDeleteConfirm.value = true
+  }
+}
+
+const confirmDelete = async (deleteType: 'single' | 'group') => {
+  showDeleteConfirm.value = false
+
+  const transaction = currentDeletingTransaction.value
+  if (!transaction) return
 
   try {
-    await transactionsStore.deleteTransaction(quickForm.editingId.value!)
+    if (deleteType === 'group' && transaction.installment_group_id) {
+      // Delete entire installment group
+      await api.deleteInstallmentGroup(transaction.installment_group_id)
+      messageModal.showSuccess(`已刪除整組分期交易 (${transaction.total_installments} 期)`)
+    } else {
+      // Delete single transaction
+      await transactionsStore.deleteTransaction(quickForm.editingId.value!)
+      messageModal.showSuccess('交易已刪除')
+    }
+
     await Promise.all([
       accountsStore.fetchAccounts(),
       budgetsStore.fetchBudgets(),
       fetchDescriptionHistory()
     ])
-    
+
     if (monthlyChartRef.value) {
       await monthlyChartRef.value.refresh()
     }
-    
-    messageModal.showSuccess('交易已刪除')
+
     closeQuickTransaction()
   } catch (error: any) {
     messageModal.showError(error.response?.data?.detail || '刪除交易失敗')
+  } finally {
+    currentDeletingTransaction.value = null
   }
 }
 
 const handleQuickTransaction = async () => {
   try {
-    const transactionData = {
+    const transactionData: any = {
       ...quickForm.form.value,
       transaction_date: dateTimeUtils.formatDateTimeForBackend(quickForm.form.value.transaction_date),
       foreign_amount: quickForm.selectedCurrency.value !== 'TWD' ? quickForm.foreignAmount.value : null,
       foreign_currency: quickForm.selectedCurrency.value !== 'TWD' ? quickForm.selectedCurrency.value : null
+    }
+
+    // Add installment fields if transaction type is installment
+    if (quickForm.form.value.transaction_type === 'installment') {
+      transactionData.is_installment = true
+      transactionData.total_installments = quickForm.installmentPeriods.value
+      transactionData.billing_day = quickForm.billingDay.value
+      transactionData.exclude_from_budget = quickForm.excludeFromBudget.value
     }
 
     if (quickForm.isEditing()) {
@@ -703,7 +874,9 @@ const handleQuickTransaction = async () => {
       await transactionsStore.createTransaction(transactionData)
       // 新增交易後更新敘述歷史
       // await api.updateDescriptionHistory(transactionData.description)
-      messageModal.showSuccess('交易已成功新增！')
+      messageModal.showSuccess(transactionData.is_installment ?
+        `已成功建立 ${quickForm.installmentPeriods.value} 期分期交易！` :
+        '交易已成功新增！')
     }
 
     // 重新載入所有資料
