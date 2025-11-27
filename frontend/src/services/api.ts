@@ -312,8 +312,9 @@ export default {
   },
 
   // 匯率
-  getExchangeRates() {
-    return api.get<ExchangeRate[]>('/exchange-rates/latest')
+  getExchangeRates(bank?: string) {
+    const params = bank ? { bank } : {}
+    return api.get<ExchangeRate[]>('/exchange-rates/latest', { params })
   },
 
   // 密碼重設

@@ -14,6 +14,7 @@ import Profile from '@/views/Profile.vue'
 import Reports from '@/views/Reports.vue'
 import TestChart from '@/views/TestChart.vue'
 import Admin from '@/views/Admin.vue'
+import ExchangeRates from '@/views/ExchangeRates.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -94,6 +95,12 @@ const routes: RouteRecordRaw[] = [
     name: 'Admin',
     component: Admin,
     meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/exchange-rates',
+    name: 'ExchangeRates',
+    component: ExchangeRates,
+    meta: { requiresAuth: true }
   },
   {
     path: '/test-chart',

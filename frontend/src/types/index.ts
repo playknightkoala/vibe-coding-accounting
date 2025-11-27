@@ -268,6 +268,7 @@ export interface AccountReport {
 
 export interface ExchangeRate {
   id: number
+  bank: string
   currency_code: string
   currency_name: string
   buying_rate: number | null

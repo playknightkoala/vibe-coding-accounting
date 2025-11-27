@@ -28,7 +28,8 @@
       "Bash(=2024.1)",
       "Bash(timeout 15 bash:*)",
       "Bash(git restore:*)",
-      "Bash(pip install:*)"
+      "Bash(pip install:*)",
+      "WebFetch(domain:www.esunbank.com)"
     ],
     "deny": [],
     "ask": []

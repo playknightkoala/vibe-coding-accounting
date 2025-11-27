@@ -202,7 +202,12 @@
               />
             </div>
             <div class="form-group">
-              <label>金額</label>
+              <label>
+                金額
+                <span v-if="isCreditCardAccount" style="font-size: 0.8rem; color: #a0aec0; font-weight: normal; margin-left: 5px;">
+                  (每小時同步臺銀匯率，實際金額以銀行為準)
+                </span>
+              </label>
               
               <!-- Currency Selector (Only for Credit Card) -->
               <div v-if="isCreditCardAccount" style="margin-bottom: 10px;">

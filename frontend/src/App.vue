@@ -8,6 +8,7 @@
 
           <router-link to="/budgets">預算</router-link>
           <router-link to="/reports">報表</router-link>
+          <router-link to="/exchange-rates">匯率</router-link>
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
           <router-link v-if="isAdmin" to="/admin">管理員</router-link>
@@ -21,7 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
@@ -35,6 +36,16 @@ const handleLogout = () => {
   authStore.logout()
   router.push('/')
 }
+
+onMounted(async () => {
+  if (authStore.isAuthenticated && !authStore.user) {
+    try {
+      await authStore.fetchUser()
+    } catch (error) {
+      console.error('Failed to restore user session:', error)
+    }
+  }
+})
 </script>
 
 <style scoped>

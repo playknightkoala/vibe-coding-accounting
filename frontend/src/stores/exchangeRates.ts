@@ -8,11 +8,11 @@ export const useExchangeRatesStore = defineStore('exchangeRates', () => {
     const isLoading = ref(false)
     const error = ref<string | null>(null)
 
-    const fetchRates = async () => {
+    const fetchRates = async (bank?: string) => {
         isLoading.value = true
         error.value = null
         try {
-            const response = await api.getExchangeRates()
+            const response = await api.getExchangeRates(bank)
             rates.value = response.data
         } catch (err) {
             console.error('Failed to fetch exchange rates:', err)

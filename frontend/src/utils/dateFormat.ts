@@ -48,3 +48,29 @@ export function formatDateTimeForInput(dateString: string): string {
   const normalized = dateString.replace(' ', 'T')
   return normalized.substring(0, 16)
 }
+
+/**
+ * 將 UTC 時間轉換為台北時間並顯示
+ * @param dateString - ISO 格式的日期時間字符串 (如: "2025-11-19T00:00:00Z")
+ * @returns 台北時間格式 (如: "2025-11-19 08:00:00")
+ */
+export function formatDateTimeToTaipei(dateString: string): string {
+  if (!dateString) return ''
+
+  const date = new Date(dateString)
+
+  // 使用 Intl.DateTimeFormat 轉換為台北時區
+  const taipeiTime = new Intl.DateTimeFormat('zh-TW', {
+    timeZone: 'Asia/Taipei',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  }).format(date)
+
+  // 將格式從 "2025/11/19 08:00:00" 轉換為 "2025-11-19 08:00:00"
+  return taipeiTime.replace(/\//g, '-')
+}

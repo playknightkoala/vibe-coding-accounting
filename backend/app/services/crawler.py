@@ -60,18 +60,22 @@ def fetch_exchange_rates(db: Session):
                 selling_rate = None
                 
             # Update or Insert into DB
-            existing_rate = db.query(ExchangeRate).filter(ExchangeRate.currency_code == currency_code).first()
-            
+            existing_rate = db.query(ExchangeRate).filter(
+                ExchangeRate.bank == 'bot',
+                ExchangeRate.currency_code == currency_code
+            ).first()
+
             if existing_rate:
                 if buying_rate is not None:
                     existing_rate.buying_rate = buying_rate
                 if selling_rate is not None:
                     existing_rate.selling_rate = selling_rate
-                
+
                 existing_rate.currency_name = currency_name
                 existing_rate.updated_at = datetime.now()
             else:
                 new_rate = ExchangeRate(
+                    bank='bot',
                     currency_code=currency_code,
                     currency_name=currency_name,
                     buying_rate=buying_rate,
