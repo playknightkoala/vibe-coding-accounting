@@ -13,8 +13,23 @@ export default defineConfig(({ mode }) => {
       }
     },
     build: {
-      // Enable minification
-      minify: 'esbuild',
+      // Enable Terser minification for better compression
+      minify: 'terser',
+      // Terser options for aggressive minification
+      terserOptions: {
+        compress: {
+          drop_console: true,        // Remove console.log in production
+          drop_debugger: true,        // Remove debugger statements
+          pure_funcs: ['console.log', 'console.info', 'console.debug'], // Remove specific console methods
+          passes: 2                   // Multiple passes for better compression
+        },
+        format: {
+          comments: false             // Remove all comments
+        },
+        mangle: {
+          safari10: true              // Fix Safari 10+ bugs
+        }
+      },
       // Target modern browsers for smaller bundle
       target: 'es2015',
       // Enable CSS code splitting
@@ -26,6 +41,7 @@ export default defineConfig(({ mode }) => {
           manualChunks: {
             'vue-vendor': ['vue', 'vue-router', 'pinia'],
             'chart-vendor': ['chart.js'],
+            'echarts-vendor': ['echarts'],
             'utils': ['axios']
           },
           // Asset file naming with hash for cache busting

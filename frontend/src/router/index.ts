@@ -1,44 +1,29 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import Login from '@/views/Login.vue'
-import Register from '@/views/Register.vue'
-import ForgotPassword from '@/views/ForgotPassword.vue'
-import ResetPassword from '@/views/ResetPassword.vue'
-import Privacy from '@/views/Privacy.vue'
-import Terms from '@/views/Terms.vue'
-import Dashboard from '@/views/Dashboard.vue'
-import Accounts from '@/views/Accounts.vue'
-
-import Budgets from '@/views/Budgets.vue'
-import Profile from '@/views/Profile.vue'
-import Reports from '@/views/Reports.vue'
-import TestChart from '@/views/TestChart.vue'
-import Admin from '@/views/Admin.vue'
-import ExchangeRates from '@/views/ExchangeRates.vue'
 
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'Login',
-    component: Login,
+    component: () => import('@/views/Login.vue'),
     meta: { public: true }
   },
   {
     path: '/register',
     name: 'Register',
-    component: Register,
+    component: () => import('@/views/Register.vue'),
     meta: { public: true }
   },
   {
     path: '/forgot-password',
     name: 'ForgotPassword',
-    component: ForgotPassword,
+    component: () => import('@/views/ForgotPassword.vue'),
     meta: { public: true }
   },
   {
     path: '/reset-password',
     name: 'ResetPassword',
-    component: ResetPassword,
+    component: () => import('@/views/ResetPassword.vue'),
     meta: { public: true }
   },
   {
@@ -50,62 +35,61 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/privacy',
     name: 'Privacy',
-    component: Privacy,
+    component: () => import('@/views/Privacy.vue'),
     meta: { public: true }
   },
   {
     path: '/terms',
     name: 'Terms',
-    component: Terms,
+    component: () => import('@/views/Terms.vue'),
     meta: { public: true }
   },
   {
     path: '/dashboard',
     name: 'Dashboard',
-    component: Dashboard,
+    component: () => import('@/views/Dashboard.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/accounts',
     name: 'Accounts',
-    component: Accounts,
+    component: () => import('@/views/Accounts.vue'),
     meta: { requiresAuth: true }
   },
-
   {
     path: '/budgets',
     name: 'Budgets',
-    component: Budgets,
+    component: () => import('@/views/Budgets.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/profile',
     name: 'Profile',
-    component: Profile,
+    component: () => import('@/views/Profile.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/reports',
     name: 'Reports',
-    component: Reports,
+    component: () => import('@/views/Reports.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/admin',
     name: 'Admin',
-    component: Admin,
+    component: () => import('@/views/Admin.vue'),
     meta: { requiresAuth: true, requiresAdmin: true }
   },
   {
     path: '/exchange-rates',
     name: 'ExchangeRates',
-    component: ExchangeRates,
+    component: () => import('@/views/ExchangeRates.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/test-chart',
     name: 'TestChart',
-    component: TestChart
+    component: () => import('@/views/TestChart.vue')
   },
   // Catch-all route for 404 - must be last
   {
