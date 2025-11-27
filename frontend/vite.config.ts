@@ -15,13 +15,16 @@ export default defineConfig(({ mode }) => {
     build: {
       // Enable Terser minification for better compression
       minify: 'terser',
-      // Terser options for aggressive minification
+      // Terser options for production optimization
       terserOptions: {
         compress: {
           drop_console: true,        // Remove console.log in production
           drop_debugger: true,        // Remove debugger statements
           pure_funcs: ['console.log', 'console.info', 'console.debug'], // Remove specific console methods
-          passes: 2                   // Multiple passes for better compression
+          passes: 2,                  // Multiple passes for better compression
+          // Keep important elements for PageSpeed
+          keep_fnames: false,
+          keep_classnames: false
         },
         format: {
           comments: false             // Remove all comments
@@ -76,6 +79,11 @@ export default defineConfig(({ mode }) => {
         host: env.VITE_HMR_HOST || undefined,
         protocol: env.VITE_HMR_PROTOCOL || undefined
       }
+    },
+    preview: {
+      port: 5173,
+      host: true,
+      strictPort: true
     }
   }
 })
