@@ -101,10 +101,17 @@ const handleLogout = () => {
 }
 
 onMounted(async () => {
-  const skeleton = document.getElementById('static-skeleton');
-  if (skeleton) {
-    skeleton.style.display = 'none'; // 或者 skeleton.remove();
-  }
+  setTimeout(() => {
+    const skeleton = document.getElementById('static-skeleton');
+    if (skeleton) {
+      skeleton.style.transition = 'opacity 0.5s ease';
+      skeleton.style.opacity = '0';
+
+      setTimeout(() => {
+        skeleton.remove();
+      }, 500);
+    }
+  }, 500);
   if (authStore.isAuthenticated && !authStore.user) {
     try {
       await authStore.fetchUser()
