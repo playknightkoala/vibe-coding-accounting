@@ -51,24 +51,6 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if not self.enabled:
             return await call_next(request)
 
-        # Get User-Agent
-        user_agent = request.headers.get("user-agent", "").lower()
-
-        # Whitelist for known crawlers and monitoring tools
-        whitelisted_user_agents = [
-            "googlebot",           # Google Search crawler
-            "google page speed",   # PageSpeed Insights (space separated)
-            "lighthouse",          # Google Lighthouse
-            "pagespeed",          # Alternative PageSpeed format
-            "chrome-lighthouse",   # Chrome DevTools Lighthouse
-            "uptimerobot",        # Uptime monitoring service
-            "pingdom",            # Pingdom monitoring
-        ]
-
-        # Skip rate limiting for whitelisted user agents
-        if any(agent in user_agent for agent in whitelisted_user_agents):
-            return await call_next(request)
-
         # Get client IP
         client_ip = request.client.host
 
