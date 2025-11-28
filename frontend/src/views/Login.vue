@@ -1,12 +1,13 @@
 <template>
   <div class="container">
-    <div class="content-wrapper">
+    <main class="content-wrapper">
       <!-- Login Form Section -->
-      <div class="card login-card">
+      <section class="card login-card" aria-labelledby="login-heading">
         <div class="logo-container">
-          <img src="/FullLOGO.webp" alt="Logo" class="full-logo" width="250" height="232" fetchpriority="high">
+          <img src="/FullLOGO.webp" alt="會計與預算系統標誌" class="full-logo" width="250" height="232" fetchpriority="high">
         </div>
-        <form @submit.prevent="handleLogin">
+        <h1 id="login-heading" class="visually-hidden">登入</h1>
+        <form @submit.prevent="handleLogin" aria-label="登入表單">
           <div class="form-group">
             <label for="email">電子郵件</label>
             <input
@@ -68,15 +69,15 @@
             </router-link>
           </div>
         </div>
-      </div>
+      </section>
 
       <!-- About / Project Info Section -->
-      <div class="about-section">
+      <section class="about-section" aria-labelledby="about-heading">
         <div class="about-content">
-          <h1>關於本專案</h1>
+          <h2 id="about-heading">關於本專案</h2>
           
           <section class="section">
-            <h2>📊 專案簡介</h2>
+            <h3>📊 專案簡介</h3>
             <p>
               這是一個功能完整的<strong>個人記帳與預算管理系統</strong>，旨在幫助使用者有效管理個人財務、追蹤支出、設定預算目標，並透過視覺化報表深入了解財務狀況。
             </p>
@@ -86,7 +87,7 @@
           </section>
 
           <section class="section">
-            <h2>✨ 主要功能</h2>
+            <h3>✨ 主要功能</h3>
             <ul>
               <li><strong>多幣別支援</strong>：支援 TWD、USD、JPY 等多種貨幣，並提供即時匯率轉換</li>
               <li><strong>交易管理</strong>：快速記帳、交易分類、描述自動完成（支援拼音搜尋）</li>
@@ -98,10 +99,10 @@
           </section>
 
           <section class="section">
-            <h2>🛠️ 技術堆疊</h2>
+            <h3>🛠️ 技術堆疊</h3>
             <div class="tech-stack">
               <div class="tech-category">
-                <h3>前端</h3>
+                <h4>前端</h4>
                 <ul>
                   <li>Vue 3 (Composition API)</li>
                   <li>TypeScript</li>
@@ -111,7 +112,7 @@
                 </ul>
               </div>
               <div class="tech-category">
-                <h3>後端</h3>
+                <h4>後端</h4>
                 <ul>
                   <li>Python FastAPI</li>
                   <li>SQLAlchemy (ORM)</li>
@@ -121,7 +122,7 @@
                 </ul>
               </div>
               <div class="tech-category">
-                <h3>部署</h3>
+                <h4>部署</h4>
                 <ul>
                   <li>Docker & Docker Compose</li>
                   <li>Nginx (反向代理)</li>
@@ -132,7 +133,7 @@
           </section>
 
           <section class="section">
-            <h2>👨‍💻 開發者</h2>
+            <h3>👨‍💻 開發者</h3>
             <p>
               <strong>YS Hong</strong> - 全端工程師
             </p>
@@ -145,13 +146,13 @@
             <p>© 2025 YS Hong. 本專案為個人作品，僅供展示與學習用途。</p>
           </div>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
 
     <!-- 2FA 驗證彈窗 -->
-    <div v-if="show2FAModal" class="modal">
+    <div v-if="show2FAModal" class="modal" role="dialog" aria-labelledby="2fa-modal-title">
       <div class="modal-content">
-        <h2 style="color: #00d4ff;">雙因素驗證</h2>
+        <h2 id="2fa-modal-title" style="color: #00d4ff;">雙因素驗證</h2>
         <p style="margin: 15px 0; color: #a0aec0;">請輸入驗證器應用程式中的 6 位數驗證碼</p>
         <div class="form-group">
           <label for="2fa_code">驗證碼</label>

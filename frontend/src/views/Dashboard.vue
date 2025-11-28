@@ -817,6 +817,7 @@ const confirmDelete = async (deleteType: 'single' | 'group') => {
     await Promise.all([
       accountsStore.fetchAccounts(),
       budgetsStore.fetchBudgets(),
+      transactionsStore.fetchTransactions(),
       fetchDescriptionHistory()
     ])
 

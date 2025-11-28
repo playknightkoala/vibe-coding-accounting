@@ -11,6 +11,7 @@ from app.models.transaction import Transaction
 from app.models.budget import Budget
 from app.models.budget_category import BudgetCategory
 from app.models.budget_account import BudgetAccount
+from app.models.category import Category
 from app.schemas.user import User as UserSchema, UserUpdate, TwoFactorSetup, TwoFactorVerify
 import pyotp
 import qrcode
@@ -162,6 +163,9 @@ def export_user_data(
         # 查詢所有預算
         budgets = db.query(Budget).filter(Budget.user_id == current_user.id).all()
 
+        # 查詢所有類別
+        categories = db.query(Category).filter(Category.user_id == current_user.id).order_by(Category.order_index).all()
+
         # 建立帳戶 ID 映射（舊 ID -> 新索引）
         account_id_map = {acc.id: idx for idx, acc in enumerate(accounts)}
 
@@ -191,10 +195,28 @@ def export_user_data(
                     "amount": float(trans.amount),
                     "transaction_type": trans.transaction_type,
                     "category": trans.category,
+                    "note": trans.note,
+                    "foreign_amount": float(trans.foreign_amount) if trans.foreign_amount else None,
+                    "foreign_currency": trans.foreign_currency,
                     "transaction_date": trans.transaction_date.isoformat() if trans.transaction_date else None,
+                    "is_installment": trans.is_installment,
+                    "installment_group_id": trans.installment_group_id,
+                    "installment_number": trans.installment_number,
+                    "total_installments": trans.total_installments,
+                    "total_amount": float(trans.total_amount) if trans.total_amount else None,
+                    "remaining_amount": float(trans.remaining_amount) if trans.remaining_amount else None,
+                    "exclude_from_budget": trans.exclude_from_budget,
                     "created_at": trans.created_at.isoformat() if trans.created_at else None
                 }
                 for trans in transactions
+            ],
+            "categories": [
+                {
+                    "name": cat.name,
+                    "order_index": cat.order_index,
+                    "created_at": cat.created_at.isoformat() if cat.created_at else None
+                }
+                for cat in categories
             ],
             "budgets": []
         }
@@ -306,6 +328,8 @@ async def import_user_data(
             "accounts_updated": 0,
             "transactions_created": 0,
             "transactions_updated": 0,
+            "categories_created": 0,
+            "categories_updated": 0,
             "budgets_created": 0,
             "budgets_updated": 0
         }
@@ -374,6 +398,16 @@ async def import_user_data(
                 existing_transaction.amount = trans_data["amount"]
                 existing_transaction.transaction_type = trans_data["transaction_type"]
                 existing_transaction.category = trans_data.get("category")
+                existing_transaction.note = trans_data.get("note")
+                existing_transaction.foreign_amount = trans_data.get("foreign_amount")
+                existing_transaction.foreign_currency = trans_data.get("foreign_currency")
+                existing_transaction.is_installment = trans_data.get("is_installment", False)
+                existing_transaction.installment_group_id = trans_data.get("installment_group_id")
+                existing_transaction.installment_number = trans_data.get("installment_number")
+                existing_transaction.total_installments = trans_data.get("total_installments")
+                existing_transaction.total_amount = trans_data.get("total_amount")
+                existing_transaction.remaining_amount = trans_data.get("remaining_amount")
+                existing_transaction.exclude_from_budget = trans_data.get("exclude_from_budget", False)
 
                 # 應用新交易對餘額的影響
                 if trans_data["transaction_type"] == "credit":
@@ -390,7 +424,17 @@ async def import_user_data(
                     amount=trans_data["amount"],
                     transaction_type=trans_data["transaction_type"],
                     category=trans_data.get("category"),
-                    transaction_date=trans_date
+                    note=trans_data.get("note"),
+                    foreign_amount=trans_data.get("foreign_amount"),
+                    foreign_currency=trans_data.get("foreign_currency"),
+                    transaction_date=trans_date,
+                    is_installment=trans_data.get("is_installment", False),
+                    installment_group_id=trans_data.get("installment_group_id"),
+                    installment_number=trans_data.get("installment_number"),
+                    total_installments=trans_data.get("total_installments"),
+                    total_amount=trans_data.get("total_amount"),
+                    remaining_amount=trans_data.get("remaining_amount"),
+                    exclude_from_budget=trans_data.get("exclude_from_budget", False)
                 )
                 db.add(new_transaction)
 
@@ -401,6 +445,28 @@ async def import_user_data(
                     account.balance -= trans_data["amount"]
 
                 stats["transactions_created"] += 1
+
+        # 匯入類別（覆蓋或新增）
+        for cat_data in import_data.get("categories", []):
+            # 查找是否已存在相同名稱的類別
+            existing_category = db.query(Category).filter(
+                Category.user_id == current_user.id,
+                Category.name == cat_data["name"]
+            ).first()
+
+            if existing_category:
+                # 覆蓋現有類別
+                existing_category.order_index = cat_data.get("order_index", 0)
+                stats["categories_updated"] += 1
+            else:
+                # 新增類別
+                new_category = Category(
+                    user_id=current_user.id,
+                    name=cat_data["name"],
+                    order_index=cat_data.get("order_index", 0)
+                )
+                db.add(new_category)
+                stats["categories_created"] += 1
 
         # 匯入預算（覆蓋或新增）
         for budget_data in import_data.get("budgets", []):
@@ -499,4 +565,112 @@ async def import_user_data(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"匯入資料失敗: {str(e)}"
+        )
+
+@router.delete("/me/clear-data")
+def clear_user_data(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """清除使用者所有資料（保留帳號）"""
+    try:
+        # 1. 先取得所有帳戶 ID
+        account_ids = [acc.id for acc in db.query(Account).filter(Account.user_id == current_user.id).all()]
+
+        # 2. 刪除所有交易（必須先刪除，因為有外鍵約束）
+        if account_ids:
+            db.query(Transaction).filter(Transaction.account_id.in_(account_ids)).delete(synchronize_session=False)
+
+        # 3. 刪除所有預算關聯
+        budget_ids = [b.id for b in db.query(Budget).filter(Budget.user_id == current_user.id).all()]
+        if budget_ids:
+            db.query(BudgetCategory).filter(BudgetCategory.budget_id.in_(budget_ids)).delete(synchronize_session=False)
+            db.query(BudgetAccount).filter(BudgetAccount.budget_id.in_(budget_ids)).delete(synchronize_session=False)
+
+        # 4. 刪除所有預算
+        db.query(Budget).filter(Budget.user_id == current_user.id).delete(synchronize_session=False)
+
+        # 5. 刪除所有帳戶
+        db.query(Account).filter(Account.user_id == current_user.id).delete(synchronize_session=False)
+
+        # 6. 刪除所有類別
+        db.query(Category).filter(Category.user_id == current_user.id).delete(synchronize_session=False)
+
+        # 7. 創建預設帳戶（恢復到初始狀態）
+        default_accounts = [
+            Account(
+                name="現金",
+                account_type="cash",
+                currency="TWD",
+                description="預設現金帳戶",
+                balance=0.0,
+                user_id=current_user.id
+            ),
+            Account(
+                name="預設銀行",
+                account_type="bank",
+                currency="TWD",
+                description="預設銀行帳戶",
+                balance=0.0,
+                user_id=current_user.id
+            )
+        ]
+        db.add_all(default_accounts)
+
+        db.commit()
+
+        return {
+            "message": "所有資料已清除，帳號已恢復到初始狀態"
+        }
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"清除資料失敗: {str(e)}"
+        )
+
+@router.delete("/me")
+def delete_user_account(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """刪除使用者帳號及所有相關資料"""
+    try:
+        # 1. 先取得所有帳戶 ID
+        account_ids = [acc.id for acc in db.query(Account).filter(Account.user_id == current_user.id).all()]
+
+        # 2. 刪除所有交易（必須先刪除，因為有外鍵約束）
+        if account_ids:
+            db.query(Transaction).filter(Transaction.account_id.in_(account_ids)).delete(synchronize_session=False)
+
+        # 3. 刪除所有預算關聯
+        budget_ids = [b.id for b in db.query(Budget).filter(Budget.user_id == current_user.id).all()]
+        if budget_ids:
+            db.query(BudgetCategory).filter(BudgetCategory.budget_id.in_(budget_ids)).delete(synchronize_session=False)
+            db.query(BudgetAccount).filter(BudgetAccount.budget_id.in_(budget_ids)).delete(synchronize_session=False)
+
+        # 4. 刪除所有預算
+        db.query(Budget).filter(Budget.user_id == current_user.id).delete(synchronize_session=False)
+
+        # 5. 刪除所有帳戶
+        db.query(Account).filter(Account.user_id == current_user.id).delete(synchronize_session=False)
+
+        # 6. 刪除所有類別
+        db.query(Category).filter(Category.user_id == current_user.id).delete(synchronize_session=False)
+
+        # 7. 刪除使用者帳號
+        db.delete(current_user)
+
+        db.commit()
+
+        return {
+            "message": "帳號已成功刪除"
+        }
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"刪除帳號失敗: {str(e)}"
         )

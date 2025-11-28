@@ -137,6 +137,14 @@ export default {
     })
   },
 
+  clearUserData() {
+    return api.delete('/users/me/clear-data')
+  },
+
+  deleteUserAccount() {
+    return api.delete('/users/me')
+  },
+
   // 帳戶
   getAccounts() {
     return api.get<Account[]>('/accounts/')

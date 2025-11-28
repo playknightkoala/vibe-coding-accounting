@@ -1,11 +1,12 @@
 <template>
   <div class="container">
-    <div class="card" style="max-width: 400px; margin: 100px auto;">
-      <div class="logo-container">
-        <img src="/FullLOGO.webp" alt="Logo" class="full-logo" width="250" height="232" fetchpriority="high">
-      </div>
-      <h2>註冊</h2>
-      <form @submit.prevent="handleRegister">
+    <main>
+      <section class="card" style="max-width: 400px; margin: 100px auto;" aria-labelledby="register-heading">
+        <div class="logo-container">
+          <img src="/FullLOGO.webp" alt="會計與預算系統標誌" class="full-logo" width="250" height="232" fetchpriority="high">
+        </div>
+        <h1 id="register-heading" style="color: #00d4ff; font-size: 24px; margin-bottom: 20px;">註冊</h1>
+        <form @submit.prevent="handleRegister" aria-label="註冊表單">
         <div class="form-group">
           <label for="email">電子郵件</label>
           <input
@@ -75,12 +76,13 @@
             隱私權政策
           </router-link>
         </div>
-      </div>
-    </div>
+      </form>
+      </section>
+    </main>
 
-    <div v-if="showSuccessModal" class="modal">
+    <div v-if="showSuccessModal" class="modal" role="dialog" aria-labelledby="success-modal-title">
       <div class="modal-content">
-        <h2 style="color: #51cf66;">註冊成功！</h2>
+        <h2 id="success-modal-title" style="color: #51cf66;">註冊成功！</h2>
         <p style="margin: 20px 0; color: #a0aec0;">您的帳號已經成功建立，點擊下方按鈕前往登入頁面。</p>
         <button @click="goToLogin" class="btn btn-primary" style="width: 100%;">
           前往登入
@@ -88,9 +90,9 @@
       </div>
     </div>
 
-    <div v-if="showErrorModal" class="modal">
+    <div v-if="showErrorModal" class="modal" role="dialog" aria-labelledby="error-modal-title">
       <div class="modal-content">
-        <h2 style="color: #ff6b6b;">註冊失敗</h2>
+        <h2 id="error-modal-title" style="color: #ff6b6b;">註冊失敗</h2>
         <p style="margin: 20px 0; color: #a0aec0;">{{ errorMessage }}</p>
         <button @click="showErrorModal = false" class="btn btn-primary" style="width: 100%;">
           確定

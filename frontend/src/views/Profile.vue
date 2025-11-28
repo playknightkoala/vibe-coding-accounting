@@ -168,6 +168,44 @@
       <div v-if="importExportError" class="error" style="margin-top: 15px;">{{ importExportError }}</div>
     </div>
 
+    <!-- 危險操作區域 -->
+    <div class="card" style="border: 2px solid #ff6b6b;">
+      <h2 style="color: #ff6b6b;">危險操作</h2>
+      <p style="margin-bottom: 20px; color: #ff9999;">
+        ⚠️ 以下操作無法復原，請謹慎操作
+      </p>
+
+      <div style="display: flex; flex-direction: column; gap: 20px;">
+        <!-- 清除所有資料 -->
+        <div style="padding: 15px; background: rgba(255, 107, 107, 0.1); border-radius: 8px;">
+          <h3 style="margin-bottom: 10px; color: #ff6b6b;">清除所有資料</h3>
+          <p style="margin-bottom: 15px; font-size: 14px; color: #a0aec0;">
+            刪除所有帳戶、交易、預算、類別等資料，但<strong>保留您的帳號</strong>。清除後帳號將恢復到剛註冊時的狀態。
+          </p>
+          <p style="margin-bottom: 15px; font-size: 13px; color: #ff9999;">
+            💡 建議：清除資料前先匯出備份
+          </p>
+          <button @click="showClearDataConfirm = true" class="btn btn-danger">
+            清除所有資料
+          </button>
+        </div>
+
+        <!-- 刪除帳號 -->
+        <div style="padding: 15px; background: rgba(255, 107, 107, 0.15); border-radius: 8px;">
+          <h3 style="margin-bottom: 10px; color: #ff6b6b;">刪除帳號</h3>
+          <p style="margin-bottom: 15px; font-size: 14px; color: #a0aec0;">
+            <strong>永久刪除</strong>您的帳號及所有相關資料（帳戶、交易、預算、類別等）。此操作無法復原！
+          </p>
+          <p style="margin-bottom: 15px; font-size: 13px; color: #ff9999;">
+            ⚠️ 警告：刪除後您將無法登入，且所有資料將永久消失
+          </p>
+          <button @click="showDeleteAccountConfirm = true" class="btn btn-danger">
+            刪除帳號
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- 消息提示彈窗 -->
     <MessageModal
       v-model="showMessageModal"
@@ -184,6 +222,32 @@
       cancel-text="取消"
       confirm-type="danger"
       @confirm="confirmImport"
+    />
+
+    <!-- 清除資料確認彈窗 -->
+    <ConfirmModal
+      v-model="showClearDataConfirm"
+      title="確認清除所有資料"
+      :message="`⚠️ 此操作將刪除您的所有資料：\n\n• 所有帳戶及交易記錄\n• 所有預算設定\n• 所有類別設定\n\n但會保留您的帳號，您仍可登入。\n帳號將恢復到初始狀態（含預設帳戶）。\n\n建議：清除前先匯出備份！`"
+      confirm-text="我已經瞭解風險"
+      cancel-text="取消"
+      confirm-type="danger"
+      :require-confirm-text="true"
+      confirm-text-placeholder="我已經瞭解風險"
+      @confirm="confirmClearData"
+    />
+
+    <!-- 刪除帳號確認彈窗 -->
+    <ConfirmModal
+      v-model="showDeleteAccountConfirm"
+      title="確認刪除帳號"
+      :message="`🚨 此操作無法復原！\n\n刪除帳號將：\n• 永久刪除您的帳號\n• 刪除所有帳戶及交易記錄\n• 刪除所有預算設定\n• 刪除所有類別設定\n• 您將無法再登入此帳號\n\n所有資料將永久消失！`"
+      confirm-text="我已經瞭解風險"
+      cancel-text="取消"
+      confirm-type="danger"
+      :require-confirm-text="true"
+      confirm-text-placeholder="我已經瞭解風險"
+      @confirm="confirmDeleteAccount"
     />
   </div>
 </template>
@@ -222,6 +286,10 @@ const exportLoading = ref(false)
 const importLoading = ref(false)
 const importExportError = ref('')
 const showImportConfirm = ref(false)
+
+// Dangerous operations
+const showClearDataConfirm = ref(false)
+const showDeleteAccountConfirm = ref(false)
 
 // Message modal
 const showMessageModal = ref(false)
@@ -397,6 +465,46 @@ const confirmImport = async () => {
     importExportError.value = err.response?.data?.detail || '匯入資料失敗'
   } finally {
     importLoading.value = false
+  }
+}
+
+const confirmClearData = async () => {
+  try {
+    await api.clearUserData()
+
+    messageType.value = 'success'
+    message.value = '所有資料已清除！您的帳號已恢復到初始狀態。'
+    showMessageModal.value = true
+
+    // 重新載入使用者資料
+    await loadUserProfile()
+  } catch (err: any) {
+    messageType.value = 'error'
+    message.value = err.response?.data?.detail || '清除資料失敗'
+    showMessageModal.value = true
+  }
+}
+
+const confirmDeleteAccount = async () => {
+  try {
+    await api.deleteUserAccount()
+
+    // 清除本地 token
+    localStorage.removeItem('token')
+
+    // 顯示成功訊息後跳轉到登入頁
+    messageType.value = 'success'
+    message.value = '帳號已成功刪除。感謝您的使用，再見！'
+    showMessageModal.value = true
+
+    // 延遲跳轉，讓使用者看到訊息
+    setTimeout(() => {
+      window.location.href = '/login'
+    }, 2000)
+  } catch (err: any) {
+    messageType.value = 'error'
+    message.value = err.response?.data?.detail || '刪除帳號失敗'
+    showMessageModal.value = true
   }
 }
 

@@ -1,45 +1,55 @@
 <template>
   <div id="app">
-    <nav v-if="isAuthenticated" class="navbar">
-      <div class="navbar-content">
-        <!-- Logo (Desktop Only) -->
-        <div class="navbar-logo">
-          <img src="/LOGO.webp" alt="Logo" class="logo-image" width="120" height="120" fetchpriority="high">
-        </div>
+    <header v-if="isAuthenticated">
+      <nav class="navbar" aria-label="主導覽">
+        <div class="navbar-content">
+          <!-- Logo (Desktop Only) -->
+          <router-link to="/dashboard" class="navbar-logo" @click="closeMenu" aria-label="返回儀表板">
+            <img src="/LOGO.webp" alt="會計與預算系統標誌" class="logo-image" width="120" height="120" fetchpriority="high">
+          </router-link>
 
-        <!-- Hamburger Menu Button (Mobile Only) -->
-        <button class="navbar-toggle" @click="toggleMenu" :class="{ active: isMenuOpen }">
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
+          <!-- Hamburger Menu Button (Mobile Only) -->
+          <button
+            class="navbar-toggle"
+            @click="toggleMenu"
+            :class="{ active: isMenuOpen }"
+            :aria-expanded="isMenuOpen"
+            aria-label="切換導覽選單"
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
 
-        <!-- Navigation Links -->
-        <div class="navbar-menu" :class="{ active: isMenuOpen }">
-          <div class="navbar-links">
-            <router-link to="/dashboard" @click="closeMenu">儀表板</router-link>
-            <router-link to="/accounts" @click="closeMenu">帳戶</router-link>
-            <router-link to="/budgets" @click="closeMenu">預算</router-link>
-            <router-link to="/reports" @click="closeMenu">報表</router-link>
-            <router-link to="/exchange-rates" @click="closeMenu">匯率</router-link>
-          </div>
-          <div class="navbar-actions">
-            <router-link v-if="isAdmin" to="/admin" @click="closeMenu">管理員</router-link>
-            <router-link to="/profile" @click="closeMenu">個人設定</router-link>
-            <button @click="handleLogout" class="btn btn-secondary">登出</button>
+          <!-- Navigation Links -->
+          <div class="navbar-menu" :class="{ active: isMenuOpen }">
+            <div class="navbar-links">
+              <router-link to="/dashboard" @click="closeMenu">儀表板</router-link>
+              <router-link to="/accounts" @click="closeMenu">帳戶</router-link>
+              <router-link to="/budgets" @click="closeMenu">預算</router-link>
+              <router-link to="/reports" @click="closeMenu">報表</router-link>
+              <router-link to="/exchange-rates" @click="closeMenu">匯率</router-link>
+            </div>
+            <div class="navbar-actions">
+              <router-link v-if="isAdmin" to="/admin" @click="closeMenu">管理員</router-link>
+              <router-link to="/profile" @click="closeMenu">個人設定</router-link>
+              <button @click="handleLogout" class="btn btn-secondary">登出</button>
+            </div>
           </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+    </header>
 
     <!-- Route Loading Spinner -->
     <LoadingSpinner :show="isRouteLoading" text="載入中..." />
 
-    <router-view v-slot="{ Component }">
-      <transition name="fade" mode="out-in">
-        <component :is="Component" />
-      </transition>
-    </router-view>
+    <main id="main-content">
+      <router-view v-slot="{ Component }">
+        <transition name="fade" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
+    </main>
   </div>
 </template>
 
@@ -107,16 +117,38 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   margin-right: 20px;
+  text-decoration: none !important;
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+}
+
+.navbar-logo::after {
+  display: none !important;
+  content: none !important;
+}
+
+.navbar-logo:hover,
+.navbar-logo:focus,
+.navbar-logo:active,
+.navbar-logo:visited {
+  text-decoration: none !important;
+  opacity: 0.9;
+}
+
+.navbar-logo:hover::after,
+.navbar-logo:focus::after,
+.navbar-logo:active::after {
+  display: none !important;
+  width: 0 !important;
 }
 
 .logo-image {
   height: 40px;
   width: auto;
-  cursor: pointer;
   transition: transform 0.3s ease;
 }
 
-.logo-image:hover {
+.navbar-logo:hover .logo-image {
   transform: scale(1.05);
 }
 
