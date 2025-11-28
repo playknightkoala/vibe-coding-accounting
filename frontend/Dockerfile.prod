@@ -1,6 +1,5 @@
-# Production Dockerfile - Only builds static files
-# The built files will be mounted to main nginx container
-FROM node:20-alpine AS builder
+# Production Dockerfile - Builds static files and outputs to volume
+FROM node:20-alpine
 
 WORKDIR /app
 
@@ -16,6 +15,6 @@ COPY . .
 # Build for production (skip TypeScript checking for faster builds)
 RUN npm run build:prod
 
-# Final stage - just keep the dist folder
-FROM scratch
-COPY --from=builder /app/dist /dist
+# Copy built files to volume mount point
+# The volume will be mounted at /dist and shared with nginx
+CMD cp -r /app/dist/* /dist/ && echo "Frontend built successfully!" && tail -f /dev/null

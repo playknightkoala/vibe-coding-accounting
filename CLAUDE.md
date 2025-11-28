@@ -67,11 +67,13 @@ docker-compose logs --tail 50 backend
 - Benefits: Fast refresh, debugging tools, source maps
 
 *Production Mode* (`docker-compose.prod.yml`):
-- Frontend: Local build → Static files mounted to Nginx
-- Build command: `npm run build:prod` (creates `frontend/dist/`)
-- No frontend container needed
-- Benefits: Optimized bundle, no Node.js runtime, minimal resources, faster serving
-- Flow: Main Nginx (port 8080) serves static files from mounted `dist/` + proxies `/api` to Backend (port 8000)
+- Frontend: Docker 內構建 → 透過 volume 共享靜態檔案給 Nginx
+- Frontend Builder: 使用 `Dockerfile.prod` 構建並輸出到 `frontend-dist` volume
+- Nginx: 掛載 `frontend-dist` volume 服務靜態檔案
+- Benefits: 完全自動化構建，無需手動步驟，優化的 bundle
+- Flow:
+  1. `frontend-builder` 容器構建靜態檔案 → 輸出到 `frontend-dist` volume
+  2. Main Nginx (port 8080) 掛載 `frontend-dist` volume + 代理 `/api` 到 Backend (port 8000)
 
 ### Installing Dependencies in Running Containers
 

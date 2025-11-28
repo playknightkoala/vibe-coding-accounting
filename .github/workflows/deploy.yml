@@ -11,7 +11,10 @@ jobs:
         run: |
           cd /home/hong/accounting-project-new
           git pull origin main
-          docker compose -f docker-compose.prod.yml build
+
+          # Build and restart Docker services (frontend built inside Docker)
+          docker compose -f docker-compose.prod.yml build --pull
           docker compose -f docker-compose.prod.yml up -d --remove-orphans
-          docker compose -f docker-compose.prod.yml exec -T nginx nginx -s reload
+
+          # Cleanup
           docker image prune -f
