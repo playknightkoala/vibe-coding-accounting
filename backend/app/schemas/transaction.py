@@ -20,6 +20,7 @@ class TransactionCreate(TransactionBase):
     is_installment: Optional[bool] = False
     total_installments: Optional[int] = None
     billing_day: Optional[int] = None  # Day of month for billing (1-31)
+    annual_interest_rate: Optional[float] = None  # Annual interest rate (e.g., 2.68 for 2.68%)
 
 class TransactionUpdate(BaseModel):
     description: Optional[str] = None
@@ -42,6 +43,7 @@ class Transaction(TransactionBase):
     total_installments: Optional[int] = None
     total_amount: Optional[float] = None
     remaining_amount: Optional[float] = None
+    annual_interest_rate: Optional[float] = None
 
     @field_serializer('transaction_date', 'created_at', 'updated_at')
     def serialize_datetime(self, dt: Optional[datetime], _info) -> Optional[str]:

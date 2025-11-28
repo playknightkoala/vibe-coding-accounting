@@ -100,6 +100,7 @@ export interface Transaction {
   total_installments?: number
   total_amount?: number
   remaining_amount?: number
+  annual_interest_rate?: number
   exclude_from_budget: boolean
 }
 
@@ -118,6 +119,7 @@ export interface TransactionCreate {
   is_installment?: boolean
   total_installments?: number
   billing_day?: number
+  annual_interest_rate?: number
 }
 
 export interface TransactionUpdate {

@@ -72,8 +72,14 @@
               <div :class="['transaction-amount', transaction.transaction_type === 'credit' ? 'credit' : 'debit']">
                 {{ transaction.transaction_type === 'credit' ? '+' : '-' }}${{ transaction.amount }}
               </div>
+              <div v-if="transaction.is_installment && transaction.total_installments && transaction.installment_number" style="color: #a0aec0; font-size: 0.75rem; margin-top: 2px;">
+                剩 {{ transaction.total_installments - transaction.installment_number }} 期
+              </div>
               <div v-if="transaction.is_installment && transaction.remaining_amount" style="color: #a0aec0; font-size: 0.75rem; margin-top: 2px;">
                 剩餘 ${{ Math.floor(transaction.remaining_amount) }}
+              </div>
+              <div v-if="transaction.is_installment && transaction.annual_interest_rate" style="color: #ffd43b; font-size: 0.75rem; margin-top: 2px;">
+                利率 {{ transaction.annual_interest_rate }}%
               </div>
             </div>
           </div>

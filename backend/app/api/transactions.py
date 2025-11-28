@@ -77,11 +77,41 @@ def create_installment_transactions(
     total_amount = transaction.amount
     num_installments = transaction.total_installments
     billing_day = transaction.billing_day
+    annual_rate = transaction.annual_interest_rate or 0
 
-    # Calculate installment amounts (integer division, no decimals)
-    base_amount = int(total_amount / num_installments)
-    remainder = int(total_amount - (base_amount * num_installments))
-    first_installment_amount = base_amount + remainder
+    # Calculate installment amounts
+    if annual_rate >= 1:
+        # Use loan payment formula: P * r * (1+r)^n / ((1+r)^n - 1)
+        # where P = principal, r = monthly rate, n = total periods
+        monthly_rate = annual_rate / 12 / 100  # Convert annual % to monthly decimal
+        monthly_payment = total_amount * monthly_rate * ((1 + monthly_rate) ** num_installments) / (((1 + monthly_rate) ** num_installments) - 1)
+        base_amount = int(monthly_payment)  # Round down to integer
+
+        # Calculate last installment separately to account for rounding
+        total_paid_before_last = base_amount * (num_installments - 1)
+
+        # Calculate actual total with interest
+        total_with_interest = int(monthly_payment * num_installments)
+        last_installment_amount = total_with_interest - total_paid_before_last
+        total_interest = total_with_interest - total_amount
+
+        first_installment_amount = base_amount
+
+        # Build note with interest information
+        installment_note = f"含利息分期 {num_installments} 期，年利率 {annual_rate}%\n本金：{int(total_amount)} 元\n利息：{total_interest} 元\n總計：{total_with_interest} 元"
+        if transaction.note:
+            installment_note = f"{transaction.note}\n\n{installment_note}"
+    else:
+        # Zero-interest: integer division
+        base_amount = int(total_amount / num_installments)
+        remainder = int(total_amount - (base_amount * num_installments))
+        first_installment_amount = base_amount + remainder
+        last_installment_amount = base_amount
+
+        # Build note for zero-interest installment
+        installment_note = f"零利率分期 {num_installments} 期\n總金額：{int(total_amount)} 元"
+        if transaction.note:
+            installment_note = f"{transaction.note}\n\n{installment_note}"
 
     # Generate group ID for all installments
     group_id = str(uuid.uuid4())
@@ -107,10 +137,27 @@ def create_installment_transactions(
 
     for i in range(num_installments):
         # Calculate this installment's amount
-        installment_amount = first_installment_amount if i == 0 else base_amount
+        if i == num_installments - 1:
+            # Last installment
+            installment_amount = last_installment_amount
+        elif i == 0 and annual_rate < 1:
+            # First installment for zero-interest (includes remainder)
+            installment_amount = first_installment_amount
+        else:
+            # Regular installment
+            installment_amount = base_amount
 
-        # Calculate remaining amount BEFORE this installment
-        remaining_before = total_amount - (base_amount * i + (remainder if i > 0 else 0))
+        # Calculate remaining amount AFTER this installment
+        if annual_rate >= 1:
+            # For interest-bearing, calculate based on total with interest
+            total_with_interest = int((total_amount * (annual_rate / 12 / 100) * ((1 + annual_rate / 12 / 100) ** num_installments) / (((1 + annual_rate / 12 / 100) ** num_installments) - 1)) * num_installments)
+            paid_so_far = base_amount * (i + 1) if i < num_installments - 1 else total_with_interest
+            remaining_after = total_with_interest - paid_so_far
+        else:
+            # For zero-interest
+            remainder = int(total_amount - (base_amount * num_installments))
+            paid_so_far = base_amount * (i + 1) + (remainder if i == 0 else 0)
+            remaining_after = total_amount - paid_so_far
 
         # Calculate billing date
         billing_date = first_billing_date + relativedelta(months=i)
@@ -135,7 +182,7 @@ def create_installment_transactions(
             amount=installment_amount,
             transaction_type="installment",
             category=transaction.category,
-            note=transaction.note,
+            note=installment_note,
             foreign_amount=transaction.foreign_amount,
             foreign_currency=transaction.foreign_currency,
             transaction_date=billing_date,
@@ -145,7 +192,8 @@ def create_installment_transactions(
             installment_number=i + 1,
             total_installments=num_installments,
             total_amount=total_amount,
-            remaining_amount=remaining_before,
+            remaining_amount=remaining_after,
+            annual_interest_rate=annual_rate if annual_rate >= 1 else None,
             exclude_from_budget=transaction.exclude_from_budget
         )
 
@@ -155,8 +203,14 @@ def create_installment_transactions(
         if i == 0:
             first_transaction = db_transaction
 
-    # Update account balance (deduct total installment amount)
-    account.balance -= total_amount
+    # Update account balance (deduct total installment amount including interest)
+    if annual_rate >= 1:
+        monthly_rate = annual_rate / 12 / 100
+        monthly_payment = total_amount * monthly_rate * ((1 + monthly_rate) ** num_installments) / (((1 + monthly_rate) ** num_installments) - 1)
+        total_with_interest = int(monthly_payment * num_installments)
+        account.balance -= total_with_interest
+    else:
+        account.balance -= total_amount
 
     db.commit()
 

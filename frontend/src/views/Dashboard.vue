@@ -340,16 +340,49 @@
                 </select>
               </div>
 
+              <div class="form-group">
+                <label>年利率 (%)</label>
+                <input
+                  type="number"
+                  v-model.number="quickForm.annualInterestRate.value"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  placeholder="輸入年利率 (例如: 2.68)"
+                />
+                <small style="color: #a0aec0; display: block; margin-top: 5px;">
+                  填入 1% 以上將使用貸款公式計算，0 或留空為零利率分期
+                </small>
+              </div>
+
               <!-- 試算結果 -->
               <div v-if="installmentCalculation" style="background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 5px; margin-top: 10px;">
-                <p style="margin: 5px 0; font-size: 0.9rem;">
-                  <strong>第一期:</strong> {{ installmentCalculation.firstAmount }} 元
+                <p v-if="installmentCalculation.hasInterest" style="margin: 5px 0; font-size: 0.9rem; color: #ffd43b;">
+                  <strong>含利息分期</strong>
                 </p>
-                <p v-if="installmentCalculation.otherAmount !== installmentCalculation.firstAmount" style="margin: 5px 0; font-size: 0.9rem;">
-                  <strong>其餘各期:</strong> {{ installmentCalculation.otherAmount }} 元
+                <p v-if="installmentCalculation.hasInterest && installmentCalculation.lastAmount !== installmentCalculation.otherAmount" style="margin: 5px 0; font-size: 0.9rem;">
+                  <strong>第 1 ~ {{ installmentCalculation.totalPeriods - 1 }} 期 ≈</strong> {{ installmentCalculation.otherAmount }} 元
                 </p>
-                <p v-else style="margin: 5px 0; font-size: 0.9rem;">
-                  <strong>每期:</strong> {{ installmentCalculation.otherAmount }} 元
+                <p v-if="installmentCalculation.hasInterest && installmentCalculation.lastAmount !== installmentCalculation.otherAmount" style="margin: 5px 0; font-size: 0.9rem;">
+                  <strong>第 {{ installmentCalculation.totalPeriods }} 期 ≈</strong> {{ installmentCalculation.lastAmount }} 元
+                </p>
+                <p v-if="installmentCalculation.hasInterest" style="margin: 5px 0; font-size: 0.9rem; color: #51cf66;">
+                  <strong>本金：</strong>{{ installmentCalculation.principal }} 元
+                </p>
+                <p v-if="installmentCalculation.hasInterest" style="margin: 5px 0; font-size: 0.9rem; color: #ff6b6b;">
+                  <strong>利息：</strong>{{ installmentCalculation.totalInterest }} 元
+                </p>
+                <p v-if="installmentCalculation.hasInterest" style="margin: 5px 0; font-size: 0.9rem; color: #ffd43b;">
+                  <strong>利息+本金 ≈</strong> {{ installmentCalculation.totalWithInterest }} 元
+                </p>
+                <p v-if="!installmentCalculation.hasInterest && installmentCalculation.firstAmount !== installmentCalculation.otherAmount" style="margin: 5px 0; font-size: 0.9rem;">
+                  <strong>第一期 ≈</strong> {{ installmentCalculation.firstAmount }} 元
+                </p>
+                <p v-if="!installmentCalculation.hasInterest && installmentCalculation.firstAmount !== installmentCalculation.otherAmount" style="margin: 5px 0; font-size: 0.9rem;">
+                  <strong>其餘各期 ≈</strong> {{ installmentCalculation.otherAmount }} 元
+                </p>
+                <p v-if="installmentCalculation.firstAmount === installmentCalculation.otherAmount" style="margin: 5px 0; font-size: 0.9rem;">
+                  <strong>每期 ≈</strong> {{ installmentCalculation.otherAmount }} 元
                 </p>
               </div>
 
@@ -593,6 +626,7 @@ const quickForm = {
   selectedCurrency: ref<string>('TWD'),
   installmentPeriods: ref<number>(12),
   billingDay: ref<number>(5),
+  annualInterestRate: ref<number>(0),
   excludeFromBudget: ref<boolean>(false),
 
   reset: () => {
@@ -611,6 +645,7 @@ const quickForm = {
     quickForm.selectedCurrency.value = 'TWD'
     quickForm.installmentPeriods.value = 12
     quickForm.billingDay.value = 5
+    quickForm.annualInterestRate.value = 0
     quickForm.excludeFromBudget.value = false
     quickForm.activeCalculatorInput.value = 'amount'
     quickForm.isExpanded.value = false
@@ -651,20 +686,44 @@ const installmentCalculation = computed(() => {
 
   const totalAmount = quickForm.form.value.amount
   const periods = quickForm.installmentPeriods.value
+  const annualRate = quickForm.annualInterestRate.value || 0
 
-  // Calculate base amount per period (integer division, no decimals)
-  const baseAmount = Math.floor(totalAmount / periods)
+  if (annualRate >= 1) {
+    // Use loan payment formula: P * r * (1+r)^n / ((1+r)^n - 1)
+    // where P = principal, r = monthly rate, n = total periods
+    const monthlyRate = annualRate / 12 / 100  // Convert annual % to monthly decimal
+    const monthlyPayment = totalAmount * monthlyRate * Math.pow(1 + monthlyRate, periods) / (Math.pow(1 + monthlyRate, periods) - 1)
+    const baseAmount = Math.floor(monthlyPayment)  // Round down to integer
 
-  // Calculate remainder
-  const remainder = totalAmount - (baseAmount * periods)
+    // Calculate last installment separately to account for rounding
+    const totalPaidBeforeLast = baseAmount * (periods - 1)
+    const totalWithInterest = Math.floor(monthlyPayment * periods)
+    const lastAmount = totalWithInterest - totalPaidBeforeLast
+    const totalInterest = totalWithInterest - totalAmount
 
-  // First installment gets the remainder
-  const firstAmount = baseAmount + remainder
+    return {
+      firstAmount: baseAmount,
+      otherAmount: baseAmount,
+      lastAmount: lastAmount,
+      totalPeriods: periods,
+      hasInterest: true,
+      totalWithInterest: totalWithInterest,
+      totalInterest: totalInterest,
+      principal: totalAmount
+    }
+  } else {
+    // Zero-interest: integer division
+    const baseAmount = Math.floor(totalAmount / periods)
+    const remainder = totalAmount - (baseAmount * periods)
+    const firstAmount = baseAmount + remainder
 
-  return {
-    firstAmount: firstAmount,
-    otherAmount: baseAmount,
-    totalPeriods: periods
+    return {
+      firstAmount: firstAmount,
+      otherAmount: baseAmount,
+      lastAmount: baseAmount,
+      totalPeriods: periods,
+      hasInterest: false
+    }
   }
 })
 
@@ -847,6 +906,7 @@ const handleQuickTransaction = async () => {
       transactionData.is_installment = true
       transactionData.total_installments = quickForm.installmentPeriods.value
       transactionData.billing_day = quickForm.billingDay.value
+      transactionData.annual_interest_rate = quickForm.annualInterestRate.value > 0 ? quickForm.annualInterestRate.value : null
       transactionData.exclude_from_budget = quickForm.excludeFromBudget.value
     }
 
