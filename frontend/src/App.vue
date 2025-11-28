@@ -101,6 +101,10 @@ const handleLogout = () => {
 }
 
 onMounted(async () => {
+  const skeleton = document.getElementById('static-skeleton');
+  if (skeleton) {
+    skeleton.style.display = 'none'; // 或者 skeleton.remove();
+  }
   if (authStore.isAuthenticated && !authStore.user) {
     try {
       await authStore.fetchUser()
