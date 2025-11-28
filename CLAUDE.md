@@ -782,6 +782,15 @@ ALLOWED_ORIGINS=http://localhost,http://localhost:5173,https://yourdomain.com
 - Configurable via `RATE_LIMIT_ENABLED` and `RATE_LIMIT_PER_MINUTE`
 - Returns 429 status when limit exceeded
 - Requests tracked per minute with automatic cleanup
+- **Whitelisted User Agents** (bypass rate limiting):
+  - `googlebot` - Google Search crawler
+  - `google page speed` - PageSpeed Insights
+  - `lighthouse` - Google Lighthouse
+  - `pagespeed` - Alternative PageSpeed format
+  - `chrome-lighthouse` - Chrome DevTools Lighthouse
+  - `uptimerobot` - Uptime monitoring service
+  - `pingdom` - Pingdom monitoring
+- Whitelist prevents blocking of SEO crawlers and performance testing tools
 
 **Security Headers:**
 When `ENABLE_SECURITY_HEADERS=true`, the following headers are added:
