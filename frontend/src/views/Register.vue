@@ -76,6 +76,7 @@
             隱私權政策
           </router-link>
         </div>
+      </div>
       </section>
     </main>
 
