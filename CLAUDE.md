@@ -58,6 +58,21 @@ docker-compose logs --tail 50 backend
 - Backend API: https://accounting.yshongcode.com/api
 - Database: Internal only (not exposed)
 
+**Architecture Differences:**
+
+*Development Mode* (`docker-compose.yml`):
+- Frontend: Vite dev server with HMR (Hot Module Replacement)
+- Dockerfile: `frontend/Dockerfile`
+- Port: 5173
+- Benefits: Fast refresh, debugging tools, source maps
+
+*Production Mode* (`docker-compose.prod.yml`):
+- Frontend: Local build → Static files mounted to Nginx
+- Build command: `npm run build:prod` (creates `frontend/dist/`)
+- No frontend container needed
+- Benefits: Optimized bundle, no Node.js runtime, minimal resources, faster serving
+- Flow: Main Nginx (port 8080) serves static files from mounted `dist/` + proxies `/api` to Backend (port 8000)
+
 ### Installing Dependencies in Running Containers
 
 When adding new npm packages or Python dependencies, install them in the running container:
