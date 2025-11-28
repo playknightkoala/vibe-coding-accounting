@@ -30,7 +30,10 @@ import type {
   RankingReport,
   AccountReport,
   TransactionDetail,
-  ExchangeRate
+  ExchangeRate,
+  RecurringExpense,
+  RecurringExpenseCreate,
+  RecurringExpenseUpdate
 } from '@/types'
 
 // 使用相對路徑，讓 nginx 反向代理處理路由
@@ -389,5 +392,26 @@ export default {
     unblockUser(userId: number) {
       return api.post(`/admin/users/${userId}/unblock`)
     }
+  },
+
+  // 固定支出
+  getRecurringExpenses() {
+    return api.get<RecurringExpense[]>('/recurring-expenses/')
+  },
+
+  createRecurringExpense(data: RecurringExpenseCreate) {
+    return api.post<RecurringExpense>('/recurring-expenses/', data)
+  },
+
+  updateRecurringExpense(id: number, data: RecurringExpenseUpdate) {
+    return api.put<RecurringExpense>(`/recurring-expenses/${id}`, data)
+  },
+
+  deleteRecurringExpense(id: number, mode: 'single' | 'future' | 'all', transactionId?: number) {
+    const params: any = { mode }
+    if (transactionId !== undefined) {
+      params.transaction_id = transactionId
+    }
+    return api.delete(`/recurring-expenses/${id}`, { params })
   }
 }

@@ -5,8 +5,8 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
 from app.core.database import engine, Base
 from app.core.config import settings
-from app.api import auth, accounts, transactions, budgets, users, categories, reports, description_history, exchange_rates, password_reset, google_auth, admin
-from app.core.scheduler import start_scheduler, stop_scheduler, run_bot_crawler_job, run_esun_crawler_job
+from app.api import auth, accounts, transactions, budgets, users, categories, reports, description_history, exchange_rates, password_reset, google_auth, admin, recurring_expenses
+from app.core.scheduler import start_scheduler, stop_scheduler, run_bot_crawler_job, run_esun_crawler_job, run_recurring_expense_job
 from starlette.middleware.base import BaseHTTPMiddleware
 import time
 from collections import defaultdict
@@ -141,6 +141,7 @@ app.include_router(description_history.router, prefix="/api/description-history"
 app.include_router(exchange_rates.router, prefix="/api/exchange-rates", tags=["exchange-rates"])
 app.include_router(password_reset.router, prefix="/api/password-reset", tags=["password-reset"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
+app.include_router(recurring_expenses.router, prefix="/api/recurring-expenses", tags=["recurring-expenses"])
 
 @app.get("/")
 def root():

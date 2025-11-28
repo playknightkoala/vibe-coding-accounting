@@ -102,6 +102,9 @@ export interface Transaction {
   remaining_amount?: number
   annual_interest_rate?: number
   exclude_from_budget: boolean
+  // Recurring expense fields
+  recurring_group_id?: string
+  is_from_recurring: boolean
 }
 
 export interface TransactionCreate {
@@ -289,4 +292,41 @@ export interface ExchangeRate {
   buying_rate: number | null
   selling_rate: number | null
   updated_at: string
+}
+
+// Recurring Expense types
+export interface RecurringExpense {
+  id: number
+  description: string
+  amount: number
+  category: string | null
+  note: string | null
+  day_of_month: number
+  account_id: number
+  recurring_group_id: string
+  start_date: string
+  end_date: string | null
+  is_active: boolean
+  last_executed_date: string | null
+  created_at: string
+  updated_at: string | null
+}
+
+export interface RecurringExpenseCreate {
+  description: string
+  amount: number
+  category?: string
+  note?: string
+  day_of_month: number
+  account_id: number
+}
+
+export interface RecurringExpenseUpdate {
+  description?: string
+  amount?: number
+  category?: string
+  note?: string
+  day_of_month?: number
+  is_active?: boolean
+  end_date?: string
 }

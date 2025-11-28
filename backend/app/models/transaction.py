@@ -27,6 +27,10 @@ class Transaction(Base):
     annual_interest_rate = Column(Float, nullable=True)  # Annual interest rate (e.g., 2.68 for 2.68%)
     exclude_from_budget = Column(Boolean, default=False, nullable=False)
 
+    # Recurring expense fields
+    recurring_group_id = Column(String, nullable=True, index=True)  # Links to RecurringExpense.recurring_group_id
+    is_from_recurring = Column(Boolean, default=False, nullable=False)  # True if this transaction was auto-generated from recurring expense
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

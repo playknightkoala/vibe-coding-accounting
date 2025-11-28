@@ -6,9 +6,42 @@
           <button @click="previousMonth" class="btn btn-secondary calendar-nav-btn">
             ◄
           </button>
-          <h3 class="calendar-title">{{ currentYear }} 年 {{ currentMonth }} 月</h3>
+
+          <div class="title-container" style="position: relative;">
+            <h3 class="calendar-title clickable" @click="toggleDatePicker">
+              {{ currentYear }} 年 {{ currentMonth }} 月
+              <span class="dropdown-arrow">▼</span>
+            </h3>
+            
+            <!-- Date Picker Dropdown -->
+            <div v-if="showDatePicker" class="date-picker-dropdown">
+              <div class="year-selector">
+                <button @click.stop="tempYear--" class="btn btn-sm">◄</button>
+                <span class="year-display">{{ tempYear }}</span>
+                <button @click.stop="tempYear++" class="btn btn-sm">►</button>
+              </div>
+              <div class="month-grid">
+                <div 
+                  v-for="m in 12" 
+                  :key="m" 
+                  :class="['month-item', { 'active': m === currentMonth && tempYear === currentYear, 'selected': m === currentMonth && tempYear === currentYear }]"
+                  @click.stop="selectMonth(m)"
+                >
+                  {{ m }}月
+                </div>
+              </div>
+            </div>
+          </div>
           <button @click="nextMonth" class="btn btn-secondary calendar-nav-btn">
             ►
+          </button>
+          <button 
+            v-if="!isTodayInView"
+            @click="goToToday" 
+            class="btn btn-primary"
+            style="padding: 4px 12px; font-size: 0.9rem; margin-left: 10px;"
+          >
+            回到今天
           </button>
         </div>
         <div class="calendar-legend">
@@ -66,6 +99,12 @@
                 <span v-if="transaction.is_installment && transaction.installment_group_id" style="color: #ff9800; font-size: 0.75rem; margin-left: 5px;" title="點擊交易可刪除整組分期">
                   [分期]
                 </span>
+                <span v-if="transaction.is_from_recurring && isTransactionPending(transaction)" style="color: #9333ea; font-size: 0.75rem; margin-left: 5px; background: rgba(147, 51, 234, 0.2); padding: 2px 6px; border-radius: 3px;">
+                  [未生效]
+                </span>
+                <span v-if="transaction.is_from_recurring && transaction.recurring_group_id && !isTransactionPending(transaction)" style="color: #9333ea; font-size: 0.75rem; margin-left: 5px;" title="此為固定支出自動產生的交易">
+                  [固定支出]
+                </span>
               </div>
             </div>
             <div style="display: flex; flex-direction: column; align-items: flex-end;">
@@ -94,11 +133,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import type { Transaction, Budget } from '@/types'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+
+import type { Transaction, Budget, RecurringExpense } from '@/types'
 
 const props = defineProps<{
   transactions: Transaction[]
+  recurringExpenses?: RecurringExpense[]
   budgets?: Budget[]
   selectedDate?: string
 }>()
@@ -111,13 +152,99 @@ const emit = defineEmits<{
 const currentYear = ref(new Date().getFullYear())
 const currentMonth = ref(new Date().getMonth() + 1)
 const internalSelectedDate = ref('')
+const showDatePicker = ref(false)
+const tempYear = ref(currentYear.value)
 
 const weekDays = ['日', '一', '二', '三', '四', '五', '六']
+
+// Helper to check if a transaction is pending (future recurring)
+const isTransactionPending = (transaction: Transaction) => {
+  if (!transaction.is_from_recurring) return false
+  
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  
+  const txDate = new Date(transaction.transaction_date)
+  txDate.setHours(0, 0, 0, 0)
+  
+  return txDate > today
+}
+
+// Merge actual transactions with projected recurring expenses
+const allTransactions = computed(() => {
+  const transactions = [...props.transactions]
+  
+  if (!props.recurringExpenses || props.recurringExpenses.length === 0) {
+    return transactions
+  }
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  
+  // Project recurring expenses for current view (and adjacent months)
+  // For simplicity, we project for the current displayed month
+  const year = currentYear.value
+  const month = currentMonth.value
+  
+  props.recurringExpenses.forEach(expense => {
+    if (!expense.is_active) return
+
+    // Calculate target date for this month
+    // Handle month end (e.g. 31st in Feb)
+    const lastDayOfMonth = new Date(year, month, 0).getDate()
+    const day = Math.min(expense.day_of_month, lastDayOfMonth)
+    
+    const targetDate = new Date(year, month - 1, day)
+    targetDate.setHours(0, 0, 0, 0)
+    
+    // Only project if it's in the future
+    if (targetDate > today) {
+      // Check end_date
+      if (expense.end_date) {
+        const endDate = new Date(expense.end_date)
+        endDate.setHours(23, 59, 59, 999) // End of the end_date day
+        if (targetDate > endDate) return
+      }
+
+      // Check if a transaction already exists for this recurring expense in this month
+      // This is a basic check, backend logic is more robust but this is for display
+      const exists = transactions.some(t => 
+        t.is_from_recurring && 
+        t.recurring_group_id === expense.recurring_group_id &&
+        new Date(t.transaction_date).getMonth() === month - 1 &&
+        new Date(t.transaction_date).getFullYear() === year
+      )
+      
+      if (!exists) {
+        // Create projected transaction
+        const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+        
+        transactions.push({
+          id: -Math.random(), // Temporary ID
+          description: expense.description,
+          amount: expense.amount,
+          transaction_type: 'debit',
+          category: expense.category,
+          transaction_date: dateStr + 'T00:00:00',
+          account_id: expense.account_id,
+          created_at: new Date().toISOString(),
+          updated_at: null,
+          is_installment: false,
+          exclude_from_budget: false,
+          is_from_recurring: true,
+          recurring_group_id: expense.recurring_group_id
+        })
+      }
+    }
+  })
+  
+  return transactions
+})
 
 // Get transactions for the selected date
 const selectedDateTransactions = computed(() => {
   if (!internalSelectedDate.value) return []
-  return props.transactions.filter(t =>
+  return allTransactions.value.filter(t =>
     t.transaction_date.startsWith(internalSelectedDate.value)
   ).sort((a, b) =>
     new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime()
@@ -196,11 +323,14 @@ const calendarDays = computed<CalendarDay[]>(() => {
   // Current month days
   for (let i = 1; i <= daysInMonth; i++) {
     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(i).padStart(2, '0')}`
-    const dayTransactions = props.transactions.filter(t => t.transaction_date.startsWith(dateStr))
+    const dayTransactions = allTransactions.value.filter(t => t.transaction_date.startsWith(dateStr))
 
     let netAmount = 0
     let totalDebit = 0
     dayTransactions.forEach(t => {
+      // Skip pending transactions for calculations
+      if (isTransactionPending(t)) return
+
       if (t.transaction_type === 'credit') {
         netAmount += t.amount
       } else {
@@ -229,6 +359,7 @@ const calendarDays = computed<CalendarDay[]>(() => {
         if (currentDate >= startDate && currentDate <= endDate) {
           // Filter transactions that match this budget
           const budgetTransactions = dayTransactions.filter(t => {
+             if (isTransactionPending(t)) return false // Skip pending
              if (t.transaction_type !== 'debit') return false
              
              // Check account filter
@@ -305,7 +436,36 @@ const nextMonth = () => {
     currentYear.value++
   } else {
     currentMonth.value++
+    currentMonth.value++
   }
+}
+
+const toggleDatePicker = () => {
+  if (!showDatePicker.value) {
+    tempYear.value = currentYear.value
+  }
+  showDatePicker.value = !showDatePicker.value
+}
+
+const closeDatePicker = (e: MouseEvent) => {
+  const target = e.target as HTMLElement
+  if (showDatePicker.value && !target.closest('.title-container')) {
+    showDatePicker.value = false
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', closeDatePicker)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', closeDatePicker)
+})
+
+const selectMonth = (month: number) => {
+  currentYear.value = tempYear.value
+  currentMonth.value = month
+  showDatePicker.value = false
 }
 
 const selectDate = (day: CalendarDay) => {
@@ -313,6 +473,25 @@ const selectDate = (day: CalendarDay) => {
     internalSelectedDate.value = day.date
     emit('date-selected', day.date)
   }
+}
+
+const isTodayInView = computed(() => {
+  const today = new Date()
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  
+  return currentYear.value === today.getFullYear() && 
+         currentMonth.value === (today.getMonth() + 1) &&
+         internalSelectedDate.value === todayStr
+})
+
+const goToToday = () => {
+  const today = new Date()
+  currentYear.value = today.getFullYear()
+  currentMonth.value = today.getMonth() + 1
+  
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  internalSelectedDate.value = todayStr
+  emit('date-selected', todayStr)
 }
 
 // Watch for external changes to selectedDate
@@ -509,6 +688,95 @@ watch(() => props.transactions, () => {
   color: #00d4ff;
   margin: 0;
   font-size: 1.5rem;
+}
+
+.calendar-title.clickable {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.calendar-title.clickable:hover {
+  background-color: rgba(0, 212, 255, 0.1);
+}
+
+.dropdown-arrow {
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.date-picker-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a202c; /* Dark background matching theme */
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 8px;
+  padding: 15px;
+  z-index: 100;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  width: 280px;
+  margin-top: 10px;
+}
+
+.year-selector {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.year-display {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: white;
+}
+
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.month-item {
+  text-align: center;
+  padding: 8px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #a0aec0;
+  transition: all 0.2s;
+}
+
+.month-item:hover {
+  background: rgba(0, 212, 255, 0.1);
+  color: white;
+}
+
+.month-item.active {
+  background: rgba(0, 212, 255, 0.2);
+  color: #00d4ff;
+  font-weight: bold;
+}
+
+.btn-sm {
+  padding: 4px 8px;
+  font-size: 0.9rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-sm:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .calendar-nav-btn {

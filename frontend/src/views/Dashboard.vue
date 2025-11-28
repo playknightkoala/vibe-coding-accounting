@@ -171,6 +171,7 @@
       </div>
       <TransactionCalendar
         :transactions="transactionsStore.transactions"
+        :recurring-expenses="recurringExpenses"
         :budgets="budgetsStore.budgets"
         :selected-date="selectedDate"
         @date-selected="handleCalendarDateSelected"
@@ -319,6 +320,32 @@
               </select>
             </div>
 
+            <!-- 固定支出選項 (只在交易類型為支出時顯示，且不在編輯模式) -->
+            <div v-if="quickForm.form.value.transaction_type === 'debit' && !quickForm.isEditing()" class="form-group">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input
+                  type="checkbox"
+                  v-model="quickForm.isRecurring.value"
+                  style="width: auto; margin: 0; cursor: pointer;"
+                />
+                設為固定支出
+              </label>
+            </div>
+
+            <!-- 固定支出欄位 (只在勾選固定支出時顯示) -->
+            <div v-if="quickForm.isRecurring.value && quickForm.form.value.transaction_type === 'debit' && !quickForm.isEditing()"
+                 style="background: rgba(147, 51, 234, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid rgba(147, 51, 234, 0.3);">
+              <div class="form-group">
+                <label>每月執行日期 (必填)</label>
+                <select v-model.number="quickForm.recurringDayOfMonth.value" required>
+                  <option v-for="day in 31" :key="day" :value="day">每月 {{ day }} 號</option>
+                </select>
+                <small style="color: #a0aec0; display: block; margin-top: 5px;">
+                  系統將在每月此日期自動建立交易記錄
+                </small>
+              </div>
+            </div>
+
             <!-- 分期相關欄位 (只在新建時顯示) -->
             <div v-if="quickForm.form.value.transaction_type === 'installment' && !quickForm.isEditing()" style="background: rgba(0, 212, 255, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
               <div class="form-group">
@@ -465,7 +492,57 @@
         <h2 style="color: #ff6b6b; margin-bottom: 20px;">刪除交易</h2>
         <p style="margin-bottom: 20px;">{{ deleteConfirmMessage }}</p>
 
-        <div v-if="deleteConfirmType === 'group'" style="margin-bottom: 20px;">
+        <!-- 固定支出刪除選項 -->
+        <div v-if="deleteConfirmType === 'recurring'" style="margin-bottom: 20px;">
+          <p style="color: #ffd43b; margin-bottom: 15px;">請選擇刪除方式：</p>
+          <div style="display: flex; gap: 10px; flex-direction: column;">
+            <button
+              @click="confirmDelete('all')"
+              class="btn"
+              style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); color: white; width: 100%;"
+            >
+              刪除固定支出及所有交易
+            </button>
+            <button
+              @click="confirmDelete('future')"
+              class="btn"
+              style="background: linear-gradient(135deg, #ffa94d 0%, #ff922b 100%); color: white; width: 100%;"
+            >
+              刪除此筆及之後的交易
+            </button>
+            <button
+              @click="confirmDelete('single')"
+              class="btn"
+              style="background: linear-gradient(135deg, #4dabf5 0%, #339af0 100%); color: white; width: 100%;"
+            >
+              僅刪除此筆交易
+            </button>
+          </div>
+        </div>
+
+        <!-- 固定支出刪除選項 (未生效/預測交易) -->
+        <div v-else-if="deleteConfirmType === 'recurring-projected'" style="margin-bottom: 20px;">
+          <p style="color: #ffd43b; margin-bottom: 15px;">此為尚未生效的固定支出，請選擇刪除方式：</p>
+          <div style="display: flex; gap: 10px; flex-direction: column;">
+            <button
+              @click="confirmDelete('all')"
+              class="btn"
+              style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); color: white; width: 100%;"
+            >
+              刪除該筆支出所有交易明細
+            </button>
+            <button
+              @click="confirmDelete('future')"
+              class="btn"
+              style="background: linear-gradient(135deg, #ffa94d 0%, #ff922b 100%); color: white; width: 100%;"
+            >
+              刪除此筆及之後的交易 (設定結束日期)
+            </button>
+          </div>
+        </div>
+
+        <!-- 分期刪除選項 -->
+        <div v-else-if="deleteConfirmType === 'group'" style="margin-bottom: 20px;">
           <p style="color: #ffd43b; margin-bottom: 15px;">請選擇刪除方式：</p>
           <div style="display: flex; gap: 10px; flex-direction: column;">
             <button
@@ -544,7 +621,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import type { Account, TransactionCreate } from '@/types'
+import type { Account, TransactionCreate, RecurringExpense } from '@/types'
 import CategorySelector from '@/components/CategorySelector.vue'
 import CategoryManagementModal from '@/components/CategoryManagementModal.vue'
 import MessageModal from '@/components/MessageModal.vue'
@@ -590,12 +667,15 @@ const showDailyModal = ref(false)
 const selectedDate = ref(dateTimeUtils.getTodayString())
 const modalDate = ref(dateTimeUtils.getTodayString())
 const monthlyChartRef = ref<InstanceType<typeof MonthlyChart> | null>(null)
+const recurringExpenses = ref<RecurringExpense[]>([])
 
 // Delete confirmation modal state
 const showDeleteConfirm = ref(false)
 const deleteConfirmMessage = ref('')
-const deleteConfirmType = ref<'single' | 'group' | 'installment-single'>('single')
+const deleteConfirmType = ref<'single' | 'group' | 'recurring' | 'recurring-projected' | 'installment-single'>('single')
 const currentDeletingTransaction = ref<any>(null)
+const currentEditingTransaction = ref<any>(null)
+const currentRecurringExpenseId = ref<number | null>(null)
 
 const initialQuickFormData: TransactionCreate = {
   account_id: 0,
@@ -628,6 +708,9 @@ const quickForm = {
   billingDay: ref<number>(5),
   annualInterestRate: ref<number>(0),
   excludeFromBudget: ref<boolean>(false),
+  // Recurring expense fields
+  isRecurring: ref<boolean>(false),
+  recurringDayOfMonth: ref<number>(1),
 
   reset: () => {
     quickForm.mode.value = 'create'
@@ -647,6 +730,8 @@ const quickForm = {
     quickForm.billingDay.value = 5
     quickForm.annualInterestRate.value = 0
     quickForm.excludeFromBudget.value = false
+    quickForm.isRecurring.value = false
+    quickForm.recurringDayOfMonth.value = 1
     quickForm.activeCalculatorInput.value = 'amount'
     quickForm.isExpanded.value = false
   },
@@ -832,20 +917,78 @@ const handleEditTransaction = (transaction: Transaction) => {
     foreign_amount: transaction.foreign_amount,
     foreign_currency: transaction.foreign_currency
   }, transaction.id)
+  currentEditingTransaction.value = transaction
   showDailyModal.value = false
   fetchDescriptionHistory()
   quickModal.open()
 }
 
-const handleDeleteTransaction = () => {
+const handleDeleteTransaction = async () => {
   if (!quickForm.isEditing()) return
 
   // Find the transaction being edited
-  const transaction = transactionsStore.transactions.find(t => t.id === quickForm.editingId.value)
+  let transaction = transactionsStore.transactions.find(t => t.id === quickForm.editingId.value)
+  
+  // If not found in store, check if it's a projected recurring expense (negative ID)
+  if (!transaction && quickForm.editingId.value && quickForm.editingId.value < 0) {
+    // We need to reconstruct the transaction object or find it from the context
+    // Since we don't have easy access to the exact object here without passing it,
+    // we can rely on the form data which should have the recurring info if we set it correctly.
+    // However, quickForm doesn't store recurring_group_id.
+    // Let's try to find it in the recurringExpenses list using the description and amount as a heuristic,
+    // OR better, we should have stored the full transaction object when opening the modal.
+    
+    // Actually, let's look at handleEditTransaction. It sets the form. 
+    // We can add a ref to store the current editing transaction object.
+    transaction = currentEditingTransaction.value
+  }
+  
   currentDeletingTransaction.value = transaction
 
+  // Check if it's a recurring expense transaction
+  if (transaction?.is_from_recurring && transaction.recurring_group_id) {
+    // Fetch recurring expenses to find the ID
+    try {
+      // If we already have recurringExpenses loaded, use them
+      let recurringExpense = recurringExpenses.value.find(re => re.recurring_group_id === transaction.recurring_group_id)
+      
+      if (!recurringExpense) {
+         const response = await api.getRecurringExpenses()
+         recurringExpense = response.data.find((re: any) => re.recurring_group_id === transaction.recurring_group_id)
+      }
+
+      if (recurringExpense) {
+        currentRecurringExpenseId.value = recurringExpense.id
+        
+        // If it's a projected transaction (negative ID), we can't delete "single" because it doesn't exist yet.
+        // We should probably only offer "future" (stop from now) or "all".
+        // Or "single" could mean "skip this occurrence" if the backend supports it (by creating a skipped record).
+        // For now, let's assume standard options but maybe warn or adjust text.
+        
+        if (transaction.id < 0) {
+             deleteConfirmMessage.value = `此為尚未生效的固定支出 (每月 ${recurringExpense.day_of_month} 號)`
+             deleteConfirmType.value = 'recurring-projected'
+        } else {
+             deleteConfirmMessage.value = `此交易為固定支出自動產生的交易 (每月 ${recurringExpense.day_of_month} 號)`
+             deleteConfirmType.value = 'recurring'
+        }
+        
+        showDeleteConfirm.value = true
+      } else {
+        // Fallback to regular single delete
+        deleteConfirmMessage.value = '確定要刪除此交易嗎？刪除後將無法復原。'
+        deleteConfirmType.value = 'single'
+        showDeleteConfirm.value = true
+      }
+    } catch (error) {
+      console.error('Failed to fetch recurring expenses:', error)
+      deleteConfirmMessage.value = '確定要刪除此交易嗎？刪除後將無法復原。'
+      deleteConfirmType.value = 'single'
+      showDeleteConfirm.value = true
+    }
+  }
   // Check if it's an installment transaction
-  if (transaction?.is_installment && transaction.installment_group_id) {
+  else if (transaction?.is_installment && transaction.installment_group_id) {
     deleteConfirmMessage.value = `此交易為分期交易 (第 ${transaction.installment_number} 期，共 ${transaction.total_installments} 期)`
     deleteConfirmType.value = 'group'
     showDeleteConfirm.value = true
@@ -856,19 +999,61 @@ const handleDeleteTransaction = () => {
   }
 }
 
-const confirmDelete = async (deleteType: 'single' | 'group') => {
+const confirmDelete = async (deleteType: 'single' | 'group' | 'future' | 'all') => {
   showDeleteConfirm.value = false
 
   const transaction = currentDeletingTransaction.value
   if (!transaction) return
 
   try {
-    if (deleteType === 'group' && transaction.installment_group_id) {
-      // Delete entire installment group
+    // Handle recurring expense deletions
+    if ((deleteConfirmType.value === 'recurring' || deleteConfirmType.value === 'recurring-projected') && currentRecurringExpenseId.value) {
+      const mode = deleteType === 'single' ? 'single' : deleteType === 'future' ? 'future' : 'all'
+      
+      // Special handling for projected transactions (negative ID)
+      if (transaction.id < 0) {
+        if (mode === 'all') {
+          // For 'all', we just delete the recurring expense, no transaction ID needed
+          await api.deleteRecurringExpense(
+            currentRecurringExpenseId.value,
+            'all'
+          )
+          messageModal.showSuccess('已刪除固定支出及所有相關交易')
+        } else if (mode === 'future') {
+          // For 'future', we update the end_date to the day before this transaction
+          const txDate = new Date(transaction.transaction_date)
+          txDate.setDate(txDate.getDate() - 1)
+          const endDate = txDate.toISOString()
+          
+          await api.updateRecurringExpense(currentRecurringExpenseId.value, {
+            end_date: endDate
+          })
+          messageModal.showSuccess('已設定結束日期，此筆及之後的交易將不再產生')
+        }
+      } else {
+        // Existing logic for real transactions
+        await api.deleteRecurringExpense(
+          currentRecurringExpenseId.value,
+          mode as 'single' | 'future' | 'all',
+          transaction.id
+        )
+
+        if (mode === 'single') {
+          messageModal.showSuccess('已刪除此筆交易')
+        } else if (mode === 'future') {
+          messageModal.showSuccess('已刪除此筆及之後的所有交易')
+        } else {
+          messageModal.showSuccess('已刪除固定支出及所有相關交易')
+        }
+      }
+    }
+    // Handle installment group deletions
+    else if (deleteType === 'group' && transaction.installment_group_id) {
       await api.deleteInstallmentGroup(transaction.installment_group_id)
       messageModal.showSuccess(`已刪除整組分期交易 (${transaction.total_installments} 期)`)
-    } else {
-      // Delete single transaction
+    }
+    // Handle single transaction deletion
+    else {
       await transactionsStore.deleteTransaction(quickForm.editingId.value!)
       messageModal.showSuccess('交易已刪除')
     }
@@ -877,7 +1062,8 @@ const confirmDelete = async (deleteType: 'single' | 'group') => {
       accountsStore.fetchAccounts(),
       budgetsStore.fetchBudgets(),
       transactionsStore.fetchTransactions(),
-      fetchDescriptionHistory()
+      fetchDescriptionHistory(),
+      api.getRecurringExpenses().then(res => recurringExpenses.value = res.data)
     ])
 
     if (monthlyChartRef.value) {
@@ -889,11 +1075,45 @@ const confirmDelete = async (deleteType: 'single' | 'group') => {
     messageModal.showError(error.response?.data?.detail || '刪除交易失敗')
   } finally {
     currentDeletingTransaction.value = null
+    currentRecurringExpenseId.value = null
   }
 }
 
 const handleQuickTransaction = async () => {
   try {
+    // Check if this is a recurring expense
+    if (quickForm.isRecurring.value && quickForm.form.value.transaction_type === 'debit' && !quickForm.isEditing()) {
+      // Create recurring expense instead of transaction
+      const recurringData = {
+        description: quickForm.form.value.description,
+        amount: quickForm.form.value.amount,
+        category: quickForm.form.value.category || undefined,
+        note: quickForm.form.value.note || undefined,
+        day_of_month: quickForm.recurringDayOfMonth.value,
+        account_id: quickForm.form.value.account_id
+      }
+
+      await api.createRecurringExpense(recurringData)
+      messageModal.showSuccess(`已成功建立固定支出！系統將在每月 ${quickForm.recurringDayOfMonth.value} 號自動建立交易。`)
+
+      // Refresh data
+      await Promise.all([
+        accountsStore.fetchAccounts(),
+        budgetsStore.fetchBudgets(),
+        transactionsStore.fetchTransactions(),
+        transactionsStore.fetchTransactions(),
+        fetchDescriptionHistory(),
+        api.getRecurringExpenses().then(res => recurringExpenses.value = res.data)
+      ])
+
+      if (monthlyChartRef.value) {
+        await monthlyChartRef.value.refresh()
+      }
+
+      closeQuickTransaction()
+      return
+    }
+
     const transactionData: any = {
       ...quickForm.form.value,
       transaction_date: dateTimeUtils.formatDateTimeForBackend(quickForm.form.value.transaction_date),
@@ -1049,7 +1269,10 @@ onMounted(async () => {
         budgetsStore.fetchBudgets(),
         categoriesStore.fetchCategories(),
         exchangeRatesStore.fetchRates(),
-        fetchDescriptionHistory()
+        categoriesStore.fetchCategories(),
+        exchangeRatesStore.fetchRates(),
+        fetchDescriptionHistory(),
+        api.getRecurringExpenses().then(res => recurringExpenses.value = res.data)
       ])
 
       // Set initial account if available

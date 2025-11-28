@@ -3,6 +3,7 @@ from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 from app.services.crawler import fetch_exchange_rates
 from app.services.crawler_esun import fetch_esun_exchange_rates
+from app.services.recurring_expense_processor import process_recurring_expenses
 from app.core.database import SessionLocal
 import logging
 
@@ -30,6 +31,18 @@ def run_esun_crawler_job():
     finally:
         db.close()
 
+def run_recurring_expense_job():
+    """處理固定支出 - 建立到期的固定支出交易"""
+    logger.info("Starting recurring expense processing")
+    db = SessionLocal()
+    try:
+        transactions_created = process_recurring_expenses(db)
+        logger.info(f"Recurring expense job completed. Created {transactions_created} transactions")
+    except Exception as e:
+        logger.error(f"Recurring expense job failed: {e}")
+    finally:
+        db.close()
+
 scheduler = BackgroundScheduler()
 
 def start_scheduler():
@@ -41,8 +54,12 @@ def start_scheduler():
     esun_trigger = IntervalTrigger(hours=1)
     scheduler.add_job(run_esun_crawler_job, trigger=esun_trigger, id="esun_exchange_rate_crawler", replace_existing=True)
 
+    # 固定支出處理：每天凌晨 00:01 執行
+    recurring_trigger = CronTrigger(hour=0, minute=1)
+    scheduler.add_job(run_recurring_expense_job, trigger=recurring_trigger, id="recurring_expense_processor", replace_existing=True)
+
     scheduler.start()
-    logger.info("Scheduler started - BOT (hourly), E.SUN (hourly)")
+    logger.info("Scheduler started - BOT (hourly), E.SUN (hourly), Recurring Expenses (daily at 00:01)")
 
 def stop_scheduler():
     scheduler.shutdown()
