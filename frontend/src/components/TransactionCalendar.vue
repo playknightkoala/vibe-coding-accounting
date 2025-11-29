@@ -80,8 +80,11 @@
     </div>
 
     <div class="transactions-panel">
-      <div v-if="internalSelectedDate" class="panel-header">
+      <div v-if="internalSelectedDate" class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
         <h3>{{ formatSelectedDate(internalSelectedDate) }}</h3>
+        <button @click="emit('add-transaction', internalSelectedDate)" class="btn btn-primary" style="padding: 4px 12px; font-size: 0.9rem;">
+          記帳
+        </button>
       </div>
       <div class="transactions-list">
         <div v-if="selectedDateTransactions.length > 0">
@@ -147,6 +150,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'date-selected', date: string): void
   (e: 'edit-transaction', transaction: Transaction): void
+  (e: 'add-transaction', date: string): void
 }>()
 
 const currentYear = ref(new Date().getFullYear())

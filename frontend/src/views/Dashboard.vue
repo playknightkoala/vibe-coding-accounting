@@ -176,6 +176,7 @@
         :selected-date="selectedDate"
         @date-selected="handleCalendarDateSelected"
         @edit-transaction="handleEditTransaction"
+        @add-transaction="handleAddTransactionFromCalendar"
       />
     </div>
 
@@ -937,6 +938,48 @@ const handleEditTransaction = (transaction: Transaction) => {
   showDailyModal.value = false
   fetchDescriptionHistory()
   quickModal.open()
+  
+  // Scroll to quick form
+  const quickFormElement = document.getElementById('quick-transaction-form')
+  if (quickFormElement) {
+    quickFormElement.scrollIntoView({ behavior: 'smooth' })
+  }
+}
+
+const handleAddTransactionFromCalendar = (dateStr: string) => {
+  // 1. Open Quick Form (Reset first)
+  quickForm.reset()
+  quickModal.open()
+  
+  // 2. Set Date and Time
+  // dateStr is YYYY-MM-DD
+  // Get current time HH:mm
+  const now = new Date()
+  const hours = String(now.getHours()).padStart(2, '0')
+  const minutes = String(now.getMinutes()).padStart(2, '0')
+  
+  // Combine date and time
+  quickForm.form.value.transaction_date = `${dateStr}T${hours}:${minutes}`
+  
+  // 3. Set Account
+  // Use last used account from localStorage or default to first account
+  const lastAccountId = localStorage.getItem('last_account_id')
+  if (lastAccountId) {
+    const account = accountsStore.accounts.find(a => a.id === Number(lastAccountId))
+    if (account) {
+      quickForm.form.value.account_id = account.id
+    } else if (accountsStore.accounts.length > 0) {
+      quickForm.form.value.account_id = accountsStore.accounts[0].id
+    }
+  } else if (accountsStore.accounts.length > 0) {
+    quickForm.form.value.account_id = accountsStore.accounts[0].id
+  }
+  
+  // Scroll to quick form
+  const quickFormElement = document.getElementById('quick-transaction-form')
+  if (quickFormElement) {
+    quickFormElement.scrollIntoView({ behavior: 'smooth' })
+  }
 }
 
 const handleDeleteTransaction = async () => {
@@ -947,15 +990,6 @@ const handleDeleteTransaction = async () => {
   
   // If not found in store, check if it's a projected recurring expense (negative ID)
   if (!transaction && quickForm.editingId.value && quickForm.editingId.value < 0) {
-    // We need to reconstruct the transaction object or find it from the context
-    // Since we don't have easy access to the exact object here without passing it,
-    // we can rely on the form data which should have the recurring info if we set it correctly.
-    // However, quickForm doesn't store recurring_group_id.
-    // Let's try to find it in the recurringExpenses list using the description and amount as a heuristic,
-    // OR better, we should have stored the full transaction object when opening the modal.
-    
-    // Actually, let's look at handleEditTransaction. It sets the form. 
-    // We can add a ref to store the current editing transaction object.
     transaction = currentEditingTransaction.value
   }
   
