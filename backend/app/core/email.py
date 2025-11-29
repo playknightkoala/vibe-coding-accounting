@@ -7,12 +7,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def send_email(to_email: str, subject: str, html_content: str) -> bool:
+from typing import Union, List
+
+def send_email(to_email: Union[str, List[str]], subject: str, html_content: str) -> bool:
     """
     使用 Gmail SMTP 發送郵件
 
     Args:
-        to_email: 收件人郵箱
+        to_email: 收件人郵箱 (單個字串或字串列表)
         subject: 郵件主題
         html_content: HTML 郵件內容
 
@@ -20,11 +22,19 @@ def send_email(to_email: str, subject: str, html_content: str) -> bool:
         bool: 發送成功返回 True，失敗返回 False
     """
     try:
+        # 處理收件人列表
+        if isinstance(to_email, list):
+            to_emails_str = ", ".join(to_email)
+            to_emails_list = to_email
+        else:
+            to_emails_str = to_email
+            to_emails_list = [to_email]
+
         # 建立郵件
         message = MIMEMultipart("alternative")
         message["Subject"] = subject
         message["From"] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_FROM_EMAIL}>"
-        message["To"] = to_email
+        message["To"] = to_emails_str
 
         # 加入 HTML 內容
         html_part = MIMEText(html_content, "html")
@@ -36,7 +46,7 @@ def send_email(to_email: str, subject: str, html_content: str) -> bool:
             server.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
             server.send_message(message)
 
-        logger.info(f"Email sent successfully to {to_email}")
+        logger.info(f"Email sent successfully to {to_emails_str}")
         return True
 
     except Exception as e:

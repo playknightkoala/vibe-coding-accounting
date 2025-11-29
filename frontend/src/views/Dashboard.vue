@@ -1240,6 +1240,10 @@ const handleQuickTransaction = async () => {
 
 
       await transactionsStore.createTransaction(transactionData)
+      
+      // Save last used account
+      localStorage.setItem('last_account_id', String(transactionData.account_id))
+      
       // 新增交易後更新敘述歷史
       // await api.updateDescriptionHistory(transactionData.description)
       messageModal.showSuccess(transactionData.is_installment ?

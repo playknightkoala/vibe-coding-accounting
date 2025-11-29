@@ -41,6 +41,9 @@ class Settings(BaseSettings):
     SMTP_FROM_EMAIL: str = ""
     SMTP_FROM_NAME: str = "Accounting System"
 
+    # Startup Notification
+    STARTUP_NOTIFICATION_EMAILS: str = ""
+
     # Frontend URL (for password reset links)
     FRONTEND_URL: str = "http://localhost"
     PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = 30
@@ -53,6 +56,13 @@ class Settings(BaseSettings):
     def cors_origins(self) -> List[str]:
         """Parse ALLOWED_ORIGINS into a list"""
         return [origin.strip() for origin in self.ALLOWED_ORIGINS.split(',')]
+
+    @property
+    def startup_notification_emails_list(self) -> List[str]:
+        """Parse STARTUP_NOTIFICATION_EMAILS into a list"""
+        if not self.STARTUP_NOTIFICATION_EMAILS:
+            return []
+        return [email.strip() for email in self.STARTUP_NOTIFICATION_EMAILS.split(',') if email.strip()]
 
     def validate_security(self):
         """Validate security settings"""

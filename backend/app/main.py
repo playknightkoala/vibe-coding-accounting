@@ -13,6 +13,12 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from contextlib import asynccontextmanager
 import threading
+import logging
+import sys
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Create database tables from SQLAlchemy models
 # This will create all tables defined in models if they don't exist
@@ -26,6 +32,116 @@ async def lifespan(app: FastAPI):
     # Run BOT crawler immediately on startup to ensure we have data
     threading.Thread(target=run_bot_crawler_job, daemon=True).start()
     # E.SUN crawler will run on schedule (hourly)
+
+    # Send startup notification email
+    print(f"DEBUG: Startup emails list: {settings.startup_notification_emails_list}", file=sys.stderr)
+    if settings.startup_notification_emails_list:
+        from app.core.email import send_email
+        
+        def send_startup_email():
+            print("DEBUG: Attempting to send startup email...", file=sys.stderr)
+            try:
+                current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                env_name = settings.ENVIRONMENT.upper()
+                
+                html_content = f"""
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <style>
+                        body {{
+                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                            line-height: 1.6;
+                            color: #e0e0e0;
+                            background-color: #1a1a2e;
+                            margin: 0;
+                            padding: 0;
+                        }}
+                        .container {{
+                            max-width: 600px;
+                            margin: 40px auto;
+                            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+                            border-radius: 12px;
+                            box-shadow: 0 8px 32px rgba(0, 212, 255, 0.1);
+                            overflow: hidden;
+                        }}
+                        .header {{
+                            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+                            padding: 40px 20px;
+                            text-align: center;
+                            border-bottom: 2px solid #00d4ff;
+                        }}
+                        .header h1 {{
+                            color: #00d4ff;
+                            margin: 0;
+                            font-size: 28px;
+                            text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+                        }}
+                        .content {{
+                            padding: 40px 30px;
+                        }}
+                        .content p {{
+                            margin: 0 0 20px;
+                            color: #a0aec0;
+                        }}
+                        .info-box {{
+                            background-color: rgba(0, 212, 255, 0.1);
+                            border-left: 4px solid #00d4ff;
+                            padding: 15px;
+                            margin: 20px 0;
+                            border-radius: 4px;
+                        }}
+                        .footer {{
+                            background-color: #0f3460;
+                            padding: 20px;
+                            text-align: center;
+                            color: #6b7280;
+                            font-size: 14px;
+                            border-top: 1px solid #00d4ff;
+                        }}
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="header">
+                            <h1>🚀 系統啟動通知</h1>
+                        </div>
+                        <div class="content">
+                            <p>管理員您好，</p>
+                            <p>Accounting System 後端服務已經重新啟動。</p>
+
+                            <div class="info-box">
+                                <p style="margin: 0;"><strong>📌 啟動資訊：</strong></p>
+                                <ul style="margin: 10px 0 0 0; padding-left: 20px; color: #a0aec0;">
+                                    <li><strong>環境：</strong> {env_name}</li>
+                                    <li><strong>時間：</strong> {current_time}</li>
+                                </ul>
+                            </div>
+                            
+                            <p>系統目前運作正常。</p>
+                        </div>
+                        <div class="footer">
+                            <p style="margin: 0;">© 2025 Accounting System. All rights reserved.</p>
+                            <p style="margin: 5px 0 0 0;">此為系統自動發送的通知。</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+                """
+
+                result = send_email(
+                    to_email=settings.startup_notification_emails_list,
+                    subject=f"[{env_name}] 系統啟動通知 - Accounting System",
+                    html_content=html_content
+                )
+                print(f"DEBUG: Email send result: {result}", file=sys.stderr)
+            except Exception as e:
+                print(f"Failed to send startup email: {e}", file=sys.stderr)
+                import traceback
+                traceback.print_exc(file=sys.stderr)
+
+        threading.Thread(target=send_startup_email, daemon=True).start()
 
     yield
     # Stop scheduler
