@@ -518,6 +518,14 @@
               僅刪除此筆交易
             </button>
           </div>
+
+          <button
+            @click="showDeleteConfirm = false"
+            class="btn btn-secondary"
+            style="margin-top: 10px; width: 100%;"
+          >
+            取消
+          </button>
         </div>
 
         <!-- 固定支出刪除選項 (未生效/預測交易) -->
@@ -539,6 +547,14 @@
               刪除此筆及之後的交易 (設定結束日期)
             </button>
           </div>
+
+          <button
+            @click="showDeleteConfirm = false"
+            class="btn btn-secondary"
+            style="margin-top: 10px; width: 100%;"
+          >
+            取消
+          </button>
         </div>
 
         <!-- 分期刪除選項 -->
@@ -1021,14 +1037,51 @@ const confirmDelete = async (deleteType: 'single' | 'group' | 'future' | 'all') 
           messageModal.showSuccess('已刪除固定支出及所有相關交易')
         } else if (mode === 'future') {
           // For 'future', we update the end_date to the day before this transaction
-          const txDate = new Date(transaction.transaction_date)
-          txDate.setDate(txDate.getDate() - 1)
-          const endDate = txDate.toISOString()
+          // BUT, if this transaction is the FIRST one (or before start_date), we should delete the whole thing
           
-          await api.updateRecurringExpense(currentRecurringExpenseId.value, {
-            end_date: endDate
-          })
-          messageModal.showSuccess('已設定結束日期，此筆及之後的交易將不再產生')
+          let shouldDeleteAll = false
+          let recurringExpense = recurringExpenses.value.find(re => re.id === currentRecurringExpenseId.value)
+          
+          // If not found in local state, fetch fresh data
+          if (!recurringExpense) {
+            try {
+              const res = await api.getRecurringExpenses()
+              recurringExpense = res.data.find(re => re.id === currentRecurringExpenseId.value)
+            } catch (e) {
+              console.error('Failed to fetch recurring expenses for check', e)
+            }
+          }
+          
+          if (recurringExpense) {
+            const txDate = new Date(transaction.transaction_date)
+            const startDate = new Date(recurringExpense.start_date)
+            
+            // Robust check: Since recurring expenses are monthly, if the transaction date is 
+            // within 15 days of the start date, it MUST be the first occurrence.
+            // This handles any timezone discrepancies (e.g. start_date being in UTC vs local txDate).
+            const bufferTime = 15 * 24 * 60 * 60 * 1000 // 15 days in ms
+            
+            if (txDate.getTime() <= startDate.getTime() + bufferTime) {
+              shouldDeleteAll = true
+            }
+          }
+          
+          if (shouldDeleteAll) {
+             await api.deleteRecurringExpense(
+                currentRecurringExpenseId.value,
+                'all'
+              )
+              messageModal.showSuccess('已刪除固定支出及所有相關交易')
+          } else {
+              const txDate = new Date(transaction.transaction_date)
+              txDate.setDate(txDate.getDate() - 1)
+              const endDate = txDate.toISOString()
+              
+              await api.updateRecurringExpense(currentRecurringExpenseId.value, {
+                end_date: endDate
+              })
+              messageModal.showSuccess('已設定結束日期，此筆及之後的交易將不再產生')
+          }
         }
       } else {
         // Existing logic for real transactions

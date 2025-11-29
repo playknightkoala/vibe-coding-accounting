@@ -436,7 +436,6 @@ const nextMonth = () => {
     currentYear.value++
   } else {
     currentMonth.value++
-    currentMonth.value++
   }
 }
 

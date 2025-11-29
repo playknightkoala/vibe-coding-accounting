@@ -18,4 +18,4 @@ class Account(Base):
 
     owner = relationship("User", back_populates="accounts")
     transactions = relationship("Transaction", back_populates="account", cascade="all, delete-orphan")
-    recurring_expenses = relationship("RecurringExpense", back_populates="account", cascade="all, delete-orphan")
+    recurring_expenses = relationship("RecurringExpense", back_populates="account", cascade="all, delete")

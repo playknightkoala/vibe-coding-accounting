@@ -197,30 +197,56 @@ def delete_recurring_expense(
 
         target_date = target_transaction.transaction_date
 
-        # Get all transactions from this date onwards
-        transactions = db.query(Transaction).join(Account).filter(
+        # Get all transactions for this recurring expense
+        all_transactions = db.query(Transaction).join(Account).filter(
+            Transaction.recurring_group_id == recurring_group_id,
+            Account.user_id == current_user.id
+        ).all()
+
+        # Get transactions from this date onwards
+        transactions_to_delete = db.query(Transaction).join(Account).filter(
             Transaction.recurring_group_id == recurring_group_id,
             Transaction.transaction_date >= target_date,
             Account.user_id == current_user.id
         ).all()
 
-        # Update account balances for transactions that have already occurred
-        now = datetime.now(TAIPEI_TZ)
-        now_utc = to_utc(now)
+        # Check if all transactions will be deleted (meaning we're deleting from the first one)
+        if len(transactions_to_delete) == len(all_transactions):
+            # This is equivalent to deleting everything - use "all" mode logic
+            now = datetime.now(TAIPEI_TZ)
+            now_utc = to_utc(now)
 
-        for transaction in transactions:
-            if transaction.transaction_date <= now_utc:
-                # Reverse the debit transaction
-                transaction.account.balance += transaction.amount
-            db.delete(transaction)
+            for transaction in transactions_to_delete:
+                if transaction.transaction_date <= now_utc:
+                    # Reverse the debit transaction
+                    transaction.account.balance += transaction.amount
+                db.delete(transaction)
 
-        # Set end_date on recurring expense to prevent future transactions
-        recurring_expense.end_date = target_date
-        recurring_expense.is_active = False
+            # Flush transaction deletions before deleting recurring expense
+            db.flush()
 
-        db.commit()
+            # Delete the recurring expense itself
+            db.query(RecurringExpense).filter(RecurringExpense.id == recurring_expense_id).delete()
+            db.commit()
 
-        return {"message": f"Deleted {len(transactions)} transactions and stopped recurring expense"}
+            return {"message": f"Deleted all {len(transactions_to_delete)} transactions and recurring expense"}
+        else:
+            # Some transactions remain - just stop future ones
+            now = datetime.now(TAIPEI_TZ)
+            now_utc = to_utc(now)
+
+            for transaction in transactions_to_delete:
+                if transaction.transaction_date <= now_utc:
+                    # Reverse the debit transaction
+                    transaction.account.balance += transaction.amount
+                db.delete(transaction)
+
+            # Set end_date on recurring expense to prevent future transactions
+            recurring_expense.end_date = target_date
+            recurring_expense.is_active = False
+            db.commit()
+
+            return {"message": f"Deleted {len(transactions_to_delete)} transactions and stopped recurring expense"}
 
     elif mode == "all":
         # 刪除所有交易和固定支出本身
@@ -239,8 +265,11 @@ def delete_recurring_expense(
                 transaction.account.balance += transaction.amount
             db.delete(transaction)
 
+        # Flush transaction deletions before deleting recurring expense
+        db.flush()
+
         # Delete the recurring expense itself
-        db.delete(recurring_expense)
+        db.query(RecurringExpense).filter(RecurringExpense.id == recurring_expense_id).delete()
         db.commit()
 
         return {"message": f"Deleted {len(transactions)} transactions and recurring expense"}

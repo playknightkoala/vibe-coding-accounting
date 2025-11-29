@@ -477,15 +477,141 @@ Automated exchange rate fetching from Taiwan Bank of Taiwan website.
 **Usage:**
 Called by scheduled tasks or can be triggered manually. Enables multi-currency account balance calculations.
 
+### Installment Transaction System
+
+**Overview:**
+Full-featured installment (分期) transaction system with support for both zero-interest and interest-bearing installments.
+
+**Key Features:**
+- Installment periods: 2-60 periods
+- Billing day selection (1-31)
+- Zero-interest installments use integer division (remainder goes to first period)
+- Interest-bearing installments use loan payment formula for annual rate ≥ 1%
+- Optional "exclude from budget" flag
+- Auto-generates note with installment details
+- Delete modes: single transaction or entire group
+
+**Implementation:**
+
+```python
+# Loan payment formula for interest-bearing installments
+if annual_rate >= 1:
+    monthly_rate = annual_rate / 12 / 100
+    monthly_payment = total_amount * monthly_rate * ((1 + monthly_rate) ** num_installments) / (((1 + monthly_rate) ** num_installments) - 1)
+    base_amount = int(monthly_payment)
+    total_with_interest = int(monthly_payment * num_installments)
+    last_installment_amount = total_with_interest - total_paid_before_last
+```
+
+**Transaction Fields:**
+- `is_installment`: Boolean flag
+- `installment_group_id`: UUID for grouping related installments
+- `installment_number`: Current period number (e.g., 2 of 12)
+- `total_installments`: Total number of periods
+- `total_amount`: Original principal amount
+- `remaining_amount`: Amount remaining AFTER this payment
+- `annual_interest_rate`: Annual interest rate percentage
+- `exclude_from_budget`: Whether to exclude from budget calculations
+
+**Frontend Display:**
+- Transaction calendar shows period progress (e.g., "2/12")
+- Shows remaining periods, remaining amount, and interest rate
+- Installment info displayed with cyan color scheme
+- Delete modal offers two options: delete single or delete entire group
+
+**Calculation Notes:**
+- Zero-interest: Uses `Math.floor()` for integer division
+- Interest-bearing: Last period calculated separately to handle rounding
+- Display uses "≈" symbol to indicate estimated amounts
+- Auto-generated notes include breakdown of principal, interest, and total
+
+### Recurring Expense System
+
+**Overview:**
+Automated monthly expense system that creates transactions on specified days each month.
+
+**Key Features:**
+- User selects day of month (1-31) for automatic transaction creation
+- System finds next occurrence from today and creates monthly transactions
+- Scheduled task runs daily at 00:01 to create due transactions
+- Three delete modes: single, future, or all
+- Purple color scheme to distinguish from regular transactions
+
+**Implementation:**
+
+**Backend:**
+- Model: `RecurringExpense` (backend/app/models/recurring_expense.py)
+- Fields: description, amount, category, note, day_of_month, account_id, recurring_group_id, start_date, end_date, is_active, last_executed_date
+- Service: `recurring_expense_processor.py` (backend/app/services/)
+- Scheduler: Runs daily at 00:01 via APScheduler
+
+**Transaction Lifecycle:**
+1. User creates recurring expense with day_of_month
+2. System calculates next occurrence from today
+3. Scheduled task checks daily for due recurring expenses
+4. Creates transaction when date arrives
+5. Updates account balance and last_executed_date
+6. Transaction marked with `is_from_recurring=True` and `recurring_group_id`
+
+**Delete Modes:**
+- **single**: Delete one transaction only (reverses balance if date passed)
+- **future**: Delete this transaction and all future ones (sets end_date, deactivates recurring expense)
+- **all**: Delete all transactions and the recurring expense itself
+
+**Frontend Integration:**
+- Checkbox option in transaction form (only for debit type)
+- Purple background for recurring expense fields
+- Transactions display "[未生效]" tag if date hasn't arrived yet
+- Transactions display "[固定支出]" tag if already effective
+- Delete modal shows three options for recurring expense transactions
+
+**Important Logic:**
+```python
+def should_create_transaction(recurring_expense, target_date, today):
+    # Only create if:
+    # 1. Target date has arrived (today >= target_date)
+    # 2. Not executed this month yet
+    if today < target_date:
+        return False
+
+    if recurring_expense.last_executed_date:
+        last_executed_local = recurring_expense.last_executed_date.astimezone(TAIPEI_TZ).date()
+        # Skip if already executed this month
+        if (last_executed_local.year == target_date.year and
+            last_executed_local.month == target_date.month):
+            return False
+
+    return True
+```
+
+**Edge Cases:**
+- Month-end handling: Feb 30 → Feb 28/29 (last day of month)
+- Timezone: All dates stored in UTC, displayed in Taipei timezone
+- Note format: Auto-appends "固定支出 - 每月 X 號" to user's note
+
 ### Background Tasks
 
-**Location:** `backend/app/tasks/`
+**Location:** `backend/app/tasks/` and scheduler in `backend/app/core/scheduler.py`
 
 **Budget Recurring Tasks** (`budget_recurring.py`):
 - Auto-generates next period budgets for recurring budgets
 - Copies account bindings and category bindings from previous period
 - Triggered by scheduler (APScheduler) or manually
 - Handles monthly, quarterly, and yearly recurring budgets
+
+**Recurring Expense Processor** (`recurring_expense_processor.py`):
+- Runs daily at 00:01 (configured in scheduler)
+- Checks all active recurring expenses
+- Creates transactions for expenses whose day_of_month has arrived
+- Updates account balances automatically
+- Tracks last_executed_date to prevent duplicates
+- Handles month-end edge cases (e.g., day 31 in Feb → last day)
+
+**Exchange Rate Crawlers:**
+- BOT (Bank of Taiwan): Runs hourly
+- E.SUN Bank: Runs hourly
+- Both use BeautifulSoup to scrape exchange rates
+- Stores in ExchangeRate model for multi-currency support
 
 ## Reusable Components
 
@@ -602,7 +728,9 @@ Tables auto-created on backend startup via `Base.metadata.create_all(bind=engine
 `Transaction`:
 - id, description, amount, transaction_type, category, transaction_date
 - account_id (FK), created_at, updated_at
-- Types: credit (income), debit (expense)
+- Types: credit (income), debit (expense), installment (分期)
+- Installment fields: is_installment, installment_group_id, installment_number, total_installments, total_amount, remaining_amount, annual_interest_rate, exclude_from_budget
+- Recurring expense fields: recurring_group_id, is_from_recurring
 
 `Budget`:
 - id, name, category (nullable, legacy field), amount, spent, daily_limit, range_mode, period, start_date, end_date
@@ -632,6 +760,12 @@ Tables auto-created on backend startup via `Base.metadata.create_all(bind=engine
 `ExchangeRate`:
 - id, currency_code, currency_name, buying_rate, selling_rate, updated_at
 - Stores exchange rates from Taiwan Bank of Taiwan
+
+`RecurringExpense`:
+- id, description, amount, category, note, day_of_month, account_id
+- recurring_group_id (unique UUID), start_date, end_date, is_active, last_executed_date
+- user_id (FK via account), created_at, updated_at
+- Used for automated monthly expense transactions
 
 **Additional User Fields:**
 - `is_google_user` (Boolean): Indicates OAuth user (no password)
@@ -870,3 +1004,24 @@ await Promise.all([
 - In production, redirect URIs must use HTTPS
 - The callback URL must be registered in Google Cloud Console
 - Frontend must handle `/google-callback?token={token}` route to extract JWT and store in localStorage
+
+**Installment transactions not calculating correctly:**
+- Check if `annual_interest_rate` is set for interest-bearing installments
+- Verify loan payment formula is using monthly rate (annual / 12 / 100)
+- Ensure last period is calculated separately to handle rounding
+- Zero-interest should use `Math.floor()` for integer division
+- Check that remainder goes to FIRST period, not last
+
+**Recurring expense transactions not being created:**
+- Verify scheduler is running (check logs for "Scheduler started")
+- Confirm recurring expense `is_active=True` and no `end_date` set
+- Check `last_executed_date` - should be null or from previous month
+- Ensure `day_of_month` is valid for current month (handle Feb 30 → Feb 28/29)
+- Verify scheduled task runs at 00:01 daily in scheduler configuration
+- Check transaction creation logic in `recurring_expense_processor.py`
+
+**Recurring expense transactions show wrong "未生效" status:**
+- Frontend uses `isTransactionPending()` function to check if date has arrived
+- Must compare transaction_date with current date in Taipei timezone
+- Transaction is pending if `transaction_date > now`
+- Once date arrives, display changes from "[未生效]" to "[固定支出]"
