@@ -73,10 +73,12 @@ def get_monthly_overview(
     # Calculate category stats
     category_totals = defaultdict(lambda: {'credit': 0.0, 'debit': 0.0})
     for t in transactions:
+        if t.transaction_type in ['transfer_out', 'transfer_in']:
+            continue
         cat = t.category or '未分類'
         if t.transaction_type == 'credit':
             category_totals[cat]['credit'] += t.amount
-        else:
+        elif t.transaction_type in ['debit', 'installment']:
             category_totals[cat]['debit'] += t.amount
 
     total_amount = total_debit  # Use debit for percentage calculation
@@ -141,10 +143,12 @@ def get_daily_overview(
     # Calculate category stats
     category_totals = defaultdict(lambda: {'credit': 0.0, 'debit': 0.0})
     for t in transactions:
+        if t.transaction_type in ['transfer_out', 'transfer_in']:
+            continue
         cat = t.category or '未分類'
         if t.transaction_type == 'credit':
             category_totals[cat]['credit'] += t.amount
-        else:
+        elif t.transaction_type in ['debit', 'installment']:
             category_totals[cat]['debit'] += t.amount
 
     total_amount = total_debit
@@ -281,10 +285,12 @@ def get_monthly_category_report(
     # Calculate category stats
     category_totals = defaultdict(lambda: {'credit': 0.0, 'debit': 0.0})
     for t in transactions:
+        if t.transaction_type in ['transfer_out', 'transfer_in']:
+            continue
         cat = t.category or '未分類'
         if t.transaction_type == 'credit':
             category_totals[cat]['credit'] += t.amount
-        else:
+        elif t.transaction_type in ['debit', 'installment']:
             category_totals[cat]['debit'] += t.amount
 
     total_debit = sum(amounts['debit'] for amounts in category_totals.values())
@@ -333,10 +339,12 @@ def get_daily_category_report(
     # Calculate category stats
     category_totals = defaultdict(lambda: {'credit': 0.0, 'debit': 0.0})
     for t in transactions:
+        if t.transaction_type in ['transfer_out', 'transfer_in']:
+            continue
         cat = t.category or '未分類'
         if t.transaction_type == 'credit':
             category_totals[cat]['credit'] += t.amount
-        else:
+        elif t.transaction_type in ['debit', 'installment']:
             category_totals[cat]['debit'] += t.amount
 
     total_debit = sum(amounts['debit'] for amounts in category_totals.values())
@@ -455,9 +463,11 @@ def get_monthly_account_report(
     # Calculate account stats
     account_totals = defaultdict(lambda: {'credit': 0.0, 'debit': 0.0})
     for t in transactions:
+        if t.transaction_type in ['transfer_out', 'transfer_in']:
+            continue
         if t.transaction_type == 'credit':
             account_totals[t.account_id]['credit'] += t.amount
-        else:
+        elif t.transaction_type in ['debit', 'installment']:
             account_totals[t.account_id]['debit'] += t.amount
 
     total_amount = sum(amounts['debit'] for amounts in account_totals.values())
@@ -509,9 +519,11 @@ def get_daily_account_report(
     # Calculate account stats
     account_totals = defaultdict(lambda: {'credit': 0.0, 'debit': 0.0})
     for t in transactions:
+        if t.transaction_type in ['transfer_out', 'transfer_in']:
+            continue
         if t.transaction_type == 'credit':
             account_totals[t.account_id]['credit'] += t.amount
-        else:
+        elif t.transaction_type in ['debit', 'installment']:
             account_totals[t.account_id]['debit'] += t.amount
 
     total_amount = sum(amounts['debit'] for amounts in account_totals.values())

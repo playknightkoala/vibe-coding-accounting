@@ -63,6 +63,25 @@
                         style="padding: 8px 15px; background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; white-space: nowrap;">
                   記帳
                 </button>
+                <!-- Transfer Buttons -->
+                <button v-if="account.account_type === 'stored_value'" 
+                        @click="openTransferModal(account, 'topup')" 
+                        class="btn"
+                        style="padding: 8px 15px; background: linear-gradient(135deg, #36D1DC 0%, #5B86E5 100%); color: white; white-space: nowrap; margin-left: 5px;">
+                  儲值
+                </button>
+                <button v-if="account.account_type === 'cash'" 
+                        @click="openTransferModal(account, 'withdraw')" 
+                        class="btn"
+                        style="padding: 8px 15px; background: linear-gradient(135deg, #FF512F 0%, #DD2476 100%); color: white; white-space: nowrap; margin-left: 5px;">
+                  提領
+                </button>
+                <button v-if="account.account_type === 'bank'" 
+                        @click="openTransferModal(account, 'transfer')" 
+                        class="btn"
+                        style="padding: 8px 15px; background: linear-gradient(135deg, #1FA2FF 0%, #12D8FA 100%); color: white; white-space: nowrap; margin-left: 5px;">
+                  轉帳
+                </button>
               </div>
             </div>
           </div>
@@ -184,18 +203,51 @@
     <div v-if="quickModal.isOpen.value" class="modal">
       <div class="modal-content quick-transaction-modal">
         <div class="modal-header">
-          <h2 style="color: #00d4ff; margin: 0;">{{ quickForm.isEditing() ? '編輯交易' : '快速記帳' }}</h2>
+          <h2 style="color: #00d4ff; margin: 0;">
+            {{ quickForm.isEditing() ? '編輯交易' : 
+               quickForm.transferMode.value === 'topup' ? '新增儲值' :
+               quickForm.transferMode.value === 'withdraw' ? '新增提領' :
+               quickForm.transferMode.value === 'transfer' ? '新增轉帳' :
+               '快速記帳' 
+            }}
+          </h2>
         </div>
         
         <div class="modal-body">
           <form id="quick-transaction-form" @submit.prevent="handleQuickTransaction">
             <div class="form-group">
-              <label>帳戶</label>
-              <select v-model="quickForm.form.value.account_id" required>
-                <option v-for="account in accountsStore.accounts" :key="account.id" :value="account.id">
-                  {{ account.name }}
-                </option>
-              </select>
+              <!-- Transfer Mode: From/To Selectors -->
+              <div v-if="quickForm.isTransfer()" style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <div style="flex: 1;">
+                  <label>轉出帳戶</label>
+                  <select v-model="quickForm.form.value.account_id" required>
+                    <option v-for="account in availableSourceAccounts" :key="account.id" :value="account.id">
+                      {{ account.name }}
+                    </option>
+                  </select>
+                </div>
+                <div style="flex: 0 0 auto; display: flex; align-items: center; padding-top: 20px;">
+                  <span style="font-size: 1.5rem;">➡️</span>
+                </div>
+                <div style="flex: 1;">
+                  <label>轉入帳戶</label>
+                  <select v-model="quickForm.transferTargetId.value" disabled required>
+                    <option v-for="account in accountsStore.accounts" :key="account.id" :value="account.id">
+                      {{ account.name }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Regular Mode: Single Account Selector -->
+              <div v-else>
+                <label>帳戶</label>
+                <select v-model="quickForm.form.value.account_id" required>
+                  <option v-for="account in accountsStore.accounts" :key="account.id" :value="account.id">
+                    {{ account.name }}
+                  </option>
+                </select>
+              </div>
             </div>
             <div class="form-group">
               <label>描述</label>
@@ -312,7 +364,9 @@
               </div>
             </div>
 
-            <div class="form-group">
+
+
+            <div v-if="!quickForm.isTransfer()" class="form-group">
               <label>交易類型</label>
               <select v-model="quickForm.form.value.transaction_type" required>
                 <option value="credit">收入</option>
@@ -321,8 +375,8 @@
               </select>
             </div>
 
-            <!-- 固定支出選項 (只在交易類型為支出時顯示，且不在編輯模式) -->
-            <div v-if="quickForm.form.value.transaction_type === 'debit' && !quickForm.isEditing()" class="form-group">
+            <!-- 固定支出選項 (只在交易類型為支出時顯示，且不在編輯模式，且不是轉帳/提領/儲值) -->
+            <div v-if="quickForm.form.value.transaction_type === 'debit' && !quickForm.isEditing() && !quickForm.isTransfer()" class="form-group">
               <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                 <input
                   type="checkbox"
@@ -334,7 +388,7 @@
             </div>
 
             <!-- 固定支出欄位 (只在勾選固定支出時顯示) -->
-            <div v-if="quickForm.isRecurring.value && quickForm.form.value.transaction_type === 'debit' && !quickForm.isEditing()"
+            <div v-if="quickForm.isRecurring.value && quickForm.form.value.transaction_type === 'debit' && !quickForm.isEditing() && !quickForm.isTransfer()"
                  style="background: rgba(147, 51, 234, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid rgba(147, 51, 234, 0.3);">
               <div class="form-group">
                 <label>每月執行日期 (必填)</label>
@@ -422,12 +476,14 @@
               </div>
             </div>
 
-            <CategorySelector
-              :model-value="quickForm.form.value.category || ''"
-              @update:model-value="quickForm.form.value.category = $event"
-              :categories="categoriesStore.categories"
-              @open-management="showCategoryModal = true"
-            />
+            <div v-if="!quickForm.isTransfer()">
+              <CategorySelector
+                :model-value="quickForm.form.value.category || ''"
+                @update:model-value="quickForm.form.value.category = $event"
+                :categories="categoriesStore.categories"
+                @open-management="showCategoryModal = true"
+              />
+            </div>
 
             <div class="form-group">
               <label>日期時間</label>
@@ -448,7 +504,9 @@
 
         <div class="modal-footer">
           <div style="display: flex; gap: 10px; width: 100%;">
-            <button type="submit" form="quick-transaction-form" class="btn btn-primary" style="flex: 1;">{{ quickForm.isEditing() ? '更新' : '新增交易' }}</button>
+            <button type="submit" form="quick-transaction-form" class="btn btn-primary" style="flex: 1;">
+              {{ quickForm.isEditing() ? '更新' : quickForm.isTransfer() ? '確認轉帳' : '新增交易' }}
+            </button>
             <button 
               v-if="quickForm.isEditing()" 
               type="button" 
@@ -637,7 +695,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import type { Account, TransactionCreate, RecurringExpense } from '@/types'
 import CategorySelector from '@/components/CategorySelector.vue'
 import CategoryManagementModal from '@/components/CategoryManagementModal.vue'
@@ -728,10 +786,16 @@ const quickForm = {
   // Recurring expense fields
   isRecurring: ref<boolean>(false),
   recurringDayOfMonth: ref<number>(1),
+  
+  // Transfer specific state
+  transferTargetId: ref<number | null>(null),
+  transferMode: ref<'transfer' | 'topup' | 'withdraw' | null>(null),
 
   reset: () => {
     quickForm.mode.value = 'create'
     quickForm.editId.value = null
+    quickForm.transferTargetId.value = null
+    quickForm.transferMode.value = null
     quickForm.form.value = {
       account_id: accountsStore.accounts.length > 0 ? accountsStore.accounts[0].id : 0,
       description: '',
@@ -754,6 +818,7 @@ const quickForm = {
   },
   
   isEditing: () => quickForm.mode.value === 'edit',
+  isTransfer: () => !!quickForm.transferMode.value,
   resetForm: () => quickForm.reset(),
   setForm: (data: any, id: number) => {
     quickForm.mode.value = 'edit'
@@ -766,6 +831,32 @@ const quickForm = {
   editingId: computed(() => quickForm.editId.value),
   activeCalculatorInput: ref<'amount' | 'foreignAmount'>('amount')
 }
+
+const availableSourceAccounts = computed(() => {
+  if (!quickForm.isTransfer() || !quickForm.transferTargetId.value) {
+    return accountsStore.accounts
+  }
+
+  const targetAccount = accountsStore.accounts.find(a => a.id === quickForm.transferTargetId.value)
+  if (!targetAccount) return accountsStore.accounts
+
+  // Rule: Cash's source can only be Bank
+  if (targetAccount.account_type === 'cash') {
+    return accountsStore.accounts.filter(a => a.account_type === 'bank')
+  }
+
+  // Rule: Bank's source can be Cash or Bank
+  if (targetAccount.account_type === 'bank') {
+    return accountsStore.accounts.filter(a => ['cash', 'bank'].includes(a.account_type))
+  }
+
+  // Rule: Stored Value's source can be Cash or Bank
+  if (targetAccount.account_type === 'stored_value') {
+    return accountsStore.accounts.filter(a => ['cash', 'bank'].includes(a.account_type))
+  }
+
+  return accountsStore.accounts
+})
 
 const currentAccount = computed(() => {
   // Use == to handle potential string/number mismatch from select input
@@ -909,16 +1000,60 @@ const handleDayClick = (date: string) => {
   showDailyModal.value = true
 }
 
-const openQuickTransaction = (account: Account) => {
+const openQuickTransaction = (account?: Account) => {
   quickForm.resetForm()
-  quickForm.form.value.account_id = account.id
+  if (account) {
+    quickForm.form.value.account_id = account.id
+    // Set default currency to account currency
+    quickForm.selectedCurrency.value = account.currency
+  } else {
+    // Default to last used account or first available
+    const lastAccountId = localStorage.getItem('last_account_id')
+    if (lastAccountId) {
+      const accountExists = accountsStore.accounts.find(a => a.id === Number(lastAccountId))
+      if (accountExists) {
+        quickForm.form.value.account_id = Number(lastAccountId)
+        quickForm.selectedCurrency.value = accountExists.currency
+      }
+    } else if (accountsStore.accounts.length > 0) {
+      quickForm.form.value.account_id = accountsStore.accounts[0].id
+      quickForm.selectedCurrency.value = accountsStore.accounts[0].currency
+    }
+  }
+  
   quickForm.form.value.transaction_date = dateTimeUtils.getCurrentDateTime()
   if (categoriesStore.categories.length > 0) {
     quickForm.form.value.category = categoriesStore.categories[0].name
   }
-  // Set default currency to account currency
-  quickForm.selectedCurrency.value = account.currency
+  
   fetchDescriptionHistory()
+  quickModal.open()
+}
+
+const openTransferModal = (account: Account, mode: 'transfer' | 'topup' | 'withdraw') => {
+  quickForm.reset()
+  quickForm.transferMode.value = mode
+  
+  // Always set the selected account as the Target (To)
+  quickForm.transferTargetId.value = account.id
+  
+  if (mode === 'topup') {
+    quickForm.form.value.description = '儲值'
+  } else if (mode === 'withdraw') {
+    quickForm.form.value.description = '提領'
+  } else {
+    quickForm.form.value.description = '轉帳'
+  }
+  
+  quickForm.form.value.transaction_date = dateTimeUtils.getCurrentDateTime()
+  
+  // Auto-select first available source account
+  nextTick(() => {
+    if (availableSourceAccounts.value.length > 0) {
+      quickForm.form.value.account_id = availableSourceAccounts.value[0].id
+    }
+  })
+
   quickModal.open()
 }
 
@@ -1167,6 +1302,50 @@ const confirmDelete = async (deleteType: 'single' | 'group' | 'future' | 'all') 
 }
 
 const handleQuickTransaction = async () => {
+  // Handle Transfer
+  if (quickForm.isTransfer()) {
+    if (!quickForm.transferTargetId.value) {
+      messageModal.show('error', '請選擇轉入帳戶')
+      return
+    }
+    if (quickForm.form.value.account_id === quickForm.transferTargetId.value) {
+      messageModal.show('error', '轉出與轉入帳戶不能相同')
+      return
+    }
+
+    // Check for sufficient funds - REMOVED per user request
+    // const sourceAccount = accountsStore.accounts.find(a => a.id === quickForm.form.value.account_id)
+    // if (sourceAccount && sourceAccount.balance < quickForm.form.value.amount) {
+    //   messageModal.show('error', '轉出帳戶餘額不足')
+    //   return
+    // }
+
+    try {
+      await transactionsStore.transfer({
+        from_account_id: quickForm.form.value.account_id,
+        to_account_id: quickForm.transferTargetId.value,
+        amount: quickForm.form.value.amount,
+        transaction_date: quickForm.form.value.transaction_date,
+        description: quickForm.form.value.description,
+        note: quickForm.form.value.note
+      })
+      
+      messageModal.show('success', '轉帳成功')
+      quickModal.close()
+      
+      // Refresh data
+      await Promise.all([
+        accountsStore.fetchAccounts(),
+        transactionsStore.fetchTransactions(),
+        budgetsStore.fetchBudgets(), // Budgets might be affected if we didn't exclude transfers (but we did)
+        dashboard.fetchData()
+      ])
+    } catch (error) {
+      // Error handled by store
+    }
+    return
+  }
+
   try {
     // Check if this is a recurring expense
     if (quickForm.isRecurring.value && quickForm.form.value.transaction_type === 'debit' && !quickForm.isEditing()) {
@@ -1375,6 +1554,7 @@ onMounted(async () => {
     }
   })
 })
+
 </script>
 
 <style scoped>

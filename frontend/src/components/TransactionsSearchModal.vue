@@ -44,11 +44,18 @@
                   </span>
                 </td>
                 <td>
-                  {{ transaction.transaction_type === 'credit' ? '收入' : (transaction.transaction_type === 'installment' ? '分期' : '支出') }}
+                  {{ 
+                    transaction.transaction_type === 'credit' ? '收入' : 
+                    (transaction.transaction_type === 'installment' ? '分期' : 
+                    (transaction.transaction_type === 'transfer_in' ? '轉入' : 
+                    (transaction.transaction_type === 'transfer_out' ? '轉出' : '支出')))
+                  }}
                 </td>
                 <td>{{ transaction.category || '無' }}</td>
-                <td :style="{ color: transaction.transaction_type === 'credit' ? '#51cf66' : '#ff6b6b' }">
-                  ${{ transaction.amount.toFixed(2) }}
+                <td :style="{ color: 
+                  transaction.transaction_type === 'credit' || transaction.transaction_type === 'transfer_in' ? '#51cf66' : '#ff6b6b' 
+                }">
+                  {{ transaction.transaction_type === 'credit' || transaction.transaction_type === 'transfer_in' ? '+' : '-' }}${{ transaction.amount.toFixed(2) }}
                 </td>
               </tr>
             </tbody>

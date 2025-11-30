@@ -22,6 +22,14 @@ class TransactionCreate(TransactionBase):
     billing_day: Optional[int] = None  # Day of month for billing (1-31)
     annual_interest_rate: Optional[float] = None  # Annual interest rate (e.g., 2.68 for 2.68%)
 
+class TransferCreate(BaseModel):
+    from_account_id: int
+    to_account_id: int
+    amount: float
+    transaction_date: datetime
+    description: str
+    note: Optional[str] = None
+
 class TransactionUpdate(BaseModel):
     description: Optional[str] = None
     amount: Optional[float] = None

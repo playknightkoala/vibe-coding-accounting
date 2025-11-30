@@ -10,7 +10,7 @@ from app.core.database import get_db
 from app.models.user import User
 from app.models.account import Account
 from app.models.transaction import Transaction
-from app.schemas.transaction import Transaction as TransactionSchema, TransactionCreate, TransactionUpdate, MonthlyStats, DailyStats
+from app.schemas.transaction import Transaction as TransactionSchema, TransactionCreate, TransactionUpdate, MonthlyStats, DailyStats, TransferCreate
 from app.api.deps import get_current_user
 from app.core.timezone import from_iso_string, to_utc, to_taipei_time, TAIPEI_TZ
 
@@ -66,6 +66,78 @@ def create_transaction(
     db.commit()
     db.refresh(db_transaction)
     return db_transaction
+
+
+@router.post("/transfer", response_model=List[TransactionSchema])
+def create_transfer(
+    transfer: TransferCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Create a transfer between two accounts.
+    Creates two transactions: one 'transfer_out' and one 'transfer_in'.
+    """
+    # Verify source account
+    from_account = db.query(Account).filter(
+        Account.id == transfer.from_account_id,
+        Account.user_id == current_user.id
+    ).first()
+    if not from_account:
+        raise HTTPException(status_code=404, detail="Source account not found")
+
+    # Verify destination account
+    to_account = db.query(Account).filter(
+        Account.id == transfer.to_account_id,
+        Account.user_id == current_user.id
+    ).first()
+    if not to_account:
+        raise HTTPException(status_code=404, detail="Destination account not found")
+
+    # Check for sufficient funds - REMOVED per user request
+    # if from_account.balance < transfer.amount:
+    #     raise HTTPException(status_code=400, detail="Insufficient funds in source account")
+
+    # Handle timezone for transaction date
+    transaction_date = transfer.transaction_date
+    if isinstance(transaction_date, str):
+        transaction_date = from_iso_string(transaction_date)
+    elif transaction_date:
+        transaction_date = to_utc(transaction_date)
+
+    # Create 'transfer_out' transaction
+    out_transaction = Transaction(
+        description=transfer.description,
+        amount=transfer.amount,
+        transaction_type="transfer_out",
+        category="轉帳",
+        note=transfer.note,
+        transaction_date=transaction_date,
+        account_id=from_account.id,
+        exclude_from_budget=True  # Transfers shouldn't affect budget
+    )
+    db.add(out_transaction)
+    from_account.balance -= transfer.amount
+
+    # Create 'transfer_in' transaction
+    in_transaction = Transaction(
+        description=transfer.description,
+        amount=transfer.amount,
+        transaction_type="transfer_in",
+        category="轉帳",
+        note=transfer.note,
+        transaction_date=transaction_date,
+        account_id=to_account.id,
+        exclude_from_budget=True  # Transfers shouldn't affect budget
+    )
+    db.add(in_transaction)
+    to_account.balance += transfer.amount
+
+    db.commit()
+    db.refresh(out_transaction)
+    db.refresh(in_transaction)
+
+    return [out_transaction, in_transaction]
 
 
 def create_installment_transactions(
@@ -266,14 +338,17 @@ def update_transaction(
 
     # Update account balance if amount changed
     account = transaction.account
-    if old_type == "credit":
+    
+    # Revert old balance change
+    if old_type == "credit" or old_type == "transfer_in":
         account.balance -= old_amount
-    else:
+    elif old_type in ["debit", "installment", "transfer_out"]:
         account.balance += old_amount
 
-    if transaction.transaction_type == "credit":
+    # Apply new balance change
+    if transaction.transaction_type == "credit" or transaction.transaction_type == "transfer_in":
         account.balance += transaction.amount
-    else:
+    elif transaction.transaction_type in ["debit", "installment", "transfer_out"]:
         account.balance -= transaction.amount
 
     db.commit()
@@ -295,9 +370,9 @@ def delete_transaction(
 
     # Update account balance
     account = transaction.account
-    if transaction.transaction_type == "credit":
+    if transaction.transaction_type == "credit" or transaction.transaction_type == "transfer_in":
         account.balance -= transaction.amount
-    elif transaction.transaction_type in ["debit", "installment"]:
+    elif transaction.transaction_type in ["debit", "installment", "transfer_out"]:
         account.balance += transaction.amount
 
     db.delete(transaction)

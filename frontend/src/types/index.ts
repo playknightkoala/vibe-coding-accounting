@@ -131,8 +131,16 @@ export interface TransactionUpdate {
   category?: string
   transaction_date?: string
   note?: string
-  foreign_amount?: number
   foreign_currency?: string
+}
+
+export interface TransferCreate {
+  from_account_id: number
+  to_account_id: number
+  amount: number
+  transaction_date: string
+  description: string
+  note?: string
 }
 
 export interface Budget {

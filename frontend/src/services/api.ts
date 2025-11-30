@@ -179,6 +179,10 @@ export default {
     return api.put<Transaction>(`/transactions/${id}`, transactionData)
   },
 
+  transfer(data: TransferCreate) {
+    return api.post<Transaction[]>('/transactions/transfer', data)
+  },
+
   deleteTransaction(id: number) {
     return api.delete(`/transactions/${id}`)
   },

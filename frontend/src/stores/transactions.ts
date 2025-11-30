@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import api from '@/services/api'
-import type { Transaction, TransactionCreate, TransactionUpdate } from '@/types'
+import type { Transaction, TransactionCreate, TransactionUpdate, TransferCreate } from '@/types'
 
 export const useTransactionsStore = defineStore('transactions', () => {
   const transactions = ref<Transaction[]>([])
@@ -72,6 +72,20 @@ export const useTransactionsStore = defineStore('transactions', () => {
     }
   }
 
+  const transfer = async (data: TransferCreate) => {
+    loading.value = true
+    error.value = null
+    try {
+      await api.transfer(data)
+      await fetchTransactions()
+    } catch (err: any) {
+      error.value = err.response?.data?.detail || '轉帳失敗'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   const deleteTransaction = async (id: number) => {
     loading.value = true
     error.value = null
@@ -93,6 +107,7 @@ export const useTransactionsStore = defineStore('transactions', () => {
     fetchTransactions,
     createTransaction,
     updateTransaction,
+    transfer,
     deleteTransaction
   }
 })

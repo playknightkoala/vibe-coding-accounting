@@ -107,7 +107,7 @@ const totalCredit = computed(() => {
 
 const totalDebit = computed(() => {
   return transactions.value
-    .filter(t => t.transaction_type === 'debit')
+    .filter(t => t.transaction_type === 'debit' || t.transaction_type === 'installment')
     .reduce((sum, t) => sum + t.amount, 0)
 })
 
@@ -351,7 +351,16 @@ watch(() => props.date, (newValue) => {
   color: #51cf66;
 }
 
-.transaction-amount.debit {
+.transaction-amount.debit,
+.transaction-amount.installment {
+  color: #ff6b6b;
+}
+
+.transaction-amount.transfer_in {
+  color: #51cf66;
+}
+
+.transaction-amount.transfer_out {
   color: #ff6b6b;
 }
 

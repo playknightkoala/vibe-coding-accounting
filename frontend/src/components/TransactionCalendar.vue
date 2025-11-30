@@ -111,8 +111,11 @@
               </div>
             </div>
             <div style="display: flex; flex-direction: column; align-items: flex-end;">
-              <div :class="['transaction-amount', transaction.transaction_type === 'credit' ? 'credit' : 'debit']">
-                {{ transaction.transaction_type === 'credit' ? '+' : '-' }}${{ transaction.amount }}
+              <div :class="['transaction-amount', 
+                transaction.transaction_type === 'credit' ? 'credit' : 
+                (transaction.transaction_type === 'transfer_in' ? 'transfer-in' : 
+                (transaction.transaction_type === 'transfer_out' ? 'transfer-out' : 'debit'))]">
+                {{ transaction.transaction_type === 'credit' || transaction.transaction_type === 'transfer_in' ? '+' : '-' }}${{ transaction.amount }}
               </div>
               <div v-if="transaction.is_installment && transaction.total_installments && transaction.installment_number" style="color: #a0aec0; font-size: 0.75rem; margin-top: 2px;">
                 剩 {{ transaction.total_installments - transaction.installment_number }} 期
@@ -630,6 +633,14 @@ watch(() => props.transactions, () => {
 }
 
 .transaction-amount.debit {
+  color: #ff6b6b;
+}
+
+.transaction-amount.transfer-in {
+  color: #51cf66;
+}
+
+.transaction-amount.transfer-out {
   color: #ff6b6b;
 }
 
