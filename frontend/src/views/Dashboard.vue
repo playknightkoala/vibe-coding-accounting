@@ -43,46 +43,39 @@
       <!-- 帳戶狀況頁籤 -->
       <div v-if="activeTab === 'accounts'" class="tab-content">
         <div v-if="accountsStore.accounts.length > 0" style="display: grid; gap: 15px;">
-          <div v-for="account in accountsStore.accounts" :key="account.id"
-               style="border: 1px solid rgba(0, 212, 255, 0.2); padding: 15px; border-radius: 8px; background: rgba(0, 212, 255, 0.03); transition: all 0.3s ease;"
-               @mouseenter="($event.currentTarget as HTMLElement).style.borderColor = 'rgba(0, 212, 255, 0.5)'"
-               @mouseleave="($event.currentTarget as HTMLElement).style.borderColor = 'rgba(0, 212, 255, 0.2)'">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <div>
-                <h4 style="margin: 0 0 5px 0;">{{ account.name }}</h4>
-                <p style="margin: 0; font-size: 14px; color: #a0aec0;">
-                  {{ accountsStore.getAccountTypeText(account.account_type) }} - {{ account.currency }}
-                </p>
+          <div v-for="account in accountsStore.accounts" :key="account.id" class="account-card">
+            <div class="account-header">
+              <div class="account-info">
+                <h4>{{ account.name }}</h4>
+                <p>{{ accountsStore.getAccountTypeText(account.account_type) }} - {{ account.currency }}</p>
               </div>
-              <div style="text-align: right; display: flex; align-items: center; gap: 15px;">
-                <p style="margin: 0; font-size: 24px; font-weight: bold;"
-                   :style="{ color: account.balance >= 0 ? '#51cf66' : '#ff6b6b' }">
+              <div class="account-balance">
+                <p :style="{ color: account.balance >= 0 ? '#51cf66' : '#ff6b6b' }">
                   {{ account.currency }} ${{ account.balance.toFixed(2) }}
                 </p>
-                <button @click="openQuickTransaction(account)" class="btn"
-                        style="padding: 8px 15px; background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; white-space: nowrap;">
-                  記帳
-                </button>
-                <!-- Transfer Buttons -->
-                <button v-if="account.account_type === 'stored_value'" 
-                        @click="openTransferModal(account, 'topup')" 
-                        class="btn"
-                        style="padding: 8px 15px; background: linear-gradient(135deg, #36D1DC 0%, #5B86E5 100%); color: white; white-space: nowrap; margin-left: 5px;">
-                  儲值
-                </button>
-                <button v-if="account.account_type === 'cash'" 
-                        @click="openTransferModal(account, 'withdraw')" 
-                        class="btn"
-                        style="padding: 8px 15px; background: linear-gradient(135deg, #FF512F 0%, #DD2476 100%); color: white; white-space: nowrap; margin-left: 5px;">
-                  提領
-                </button>
-                <button v-if="account.account_type === 'bank'" 
-                        @click="openTransferModal(account, 'transfer')" 
-                        class="btn"
-                        style="padding: 8px 15px; background: linear-gradient(135deg, #1FA2FF 0%, #12D8FA 100%); color: white; white-space: nowrap; margin-left: 5px;">
-                  轉帳
-                </button>
               </div>
+            </div>
+            
+            <div class="account-actions">
+              <button @click="openQuickTransaction(account)" class="btn btn-action btn-accounting">
+                記帳
+              </button>
+              <!-- Transfer Buttons -->
+              <button v-if="account.account_type === 'stored_value'" 
+                      @click="openTransferModal(account, 'topup')" 
+                      class="btn btn-action btn-topup">
+                儲值
+              </button>
+              <button v-if="account.account_type === 'cash'" 
+                      @click="openTransferModal(account, 'withdraw')" 
+                      class="btn btn-action btn-withdraw">
+                提領
+              </button>
+              <button v-if="account.account_type === 'bank'" 
+                      @click="openTransferModal(account, 'transfer')" 
+                      class="btn btn-action btn-transfer">
+                轉帳
+              </button>
             </div>
           </div>
         </div>
@@ -1631,5 +1624,104 @@ textarea:focus {
   outline: none;
   border-color: #00d4ff;
   box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2);
+}
+
+/* Account Card Responsive Styles */
+.account-card {
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  padding: 15px;
+  border-radius: 8px;
+  background: rgba(0, 212, 255, 0.03);
+  transition: all 0.3s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+}
+
+.account-card:hover {
+  border-color: rgba(0, 212, 255, 0.5);
+}
+
+.account-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex: 1;
+  gap: 15px;
+}
+
+.account-info h4 {
+  margin: 0 0 5px 0;
+}
+
+.account-info p {
+  margin: 0;
+  font-size: 14px;
+  color: #a0aec0;
+}
+
+.account-balance p {
+  margin: 0;
+  font-size: 24px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.account-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-action {
+  padding: 8px 15px;
+  color: white;
+  white-space: nowrap;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-accounting {
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+}
+
+.btn-topup {
+  background: linear-gradient(135deg, #36D1DC 0%, #5B86E5 100%);
+}
+
+.btn-withdraw {
+  background: linear-gradient(135deg, #FF512F 0%, #DD2476 100%);
+}
+
+.btn-transfer {
+  background: linear-gradient(135deg, #1FA2FF 0%, #12D8FA 100%);
+}
+
+/* Mobile Layout */
+@media (max-width: 768px) {
+  .account-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .account-header {
+    margin-bottom: 12px;
+  }
+
+  .account-actions {
+    justify-content: flex-end;
+    width: 100%;
+    overflow-x: auto; /* Allow scrolling if too many buttons */
+    padding-bottom: 2px; /* Space for scrollbar if needed */
+  }
+  
+  .btn-action {
+    flex: 1; /* Make buttons expand to fill space on mobile */
+    text-align: center;
+    padding: 10px;
+  }
 }
 </style>
