@@ -477,10 +477,15 @@ async def import_user_data(
                 if idx in account_index_to_new_id
             ]
 
-            # 查找是否已存在相同名稱的預算
+            # 查找是否已存在相同名稱和時間範圍的預算（避免週期預算被誤判為重複）
+            budget_start = datetime.fromisoformat(budget_data["start_date"]) if budget_data.get("start_date") else None
+            budget_end = datetime.fromisoformat(budget_data["end_date"]) if budget_data.get("end_date") else None
+            
             existing_budget = db.query(Budget).filter(
                 Budget.user_id == current_user.id,
-                Budget.name == budget_data["name"]
+                Budget.name == budget_data["name"],
+                Budget.start_date == budget_start,
+                Budget.end_date == budget_end
             ).first()
 
             if existing_budget:
@@ -498,7 +503,8 @@ async def import_user_data(
                 db.query(BudgetAccount).filter(BudgetAccount.budget_id == existing_budget.id).delete()
 
                 # 新增預算類別關聯
-                for category_name in budget_data.get("category_names", []):
+                unique_category_names = list(set(budget_data.get("category_names", []) or []))
+                for category_name in unique_category_names:
                     budget_category = BudgetCategory(
                         budget_id=existing_budget.id,
                         category_name=category_name
@@ -531,7 +537,8 @@ async def import_user_data(
                 db.flush()
 
                 # 新增預算類別關聯
-                for category_name in budget_data.get("category_names", []):
+                unique_category_names = list(set(budget_data.get("category_names", []) or []))
+                for category_name in unique_category_names:
                     budget_category = BudgetCategory(
                         budget_id=new_budget.id,
                         category_name=category_name

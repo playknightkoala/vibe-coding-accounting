@@ -5,58 +5,118 @@
     <div class="card">
       <button @click="handleCreate" class="btn btn-primary">新增預算</button>
 
-      <div v-if="budgetsStore.budgets.length > 0" style="margin-top: 20px;">
-        <div v-for="budget in budgetsStore.budgets" :key="budget.id" class="card">
-          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
-            <h3 style="margin: 0;">{{ budget.name }}</h3>
-            <span v-if="budget.range_mode === 'recurring'"
-                  style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                         color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px;">
-              🔄 {{ budgetsStore.getPeriodText(budget.period || '') }}
-            </span>
-            <span v-else
-                  style="background: rgba(0, 212, 255, 0.2);
-                         color: #00d4ff; padding: 4px 12px; border-radius: 12px; font-size: 12px; border: 1px solid #00d4ff;">
-              📅 自訂區間
-            </span>
+      <div style="margin-top: 20px;">
+        <!-- Active Budgets Section -->
+        <div class="section-header" @click="showActive = !showActive" style="display: flex; align-items: center; cursor: pointer; margin-bottom: 15px; user-select: none;">
+          <span style="font-size: 1.2rem; margin-right: 10px; transition: transform 0.3s;" :style="{ transform: showActive ? 'rotate(90deg)' : 'rotate(0deg)' }">▶</span>
+          <h2 style="margin: 0;">進行中預算 ({{ activeBudgets.length }})</h2>
+        </div>
+        
+        <div v-show="showActive">
+          <div v-if="activeBudgets.length > 0">
+            <div v-for="budget in activeBudgets" :key="budget.id" class="card" style="margin-bottom: 15px;">
+              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                <h3 style="margin: 0;">{{ budget.name }}</h3>
+                <span v-if="budget.range_mode === 'recurring'"
+                      style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                             color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px;">
+                  🔄 {{ budgetsStore.getPeriodText(budget.period || '') }}
+                </span>
+                <span v-else
+                      style="background: rgba(0, 212, 255, 0.2);
+                             color: #00d4ff; padding: 4px 12px; border-radius: 12px; font-size: 12px; border: 1px solid #00d4ff;">
+                  📅 自訂區間
+                </span>
+              </div>
+
+              <p><strong>類別：</strong>{{ budget.category_names.length > 0 ? budget.category_names.join('、') : '全部類別' }}</p>
+              <p><strong>綁定帳戶：</strong>{{ budgetsStore.getAccountNames(budget.account_ids) }}</p>
+              <p><strong>預算：</strong>${{ budget.amount.toFixed(2) }}</p>
+              <p v-if="budget.daily_limit"><strong>每日預算：</strong>${{ budget.daily_limit.toFixed(2) }}</p>
+              <p><strong>已使用：</strong>${{ budget.spent.toFixed(2) }}</p>
+              <p><strong>剩餘：</strong>${{ (budget.amount - budget.spent).toFixed(2) }}</p>
+
+              <div style="background-color: rgba(0, 0, 0, 0.3); height: 20px; border-radius: 10px; overflow: hidden; margin: 10px 0;">
+                <div
+                  :style="{
+                    width: Math.min((budget.spent / budget.amount) * 100, 100) + '%',
+                    backgroundColor: budget.spent > budget.amount ? '#ff6b6b' : '#51cf66',
+                    height: '100%',
+                    boxShadow: budget.spent > budget.amount ? '0 0 10px rgba(255, 107, 107, 0.5)' : '0 0 10px rgba(81, 207, 102, 0.5)'
+                  }"
+                ></div>
+              </div>
+
+              <p><small>{{ dateTimeUtils.formatDateTime(budget.start_date) }} - {{ dateTimeUtils.formatDateTime(budget.end_date) }}</small></p>
+
+              <p v-if="budget.range_mode === 'recurring' && budget.is_latest_period"
+                 style="margin: 10px 0 0 0; padding: 8px; background: rgba(102, 126, 234, 0.1); border-left: 3px solid #667eea; font-size: 12px;">
+                ℹ️ 本週期結束後將自動建立下一個週期
+              </p>
+
+              <div style="display: flex; gap: 5px; flex-wrap: wrap; margin-top: 10px;">
+                <button @click="handleEdit(budget)" class="btn btn-primary" style="padding: 5px 10px;">
+                  編輯
+                </button>
+                <button @click="handleDelete(budget.id)" class="btn btn-danger" style="padding: 5px 10px;">
+                  {{ budget.range_mode === 'recurring' && budget.is_latest_period ? '取消週期' : '刪除' }}
+                </button>
+              </div>
+            </div>
           </div>
+          <p v-else style="margin-left: 20px; color: #a0aec0;">尚無進行中預算</p>
+        </div>
 
-          <p><strong>類別：</strong>{{ budget.category_names.length > 0 ? budget.category_names.join('、') : '全部類別' }}</p>
-          <p><strong>綁定帳戶：</strong>{{ budgetsStore.getAccountNames(budget.account_ids) }}</p>
-          <p><strong>預算：</strong>${{ budget.amount.toFixed(2) }}</p>
-          <p v-if="budget.daily_limit"><strong>每日預算：</strong>${{ budget.daily_limit.toFixed(2) }}</p>
-          <p><strong>已使用：</strong>${{ budget.spent.toFixed(2) }}</p>
-          <p><strong>剩餘：</strong>${{ (budget.amount - budget.spent).toFixed(2) }}</p>
+        <!-- Expired Budgets Section -->
+        <div class="section-header" @click="showExpired = !showExpired" style="display: flex; align-items: center; cursor: pointer; margin: 20px 0 15px 0; user-select: none;">
+          <span style="font-size: 1.2rem; margin-right: 10px; transition: transform 0.3s;" :style="{ transform: showExpired ? 'rotate(90deg)' : 'rotate(0deg)' }">▶</span>
+          <h2 style="margin: 0; color: #a0aec0;">已過期預算 ({{ expiredBudgets.length }})</h2>
+        </div>
+        
+        <div v-show="showExpired">
+          <div v-if="expiredBudgets.length > 0">
+            <div v-for="budget in expiredBudgets" :key="budget.id" class="card" style="margin-bottom: 15px; opacity: 0.8;">
+              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                <h3 style="margin: 0; color: #a0aec0;">{{ budget.name }}</h3>
+                <span v-if="budget.range_mode === 'recurring'"
+                      style="background: #4a5568; color: #cbd5e0; padding: 4px 12px; border-radius: 12px; font-size: 12px;">
+                  🔄 {{ budgetsStore.getPeriodText(budget.period || '') }}
+                </span>
+                <span v-else
+                      style="background: #4a5568; color: #cbd5e0; padding: 4px 12px; border-radius: 12px; font-size: 12px;">
+                  📅 自訂區間
+                </span>
+              </div>
 
-          <div style="background-color: rgba(0, 0, 0, 0.3); height: 20px; border-radius: 10px; overflow: hidden; margin: 10px 0;">
-            <div
-              :style="{
-                width: Math.min((budget.spent / budget.amount) * 100, 100) + '%',
-                backgroundColor: budget.spent > budget.amount ? '#ff6b6b' : '#51cf66',
-                height: '100%',
-                boxShadow: budget.spent > budget.amount ? '0 0 10px rgba(255, 107, 107, 0.5)' : '0 0 10px rgba(81, 207, 102, 0.5)'
-              }"
-            ></div>
+              <p><strong>類別：</strong>{{ budget.category_names.length > 0 ? budget.category_names.join('、') : '全部類別' }}</p>
+              <p><strong>綁定帳戶：</strong>{{ budgetsStore.getAccountNames(budget.account_ids) }}</p>
+              <p><strong>預算：</strong>${{ budget.amount.toFixed(2) }}</p>
+              <p v-if="budget.daily_limit"><strong>每日預算：</strong>${{ budget.daily_limit.toFixed(2) }}</p>
+              <p><strong>已使用：</strong>${{ budget.spent.toFixed(2) }}</p>
+              <p><strong>剩餘：</strong>${{ (budget.amount - budget.spent).toFixed(2) }}</p>
+
+              <div style="background-color: rgba(0, 0, 0, 0.3); height: 20px; border-radius: 10px; overflow: hidden; margin: 10px 0;">
+                <div
+                  :style="{
+                    width: Math.min((budget.spent / budget.amount) * 100, 100) + '%',
+                    backgroundColor: '#a0aec0',
+                    height: '100%'
+                  }"
+                ></div>
+              </div>
+
+              <p><small>{{ dateTimeUtils.formatDateTime(budget.start_date) }} - {{ dateTimeUtils.formatDateTime(budget.end_date) }}</small></p>
+
+              <div style="display: flex; gap: 5px; flex-wrap: wrap; margin-top: 10px;">
+                <button @click="handleDelete(budget.id)" class="btn btn-danger" style="padding: 5px 10px;">
+                  刪除
+                </button>
+              </div>
+            </div>
           </div>
-
-          <p><small>{{ dateTimeUtils.formatDateTime(budget.start_date) }} - {{ dateTimeUtils.formatDateTime(budget.end_date) }}</small></p>
-
-          <p v-if="budget.range_mode === 'recurring' && budget.is_latest_period"
-             style="margin: 10px 0 0 0; padding: 8px; background: rgba(102, 126, 234, 0.1); border-left: 3px solid #667eea; font-size: 12px;">
-            ℹ️ 本週期結束後將自動建立下一個週期
-          </p>
-
-          <div style="display: flex; gap: 5px; flex-wrap: wrap; margin-top: 10px;">
-            <button @click="handleEdit(budget)" class="btn btn-primary" style="padding: 5px 10px;">
-              編輯
-            </button>
-            <button @click="handleDelete(budget.id)" class="btn btn-danger" style="padding: 5px 10px;">
-              {{ budget.range_mode === 'recurring' && budget.is_latest_period ? '取消週期' : '刪除' }}
-            </button>
-          </div>
+          <p v-else style="margin-left: 20px; color: #a0aec0;">尚無已過期預算</p>
         </div>
       </div>
-      <p v-else style="margin-top: 20px;">尚無預算</p>
     </div>
 
     <div v-if="modal.isOpen.value" class="modal">
@@ -234,7 +294,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import type { Budget } from '@/types'
 import CategoryManagementModal from '@/components/CategoryManagementModal.vue'
 import MessageModal from '@/components/MessageModal.vue'
@@ -259,6 +319,18 @@ const dateTimeUtils = useDateTime()
 const budgetForm = useBudgetForm()
 
 const showCategoryModal = ref(false)
+const showActive = ref(true)
+const showExpired = ref(false)
+
+const activeBudgets = computed(() => {
+  const today = dateTimeUtils.getTodayString()
+  return budgetsStore.budgets.filter(b => b.end_date >= today)
+})
+
+const expiredBudgets = computed(() => {
+  const today = dateTimeUtils.getTodayString()
+  return budgetsStore.budgets.filter(b => b.end_date < today)
+})
 
 const formController = useForm(budgetForm.initialFormData)
 

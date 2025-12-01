@@ -15,11 +15,17 @@
               月報
             </button>
             <button
-              :class="['btn', reportType === 'daily' ? 'btn-primary' : 'btn-secondary']"
-              @click="reportType = 'daily'"
-            >
-              日報
-            </button>
+            :class="['btn', reportType === 'daily' ? 'btn-primary' : 'btn-secondary']"
+            @click="reportType = 'daily'"
+          >
+            日報
+          </button>
+          <button
+            :class="['btn', reportType === 'custom' ? 'btn-primary' : 'btn-secondary']"
+            @click="reportType = 'custom'"
+          >
+            自訂
+          </button>
           </div>
         </div>
 
@@ -32,9 +38,18 @@
           </div>
         </div>
 
-        <div class="control-group" v-else>
+        <div class="control-group" v-else-if="reportType === 'daily'">
           <label>選擇日期：</label>
           <input type="date" v-model="selectedDate" class="date-input" />
+        </div>
+
+        <div class="control-group" v-else-if="reportType === 'custom'">
+          <label>選擇區間：</label>
+          <div class="date-range-selector">
+            <input type="date" v-model="customStartDate" class="date-input" placeholder="開始日期" />
+            <span class="date-separator">至</span>
+            <input type="date" v-model="customEndDate" class="date-input" placeholder="結束日期" />
+          </div>
         </div>
       </div>
     </div>
@@ -60,6 +75,8 @@
         :year="currentYear"
         :month="currentMonth"
         :date="selectedDate"
+        :start-date="customStartDate"
+        :end-date="customEndDate"
       />
     </div>
 
@@ -70,6 +87,8 @@
         :year="currentYear"
         :month="currentMonth"
         :date="selectedDate"
+        :start-date="customStartDate"
+        :end-date="customEndDate"
       />
     </div>
 
@@ -80,6 +99,8 @@
         :year="currentYear"
         :month="currentMonth"
         :date="selectedDate"
+        :start-date="customStartDate"
+        :end-date="customEndDate"
       />
     </div>
 
@@ -90,6 +111,8 @@
         :year="currentYear"
         :month="currentMonth"
         :date="selectedDate"
+        :start-date="customStartDate"
+        :end-date="customEndDate"
       />
     </div>
 
@@ -100,6 +123,16 @@
         :year="currentYear"
         :month="currentMonth"
         :date="selectedDate"
+        :start-date="customStartDate"
+        :end-date="customEndDate"
+      />
+    </div>
+
+    <!-- 預算子模組 -->
+    <div v-else-if="activeTab === 'budget'" class="reports-section">
+      <BudgetReport
+        :stats="budgetStats"
+        :transactions="budgetTransactions"
       />
     </div>
   </div>
@@ -112,24 +145,66 @@ import DetailsReport from '@/components/reports/DetailsReport.vue'
 import CategoryReport from '@/components/reports/CategoryReport.vue'
 import RankingReport from '@/components/reports/RankingReport.vue'
 import AccountReportView from '@/components/reports/AccountReportView.vue'
-
+import BudgetReport from '@/components/reports/BudgetReport.vue'
 import { useDateTime } from '@/composables/useDateTime'
+import { useAuthStore } from '@/stores/auth'
+import api from '@/services/api'
 
 const { getTodayString } = useDateTime()
+const authStore = useAuthStore()
 
-const reportType = ref<'monthly' | 'daily'>('monthly')
+const reportType = ref<'monthly' | 'daily' | 'custom'>('monthly')
 const activeTab = ref('overview')
 const currentYear = ref(new Date().getFullYear())
 const currentMonth = ref(new Date().getMonth() + 1)
 const selectedDate = ref(getTodayString())
+const customStartDate = ref(getTodayString())
+const customEndDate = ref(getTodayString())
+
+const budgetStats = ref({
+  total_budget: 0,
+  total_spent: 0,
+  remaining: 0,
+  daily_average: 0,
+  status: 'on_track'
+})
+const budgetTransactions = ref([])
 
 const tabs = [
   { label: '總覽', value: 'overview' },
   { label: '明細', value: 'details' },
   { label: '類別', value: 'category' },
   { label: '排行', value: 'ranking' },
-  { label: '帳戶', value: 'account' }
+  { label: '帳戶', value: 'account' },
+  { label: '預算', value: 'budget' }
 ]
+
+const fetchBudgetData = async () => {
+  try {
+    let response
+    
+    if (reportType.value === 'monthly') {
+      response = await api.getBudgetReportMonthly(currentYear.value, currentMonth.value)
+    } else if (reportType.value === 'daily') {
+      response = await api.getBudgetReportDaily(selectedDate.value)
+    } else if (reportType.value === 'custom') {
+      response = await api.getBudgetReportCustom(customStartDate.value, customEndDate.value)
+    }
+    
+    budgetStats.value = response.data.stats
+    budgetTransactions.value = response.data.transactions
+  } catch (error) {
+    console.error('Failed to fetch budget report:', error)
+  }
+}
+
+// Watch for changes to fetch data
+import { watch } from 'vue'
+watch([reportType, currentYear, currentMonth, selectedDate, customStartDate, customEndDate, activeTab], () => {
+  if (activeTab.value === 'budget') {
+    fetchBudgetData()
+  }
+}, { immediate: true })
 
 const previousPeriod = () => {
   if (reportType.value === 'monthly') {
@@ -226,6 +301,17 @@ const nextPeriod = () => {
 
 .date-input::-webkit-calendar-picker-indicator {
   filter: invert(1);
+}
+
+.date-range-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.date-separator {
+  color: #00d4ff;
+  font-weight: 500;
 }
 
 .tabs {

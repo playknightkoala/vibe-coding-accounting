@@ -62,7 +62,7 @@ def get_budgets(current_user: User = Depends(get_current_user), db: Session = De
     result = []
     for budget in budgets:
         # 獲取綁定的類別名稱列表
-        category_names = [bc.category_name for bc in db.query(BudgetCategory).filter(BudgetCategory.budget_id == budget.id).all()]
+        category_names = list(set([bc.category_name for bc in db.query(BudgetCategory).filter(BudgetCategory.budget_id == budget.id).all()]))
 
         # 計算已使用金額（傳入類別名稱列表）
         budget.spent = calculate_budget_spent(db, budget, category_names)
@@ -87,7 +87,7 @@ def get_budgets(current_user: User = Depends(get_current_user), db: Session = De
             "updated_at": budget.updated_at
         }
         result.append(budget_dict)
-    db.commit()
+    # db.commit()  # Do not commit changes on GET request
 
     return result
 
@@ -140,7 +140,9 @@ def create_budget(
 
     # 建立預算與類別的關聯
     if category_names:
-        for category_name in category_names:
+        # 去除重複的類別名稱
+        unique_category_names = list(set(category_names))
+        for category_name in unique_category_names:
             budget_category = BudgetCategory(budget_id=db_budget.id, category_name=category_name)
             db.add(budget_category)
 
@@ -151,7 +153,7 @@ def create_budget(
     return {
         "id": db_budget.id,
         "name": db_budget.name,
-        "category_names": category_names,
+        "category_names": unique_category_names,
         "amount": db_budget.amount,
         "daily_limit": db_budget.daily_limit,
         "spent": db_budget.spent,
@@ -182,10 +184,12 @@ def get_budget(
 
     # 獲取綁定的類別名稱列表
     category_names = [bc.category_name for bc in db.query(BudgetCategory).filter(BudgetCategory.budget_id == budget.id).all()]
+    # 去除重複顯示
+    category_names = list(set(category_names))
 
     # 自動更新已使用金額
     budget.spent = calculate_budget_spent(db, budget, category_names)
-    db.commit()
+    # db.commit()  # Do not commit changes on GET request
 
     return {
         "id": budget.id,
@@ -254,7 +258,9 @@ def update_budget(
 
         # 創建新的關聯
         if category_names:
-            for category_name in category_names:
+            # 去除重複的類別名稱
+            unique_category_names = list(set(category_names))
+            for category_name in unique_category_names:
                 budget_category = BudgetCategory(budget_id=budget_id, category_name=category_name)
                 db.add(budget_category)
 

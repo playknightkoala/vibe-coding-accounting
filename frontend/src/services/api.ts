@@ -16,6 +16,7 @@ import type {
   Transaction,
   TransactionCreate,
   TransactionUpdate,
+  TransferCreate,
   Budget,
   BudgetCreate,
   BudgetUpdate,
@@ -297,6 +298,66 @@ export default {
   getAccountReportDaily(date: string) {
     return api.get<AccountReport>('/reports/account/daily', {
       params: { date_str: date }
+    })
+  },
+
+  getBudgetReportMonthly(year: number, month: number) {
+    return api.get<any>('/reports/budget/monthly', {
+      params: { year, month }
+    })
+  },
+
+  getBudgetReportDaily(date: string) {
+    return api.get<any>('/reports/budget/daily', {
+      params: { date_str: date }
+    })
+  },
+
+  getBudgetReportCustom(startDate: string, endDate: string) {
+    return api.get<any>('/reports/custom/budget', {
+      params: { start_date: startDate, end_date: endDate }
+    })
+  },
+
+  getOverviewReportCustom(startDate: string, endDate: string) {
+    return api.get<any>('/reports/custom/overview', {
+      params: { start_date: startDate, end_date: endDate }
+    })
+  },
+
+  getDetailsReportCustom(startDate: string, endDate: string) {
+    return api.get<any>('/reports/custom/details', {
+      params: { start_date: startDate, end_date: endDate }
+    })
+  },
+
+  getCategoryReportCustom(startDate: string, endDate: string) {
+    return api.get<any>('/reports/custom/category', {
+      params: { start_date: startDate, end_date: endDate }
+    })
+  },
+
+  getRankingReportCustom(startDate: string, endDate: string) {
+    return api.get<any>('/reports/custom/ranking', {
+      params: { start_date: startDate, end_date: endDate }
+    })
+  },
+
+  getAccountReportCustom(startDate: string, endDate: string) {
+    return api.get<any>('/reports/custom/account', {
+      params: { start_date: startDate, end_date: endDate }
+    })
+  },
+
+  getCategoryTransactionsCustom(category: string, startDate: string, endDate: string) {
+    return api.get<any>(`/reports/custom/category/${encodeURIComponent(category)}/transactions`, {
+      params: { start_date: startDate, end_date: endDate }
+    })
+  },
+
+  getAccountTransactionsCustom(accountId: number, startDate: string, endDate: string) {
+    return api.get<any>(`/reports/custom/account/${accountId}/transactions`, {
+      params: { start_date: startDate, end_date: endDate }
     })
   },
 

@@ -128,10 +128,12 @@ import api from '@/services/api'
 import type { AccountReport, TransactionDetail } from '@/types'
 
 interface Props {
-  reportType: 'monthly' | 'daily'
+  reportType: 'monthly' | 'daily' | 'custom'
   year: number
   month: number
   date: string
+  startDate?: string
+  endDate?: string
 }
 
 const props = defineProps<Props>()
@@ -232,8 +234,10 @@ const fetchReport = async () => {
     let response
     if (props.reportType === 'monthly') {
       response = await api.getAccountReportMonthly(props.year, props.month)
-    } else {
+    } else if (props.reportType === 'daily') {
       response = await api.getAccountReportDaily(props.date)
+    } else if (props.reportType === 'custom' && props.startDate && props.endDate) {
+      response = await api.getAccountReportCustom(props.startDate, props.endDate)
     }
     reportData.value = response.data
 
@@ -497,7 +501,7 @@ const formatDate = (dateString: string) => {
   return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 }
 
-watch([() => props.reportType, () => props.year, () => props.month, () => props.date], () => {
+watch([() => props.reportType, () => props.year, () => props.month, () => props.date, () => props.startDate, () => props.endDate], () => {
   fetchReport()
 })
 

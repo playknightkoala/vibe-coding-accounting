@@ -65,10 +65,13 @@ def create_next_period_budgets():
 
             # 複製類別綁定關係
             old_budget_categories = db.query(BudgetCategory).filter(BudgetCategory.budget_id == budget.id).all()
-            for bc in old_budget_categories:
+            # 使用 set 去除重複的類別名稱
+            unique_categories = set(bc.category_name for bc in old_budget_categories)
+            
+            for category_name in unique_categories:
                 new_budget_category = BudgetCategory(
                     budget_id=new_budget.id,
-                    category_name=bc.category_name
+                    category_name=category_name
                 )
                 db.add(new_budget_category)
 

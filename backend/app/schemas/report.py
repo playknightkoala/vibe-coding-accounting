@@ -29,6 +29,7 @@ class TransactionDetail(BaseModel):
     account_name: str
     foreign_amount: Optional[float] = None
     foreign_currency: Optional[str] = None
+    exclude_from_budget: bool = False
 
 class DailyTransactions(BaseModel):
     date: str

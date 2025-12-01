@@ -90,8 +90,8 @@
 
     <div class="card">
       <h2>預算狀態</h2>
-      <div v-if="budgetsStore.budgets.length > 0" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
-        <div v-for="budget in budgetsStore.budgets" :key="budget.id"
+      <div v-if="activeBudgets.length > 0" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
+        <div v-for="budget in activeBudgets" :key="budget.id"
              style="border: 1px solid rgba(0, 212, 255, 0.2); padding: 12px; border-radius: 8px; background: rgba(0, 212, 255, 0.03);">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <h3 style="margin: 0; font-size: 1.1rem;">{{ budget.name }}</h3>
@@ -736,6 +736,11 @@ const selectedDate = ref(dateTimeUtils.getTodayString())
 const modalDate = ref(dateTimeUtils.getTodayString())
 const monthlyChartRef = ref<InstanceType<typeof MonthlyChart> | null>(null)
 const recurringExpenses = ref<RecurringExpense[]>([])
+
+const activeBudgets = computed(() => {
+  const today = dateTimeUtils.getTodayString()
+  return budgetsStore.budgets.filter(b => b.end_date >= today)
+})
 
 // Delete confirmation modal state
 const showDeleteConfirm = ref(false)
