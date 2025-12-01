@@ -6,7 +6,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.core.database import engine, Base
 from app.core.config import settings
 from app.api import auth, accounts, transactions, budgets, users, categories, reports, description_history, exchange_rates, password_reset, google_auth, admin, recurring_expenses
-from app.core.scheduler import start_scheduler, stop_scheduler, run_bot_crawler_job, run_esun_crawler_job, run_recurring_expense_job
+from app.core.scheduler import start_scheduler, stop_scheduler, run_bot_crawler_job, run_esun_crawler_job, run_recurring_expense_job, run_budget_recurring_job
 from starlette.middleware.base import BaseHTTPMiddleware
 import time
 from collections import defaultdict
@@ -31,6 +31,8 @@ async def lifespan(app: FastAPI):
 
     # Run BOT crawler immediately on startup to ensure we have data
     threading.Thread(target=run_bot_crawler_job, daemon=True).start()
+    # Run budget recurring job immediately on startup to ensure past due budgets are reset
+    threading.Thread(target=run_budget_recurring_job, daemon=True).start()
     # E.SUN crawler will run on schedule (hourly)
 
     # Send startup notification email

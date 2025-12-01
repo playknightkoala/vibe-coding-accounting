@@ -4,6 +4,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from app.services.crawler import fetch_exchange_rates
 from app.services.crawler_esun import fetch_esun_exchange_rates
 from app.services.recurring_expense_processor import process_recurring_expenses
+from app.tasks.budget_recurring import create_next_period_budgets
 from app.core.database import SessionLocal
 import logging
 
@@ -43,6 +44,15 @@ def run_recurring_expense_job():
     finally:
         db.close()
 
+def run_budget_recurring_job():
+    """處理週期預算 - 建立下一個週期的預算"""
+    logger.info("Starting budget recurring processing")
+    try:
+        create_next_period_budgets()
+        logger.info("Budget recurring job completed")
+    except Exception as e:
+        logger.error(f"Budget recurring job failed: {e}")
+
 scheduler = BackgroundScheduler()
 
 def start_scheduler():
@@ -58,8 +68,12 @@ def start_scheduler():
     recurring_trigger = CronTrigger(hour=0, minute=1)
     scheduler.add_job(run_recurring_expense_job, trigger=recurring_trigger, id="recurring_expense_processor", replace_existing=True)
 
+    # 週期預算處理：每天凌晨 00:05 執行
+    budget_trigger = CronTrigger(hour=0, minute=5)
+    scheduler.add_job(run_budget_recurring_job, trigger=budget_trigger, id="budget_recurring_processor", replace_existing=True)
+
     scheduler.start()
-    logger.info("Scheduler started - BOT (hourly), E.SUN (hourly), Recurring Expenses (daily at 00:01)")
+    logger.info("Scheduler started - BOT (hourly), E.SUN (hourly), Recurring Expenses (daily at 00:01), Budget Recurring (daily at 00:05)")
 
 def stop_scheduler():
     scheduler.shutdown()
