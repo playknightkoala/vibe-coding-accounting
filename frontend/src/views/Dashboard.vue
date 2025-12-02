@@ -1402,7 +1402,8 @@ const handleQuickTransaction = async () => {
         category: transactionData.category,
         transaction_date: transactionData.transaction_date,
         foreign_amount: transactionData.foreign_amount,
-        foreign_currency: transactionData.foreign_currency
+        foreign_currency: transactionData.foreign_currency,
+        transaction_type: transactionData.transaction_type
       })
       // 更新交易時也更新敘述歷史
       // await api.updateDescriptionHistory(transactionData.description)

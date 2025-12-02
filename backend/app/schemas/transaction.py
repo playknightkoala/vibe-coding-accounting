@@ -38,6 +38,7 @@ class TransactionUpdate(BaseModel):
     foreign_amount: Optional[float] = None
     foreign_currency: Optional[str] = None
     transaction_date: Optional[datetime] = None
+    transaction_type: Optional[str] = None
 
 class Transaction(TransactionBase):
     id: int

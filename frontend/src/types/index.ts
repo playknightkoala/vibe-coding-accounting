@@ -132,6 +132,7 @@ export interface TransactionUpdate {
   transaction_date?: string
   note?: string
   foreign_currency?: string
+  transaction_type?: 'credit' | 'debit' | 'installment'
 }
 
 export interface TransferCreate {
