@@ -158,7 +158,12 @@ const handleSubmit = async () => {
         currency: formController.form.value.currency
       })
     } else {
-      await accountsStore.createAccount(formController.form.value)
+      // Ensure initial_balance is a valid number (convert empty string to 0)
+      const accountData = {
+        ...formController.form.value,
+        initial_balance: formController.form.value.initial_balance || 0
+      }
+      await accountsStore.createAccount(accountData)
     }
     handleClose()
   } catch (err: any) {
