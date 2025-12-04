@@ -2,6 +2,7 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 import base64
+from typing import Optional
 from app.core.config import settings
 
 def _get_encryption_key() -> bytes:
@@ -48,3 +49,55 @@ def decrypt_data(encrypted_data: str) -> str:
         return decrypted_data.decode()
     except Exception as e:
         raise ValueError(f"解密失敗: 檔案可能已損壞或不是由此應用程式匯出")
+
+
+# ===== 欄位加密功能 (用於資料庫敏感欄位) =====
+
+def encrypt_field(text: Optional[str]) -> Optional[str]:
+    """
+    加密資料庫欄位文字
+
+    Args:
+        text: 要加密的文字，可為 None 或空字串
+
+    Returns:
+        加密後的文字，如果輸入為 None 或空字串則返回原值
+    """
+    if not text:
+        return text
+
+    try:
+        key = _get_encryption_key()
+        f = Fernet(key)
+        encrypted_bytes = f.encrypt(text.encode('utf-8'))
+        # 直接返回 bytes 解碼後的字串（Fernet 輸出已經是 base64 格式）
+        return encrypted_bytes.decode('utf-8')
+    except Exception as e:
+        # 如果加密失敗，記錄錯誤但返回原始文字（確保系統可用性）
+        print(f"Field encryption error: {e}")
+        return text
+
+
+def decrypt_field(encrypted_text: Optional[str]) -> Optional[str]:
+    """
+    解密資料庫欄位文字
+
+    Args:
+        encrypted_text: 加密的文字，可為 None 或空字串
+
+    Returns:
+        解密後的文字，如果輸入為 None 或空字串則返回原值
+        如果解密失敗（舊資料未加密），返回原始文字以保持向後相容
+    """
+    if not encrypted_text:
+        return encrypted_text
+
+    try:
+        key = _get_encryption_key()
+        f = Fernet(key)
+        decrypted_bytes = f.decrypt(encrypted_text.encode('utf-8'))
+        return decrypted_bytes.decode('utf-8')
+    except Exception as e:
+        # 如果解密失敗，可能是未加密的舊資料
+        # 返回原始文字以保持向後兼容
+        return encrypted_text

@@ -1,17 +1,39 @@
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Date, Boolean
 from sqlalchemy.orm import relationship
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.sql import func
 from app.core.database import Base
+from app.core.encryption import encrypt_field, decrypt_field
 
 class Transaction(Base):
     __tablename__ = "transactions"
 
     id = Column(Integer, primary_key=True, index=True)
-    description = Column(String, nullable=False)
+    _description = Column("description", String, nullable=False)  # 加密儲存
     amount = Column(Float, nullable=False)
     transaction_type = Column(String, nullable=False)  # 'debit', 'credit', or 'installment'
     category = Column(String)
-    note = Column(String, nullable=True)
+    _note = Column("note", String, nullable=True)  # 加密儲存
+
+    @hybrid_property
+    def description(self):
+        """解密 description"""
+        return decrypt_field(self._description)
+
+    @description.setter
+    def description(self, value):
+        """加密 description"""
+        self._description = encrypt_field(value)
+
+    @hybrid_property
+    def note(self):
+        """解密 note"""
+        return decrypt_field(self._note)
+
+    @note.setter
+    def note(self, value):
+        """加密 note"""
+        self._note = encrypt_field(value)
     foreign_amount = Column(Float, nullable=True)
     foreign_currency = Column(String, nullable=True)
     transaction_date = Column(DateTime(timezone=True), nullable=False)
