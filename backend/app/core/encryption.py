@@ -5,11 +5,23 @@ import base64
 from typing import Optional
 from app.core.config import settings
 
+# ===== 快取機制：避免重複計算金鑰 =====
+_cached_encryption_key: Optional[bytes] = None
+_cached_fernet: Optional[Fernet] = None
+
 def _get_encryption_key() -> bytes:
     """
     從 DATA_ENCRYPTION_KEY 生成 Fernet 密鑰
     使用 PBKDF2HMAC 將密鑰派生為標準格式
+
+    ⚡ 效能優化：金鑰會被快取，避免重複執行 PBKDF2（100,000 次迭代）
     """
+    global _cached_encryption_key
+
+    # 如果已有快取，直接返回
+    if _cached_encryption_key is not None:
+        return _cached_encryption_key
+
     # 使用固定的 salt（因為我們需要一致的密鑰）
     salt = b'accounting_app_salt_v1'
 
@@ -21,7 +33,29 @@ def _get_encryption_key() -> bytes:
     )
 
     key = base64.urlsafe_b64encode(kdf.derive(settings.DATA_ENCRYPTION_KEY.encode()))
+
+    # 快取金鑰
+    _cached_encryption_key = key
+
     return key
+
+def _get_fernet() -> Fernet:
+    """
+    取得 Fernet 加密器實例
+
+    ⚡ 效能優化：Fernet 實例會被快取並重複使用
+    """
+    global _cached_fernet
+
+    # 如果已有快取，直接返回
+    if _cached_fernet is not None:
+        return _cached_fernet
+
+    # 建立 Fernet 實例並快取
+    key = _get_encryption_key()
+    _cached_fernet = Fernet(key)
+
+    return _cached_fernet
 
 def encrypt_data(data: str) -> str:
     """
@@ -29,8 +63,7 @@ def encrypt_data(data: str) -> str:
     返回 base64 編碼的加密資料
     """
     try:
-        key = _get_encryption_key()
-        f = Fernet(key)
+        f = _get_fernet()  # 使用快取的 Fernet 實例
         encrypted_data = f.encrypt(data.encode())
         return base64.urlsafe_b64encode(encrypted_data).decode()
     except Exception as e:
@@ -42,8 +75,7 @@ def decrypt_data(encrypted_data: str) -> str:
     返回原始 JSON 字串
     """
     try:
-        key = _get_encryption_key()
-        f = Fernet(key)
+        f = _get_fernet()  # 使用快取的 Fernet 實例
         encrypted_bytes = base64.urlsafe_b64decode(encrypted_data.encode())
         decrypted_data = f.decrypt(encrypted_bytes)
         return decrypted_data.decode()
@@ -62,13 +94,14 @@ def encrypt_field(text: Optional[str]) -> Optional[str]:
 
     Returns:
         加密後的文字，如果輸入為 None 或空字串則返回原值
+
+    ⚡ 效能優化：使用快取的 Fernet 實例
     """
     if not text:
         return text
 
     try:
-        key = _get_encryption_key()
-        f = Fernet(key)
+        f = _get_fernet()  # 使用快取的 Fernet 實例
         encrypted_bytes = f.encrypt(text.encode('utf-8'))
         # 直接返回 bytes 解碼後的字串（Fernet 輸出已經是 base64 格式）
         return encrypted_bytes.decode('utf-8')
@@ -88,13 +121,14 @@ def decrypt_field(encrypted_text: Optional[str]) -> Optional[str]:
     Returns:
         解密後的文字，如果輸入為 None 或空字串則返回原值
         如果解密失敗（舊資料未加密），返回原始文字以保持向後相容
+
+    ⚡ 效能優化：使用快取的 Fernet 實例
     """
     if not encrypted_text:
         return encrypted_text
 
     try:
-        key = _get_encryption_key()
-        f = Fernet(key)
+        f = _get_fernet()  # 使用快取的 Fernet 實例
         decrypted_bytes = f.decrypt(encrypted_text.encode('utf-8'))
         return decrypted_bytes.decode('utf-8')
     except Exception as e:
