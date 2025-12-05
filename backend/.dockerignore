@@ -1,0 +1,46 @@
+# Python cache and compiled files
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Testing
+.pytest_cache
+.coverage
+htmlcov
+coverage.xml
+
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+docs/
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.*
+
+# Database
+*.db
+*.sqlite
+
+# Alembic (if not needed in runtime)
+alembic/
+alembic.ini
