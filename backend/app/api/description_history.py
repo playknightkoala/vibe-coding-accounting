@@ -50,10 +50,17 @@ def update_description_history(
     description = description.strip()
 
     # 檢查是否已存在此敘述
-    existing = db.query(DescriptionHistory).filter(
-        DescriptionHistory.user_id == current_user.id,
-        DescriptionHistory.description == description
-    ).first()
+    # 由於 description 是加密欄位，無法直接在 SQL 查詢中比對
+    # 需要取得所有該使用者的記錄，在應用層解密後比對
+    all_histories = db.query(DescriptionHistory).filter(
+        DescriptionHistory.user_id == current_user.id
+    ).all()
+
+    existing = None
+    for history in all_histories:
+        if history.description == description:
+            existing = history
+            break
 
     if existing:
         # 更新 last_used_at 讓它排到最前面

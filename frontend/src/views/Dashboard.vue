@@ -8,18 +8,69 @@
     <div class="card">
       <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 20px; margin-bottom: 20px;">
         <h2>總覽</h2>
-        
-        <!-- 總額統計 (移至右上角) -->
+
+        <!-- 總額統計與時間範圍切換 (移至右上角) -->
         <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
-          <span style="font-size: 1.1rem; color: #a0aec0; font-weight: 500;">總額統計</span>
-          
-          <div v-for="(total, currency) in dashboard.totalByCurrency.value" :key="currency"
+          <!-- 時間範圍切換按鈕 -->
+          <div style="display: flex; gap: 8px; background: rgba(0, 0, 0, 0.2); padding: 4px; border-radius: 20px; border: 1px solid rgba(0, 212, 255, 0.2);">
+            <button
+              @click="dashboard.setTimeRangeMode('month')"
+              :class="['time-range-btn', dashboard.timeRangeMode.value === 'month' ? 'active' : '']"
+            >
+              本月
+            </button>
+            <button
+              @click="dashboard.setTimeRangeMode('day')"
+              :class="['time-range-btn', dashboard.timeRangeMode.value === 'day' ? 'active' : '']"
+            >
+              今日
+            </button>
+            <button
+              @click="dashboard.setTimeRangeMode('total')"
+              :class="['time-range-btn', dashboard.timeRangeMode.value === 'total' ? 'active' : '']"
+            >
+              總體
+            </button>
+          </div>
+
+          <span style="font-size: 1.1rem; color: #a0aec0; font-weight: 500;">
+            <template v-if="dashboard.timeRangeMode.value === 'total'">帳戶總額</template>
+            <template v-else-if="dashboard.timeRangeMode.value === 'month'">本月變化</template>
+            <template v-else>今日變化</template>
+          </span>
+
+          <div v-for="(total, currency) in dashboard.totalByCurrencyForTimeRange.value" :key="currency"
                style="padding: 8px 20px; background: linear-gradient(135deg, rgba(0, 102, 255, 0.1) 0%, rgba(0, 212, 255, 0.05) 100%); border-radius: 25px; border: 1px solid rgba(0, 212, 255, 0.2); display: flex; align-items: center; gap: 12px;">
             <span style="color: #a0aec0; font-size: 1rem;">{{ currency }}</span>
             <span style="font-size: 1.3rem; font-weight: bold;"
                :style="{ color: total >= 0 ? '#51cf66' : '#ff6b6b' }">
+              <template v-if="dashboard.timeRangeMode.value !== 'total'">
+                {{ total >= 0 ? '+' : '' }}
+              </template>
               ${{ total.toFixed(2) }}
             </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 收支統計 -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+        <div style="padding: 15px; background: linear-gradient(135deg, rgba(81, 207, 102, 0.1) 0%, rgba(81, 207, 102, 0.05) 100%); border-radius: 8px; border: 1px solid rgba(81, 207, 102, 0.2);">
+          <div style="color: #a0aec0; font-size: 0.9rem; margin-bottom: 5px;">收入</div>
+          <div style="color: #51cf66; font-size: 1.8rem; font-weight: bold;">
+            ${{ dashboard.incomeExpenseStats.value.income.toFixed(2) }}
+          </div>
+        </div>
+        <div style="padding: 15px; background: linear-gradient(135deg, rgba(255, 107, 107, 0.1) 0%, rgba(255, 107, 107, 0.05) 100%); border-radius: 8px; border: 1px solid rgba(255, 107, 107, 0.2);">
+          <div style="color: #a0aec0; font-size: 0.9rem; margin-bottom: 5px;">支出</div>
+          <div style="color: #ff6b6b; font-size: 1.8rem; font-weight: bold;">
+            ${{ dashboard.incomeExpenseStats.value.expense.toFixed(2) }}
+          </div>
+        </div>
+        <div style="padding: 15px; background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 212, 255, 0.05) 100%); border-radius: 8px; border: 1px solid rgba(0, 212, 255, 0.2);">
+          <div style="color: #a0aec0; font-size: 0.9rem; margin-bottom: 5px;">淨收支</div>
+          <div :style="{ color: dashboard.incomeExpenseStats.value.net >= 0 ? '#51cf66' : '#ff6b6b', fontSize: '1.8rem', fontWeight: 'bold' }">
+            ${{ dashboard.incomeExpenseStats.value.net.toFixed(2) }}
           </div>
         </div>
       </div>
@@ -44,18 +95,20 @@
       <div v-if="activeTab === 'accounts'" class="tab-content">
         <div v-if="accountsStore.accounts.length > 0" style="display: grid; gap: 15px;">
           <div v-for="account in accountsStore.accounts" :key="account.id" class="account-card">
-            <div class="account-header">
-              <div class="account-info">
-                <h4>{{ account.name }}</h4>
-                <p>{{ accountsStore.getAccountTypeText(account.account_type) }} - {{ account.currency }}</p>
-              </div>
-              <div class="account-balance">
-                <p :style="{ color: account.balance >= 0 ? '#51cf66' : '#ff6b6b' }">
-                  {{ account.currency }} ${{ account.balance.toFixed(2) }}
-                </p>
+            <div class="account-info">
+              <h4>{{ account.name }}</h4>
+              <p>{{ accountsStore.getAccountTypeText(account.account_type) }} - {{ account.currency }}</p>
+            </div>
+
+            <div class="account-balance">
+              <div class="balance-display">
+                <span class="currency-label">{{ account.currency }}</span>
+                <span class="balance-amount" :style="{ color: dashboard.getAccountBalance(account.id) >= 0 ? '#51cf66' : '#ff6b6b' }">
+                  ${{ dashboard.getAccountBalance(account.id).toFixed(2) }}
+                </span>
               </div>
             </div>
-            
+
             <div class="account-actions">
               <button @click="openQuickTransaction(account)" class="btn btn-action btn-accounting">
                 記帳
@@ -1586,6 +1639,30 @@ onMounted(async () => {
   margin-top: 20px;
 }
 
+/* 時間範圍切換按鈕樣式 */
+.time-range-btn {
+  padding: 6px 16px;
+  border: none;
+  border-radius: 16px;
+  background: transparent;
+  color: #a0aec0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.time-range-btn.active {
+  background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3);
+}
+
+.time-range-btn:hover:not(.active) {
+  background: rgba(0, 212, 255, 0.1);
+  color: #00d4ff;
+}
+
 
 
 .quick-transaction-modal {
@@ -1639,22 +1716,14 @@ textarea:focus {
   border-radius: 8px;
   background: rgba(0, 212, 255, 0.03);
   transition: all 0.3s ease;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
   gap: 15px;
+  align-items: center;
 }
 
 .account-card:hover {
   border-color: rgba(0, 212, 255, 0.5);
-}
-
-.account-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex: 1;
-  gap: 15px;
 }
 
 .account-info h4 {
@@ -1667,8 +1736,29 @@ textarea:focus {
   color: #a0aec0;
 }
 
-.account-balance p {
-  margin: 0;
+.account-balance {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  min-width: 200px;
+}
+
+.balance-display {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  justify-content: flex-end;
+}
+
+.currency-label {
+  color: #a0aec0;
+  font-size: 16px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.balance-amount {
   font-size: 24px;
   font-weight: bold;
   white-space: nowrap;
@@ -1677,7 +1767,9 @@ textarea:focus {
 .account-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
+  min-width: 190px;
 }
 
 .btn-action {
@@ -1688,6 +1780,8 @@ textarea:focus {
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
+  width: 90px;
+  text-align: center;
 }
 
 .btn-accounting {
@@ -1709,23 +1803,27 @@ textarea:focus {
 /* Mobile Layout */
 @media (max-width: 768px) {
   .account-card {
-    flex-direction: column;
-    align-items: stretch;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 12px;
   }
 
-  .account-header {
-    margin-bottom: 12px;
+  .account-balance {
+    width: 100%;
+    text-align: left;
   }
 
   .account-actions {
-    justify-content: flex-end;
     width: 100%;
-    overflow-x: auto; /* Allow scrolling if too many buttons */
-    padding-bottom: 2px; /* Space for scrollbar if needed */
+    min-width: auto;
+    justify-content: flex-end;
+    overflow-x: auto;
+    padding-bottom: 2px;
   }
-  
+
   .btn-action {
-    flex: 1; /* Make buttons expand to fill space on mobile */
+    flex: 1;
+    width: auto;
     text-align: center;
     padding: 10px;
   }
