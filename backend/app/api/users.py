@@ -345,8 +345,8 @@ async def import_user_data(
             ).first()
 
             if existing_account:
-                # 覆蓋現有帳戶（先將餘額歸零，之後會透過交易重新計算）
-                existing_account.balance = 0
+                # 覆蓋現有帳戶（直接使用匯出時保存的餘額）
+                existing_account.balance = acc_data["balance"]
                 existing_account.description = acc_data.get("description")
 
                 # 刪除該帳戶的所有舊交易
@@ -355,12 +355,12 @@ async def import_user_data(
                 account_index_to_new_id[acc_data["index"]] = existing_account.id
                 stats["accounts_updated"] += 1
             else:
-                # 新增帳戶
+                # 新增帳戶（直接使用匯出時保存的餘額）
                 new_account = Account(
                     user_id=current_user.id,
                     name=acc_data["name"],
                     account_type=acc_data["account_type"],
-                    balance=0,
+                    balance=acc_data["balance"],
                     currency=acc_data.get("currency", "TWD"),
                     description=acc_data.get("description")
                 )
@@ -388,11 +388,7 @@ async def import_user_data(
             ).first()
 
             if existing_transaction:
-                # 先反轉舊交易對餘額的影響
-                if existing_transaction.transaction_type == "credit":
-                    account.balance -= existing_transaction.amount
-                else:
-                    account.balance += existing_transaction.amount
+                # 更新現有交易（不調整餘額，因為帳戶餘額已直接使用匯出值）
 
                 # 更新交易資料
                 existing_transaction.amount = trans_data["amount"]
@@ -409,11 +405,7 @@ async def import_user_data(
                 existing_transaction.remaining_amount = trans_data.get("remaining_amount")
                 existing_transaction.exclude_from_budget = trans_data.get("exclude_from_budget", False)
 
-                # 應用新交易對餘額的影響
-                if trans_data["transaction_type"] == "credit":
-                    account.balance += trans_data["amount"]
-                else:
-                    account.balance -= trans_data["amount"]
+                # 不調整餘額（帳戶餘額已直接使用匯出時保存的值）
 
                 stats["transactions_updated"] += 1
             else:
@@ -438,11 +430,7 @@ async def import_user_data(
                 )
                 db.add(new_transaction)
 
-                # 更新帳戶餘額
-                if trans_data["transaction_type"] == "credit":
-                    account.balance += trans_data["amount"]
-                else:
-                    account.balance -= trans_data["amount"]
+                # 不調整餘額（帳戶餘額已直接使用匯出時保存的值）
 
                 stats["transactions_created"] += 1
 

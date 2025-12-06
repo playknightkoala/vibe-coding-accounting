@@ -53,6 +53,9 @@ class Transaction(Base):
     recurring_group_id = Column(String, nullable=True, index=True)  # Links to RecurringExpense.recurring_group_id
     is_from_recurring = Column(Boolean, default=False, nullable=False)  # True if this transaction was auto-generated from recurring expense
 
+    # Transfer pairing
+    transfer_pair_id = Column(String, nullable=True, index=True)  # UUID to link transfer_out and transfer_in
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

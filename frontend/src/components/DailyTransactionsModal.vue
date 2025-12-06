@@ -52,7 +52,7 @@
                   <span class="exchange-rate">≈ {{ transaction.amount.toFixed(0) }} TWD</span>
                 </div>
                 <div v-else>
-                  {{ transaction.transaction_type === 'credit' ? '+' : '-' }}${{ transaction.amount.toFixed(2) }}
+                  {{ (transaction.transaction_type === 'credit' || transaction.transaction_type === 'transfer_in') ? '+' : '-' }}${{ transaction.amount.toFixed(2) }}
                 </div>
               </div>
             </div>

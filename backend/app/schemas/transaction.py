@@ -53,6 +53,8 @@ class Transaction(TransactionBase):
     total_amount: Optional[float] = None
     remaining_amount: Optional[float] = None
     annual_interest_rate: Optional[float] = None
+    # Transfer pairing
+    transfer_pair_id: Optional[str] = None
 
     @field_serializer('transaction_date', 'created_at', 'updated_at')
     def serialize_datetime(self, dt: Optional[datetime], _info) -> Optional[str]:

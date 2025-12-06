@@ -122,9 +122,9 @@ export function useDashboard() {
 
     // 計算該時間範圍內的淨變化
     const netChange = filteredTransactions.reduce((sum, t) => {
-      if (t.transaction_type === 'credit') {
+      if (t.transaction_type === 'credit' || t.transaction_type === 'transfer_in') {
         return sum + t.amount
-      } else if (t.transaction_type === 'debit' || t.transaction_type === 'installment') {
+      } else if (t.transaction_type === 'debit' || t.transaction_type === 'installment' || t.transaction_type === 'transfer_out') {
         return sum - t.amount
       }
       return sum

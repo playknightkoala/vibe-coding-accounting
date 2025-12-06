@@ -411,14 +411,21 @@
             </div>
 
 
-
-            <div v-if="!quickForm.isTransfer()" class="form-group">
+            <!-- 交易類型 -->
+            <div v-if="!quickForm.isTransfer() && !isEditingTransferTransaction" class="form-group">
               <label>交易類型</label>
               <select v-model="quickForm.form.value.transaction_type" required>
                 <option value="credit">收入</option>
                 <option value="debit">支出</option>
                 <option value="installment">分期</option>
               </select>
+            </div>
+            <!-- 轉帳交易：顯示唯讀類型 -->
+            <div v-else-if="isEditingTransferTransaction" class="form-group">
+              <label>交易類型</label>
+              <div style="padding: 10px 12px; background: rgba(0, 0, 0, 0.2); border-radius: 4px; border: 1px solid rgba(0, 212, 255, 0.3); color: #a0aec0;">
+                {{ quickForm.form.value.transaction_type === 'transfer_in' ? '轉入' : '轉出' }}
+              </div>
             </div>
 
             <!-- 固定支出選項 (只在交易類型為支出時顯示，且不在編輯模式，且不是轉帳/提領/儲值) -->
@@ -522,13 +529,21 @@
               </div>
             </div>
 
-            <div v-if="!quickForm.isTransfer()">
+            <!-- 類別選擇器：新建轉帳和編輯轉帳時都隱藏 -->
+            <div v-if="!quickForm.isTransfer() && !isEditingTransferTransaction">
               <CategorySelector
                 :model-value="quickForm.form.value.category || ''"
                 @update:model-value="quickForm.form.value.category = $event"
                 :categories="categoriesStore.categories"
                 @open-management="showCategoryModal = true"
               />
+            </div>
+            <!-- 轉帳交易：顯示「不適用」 -->
+            <div v-else-if="isEditingTransferTransaction" class="form-group">
+              <label>類別</label>
+              <div style="padding: 10px 12px; background: rgba(0, 0, 0, 0.2); border-radius: 4px; border: 1px solid rgba(0, 212, 255, 0.3); color: #a0aec0;">
+                (不適用)
+              </div>
             </div>
 
             <div class="form-group">
@@ -554,7 +569,7 @@
               {{ quickForm.isEditing() ? '更新' : quickForm.isTransfer() ? '確認轉帳' : '新增交易' }}
             </button>
             <button 
-              v-if="quickForm.isEditing()" 
+              v-if="quickForm.isEditing() && !isEditingTransferTransaction" 
               type="button" 
               @click="handleRecordAgain({ 
                 account_id: quickForm.form.value.account_id,
@@ -682,6 +697,23 @@
             </button>
           </div>
         </div>
+        <!-- 轉帳刪除選項 -->
+        <div v-else-if="deleteConfirmType === 'transfer'" style="display: flex; gap: 10px;">
+          <button
+            @click="confirmDelete('single')"
+            class="btn btn-danger"
+            style="flex: 1;"
+          >
+            確定刪除（連同配對交易）
+          </button>
+          <button
+            @click="showDeleteConfirm = false"
+            class="btn btn-secondary"
+            style="flex: 1;"
+          >
+            取消
+          </button>
+        </div>
         <div v-else style="display: flex; gap: 10px;">
           <button
             @click="confirmDelete('single')"
@@ -798,7 +830,7 @@ const activeBudgets = computed(() => {
 // Delete confirmation modal state
 const showDeleteConfirm = ref(false)
 const deleteConfirmMessage = ref('')
-const deleteConfirmType = ref<'single' | 'group' | 'recurring' | 'recurring-projected' | 'installment-single'>('single')
+const deleteConfirmType = ref<'single' | 'group' | 'recurring' | 'recurring-projected' | 'installment-single' | 'transfer'>('single')
 const currentDeletingTransaction = ref<any>(null)
 const currentEditingTransaction = ref<any>(null)
 const currentRecurringExpenseId = ref<number | null>(null)
@@ -916,6 +948,12 @@ const currentAccount = computed(() => {
 
 const currentAccountCurrency = computed(() => {
   return currentAccount.value?.currency || 'TWD'
+})
+
+// 檢測是否正在編輯轉帳交易（包括 transfer_in 和 transfer_out）
+const isEditingTransferTransaction = computed(() => {
+  const transactionType = quickForm.form.value.transaction_type
+  return transactionType === 'transfer_in' || transactionType === 'transfer_out'
 })
 
 const isCreditCardAccount = computed(() => {
@@ -1228,7 +1266,15 @@ const handleDeleteTransaction = async () => {
     deleteConfirmMessage.value = `此交易為分期交易 (第 ${transaction.installment_number} 期，共 ${transaction.total_installments} 期)`
     deleteConfirmType.value = 'group'
     showDeleteConfirm.value = true
-  } else {
+  }
+  // Check if it's a transfer transaction
+  else if (transaction?.transaction_type === 'transfer_in' || transaction?.transaction_type === 'transfer_out') {
+    const typeLabel = transaction.transaction_type === 'transfer_in' ? '轉入' : '轉出'
+    deleteConfirmMessage.value = `此為${typeLabel}交易，刪除時將同時移除對應的轉出/轉入記錄。確定要刪除嗎？`
+    deleteConfirmType.value = 'transfer'
+    showDeleteConfirm.value = true
+  }
+  else {
     deleteConfirmMessage.value = '確定要刪除此交易嗎？刪除後將無法復原。'
     deleteConfirmType.value = 'single'
     showDeleteConfirm.value = true

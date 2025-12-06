@@ -51,7 +51,7 @@
                 </div>
               </div>
               <div class="trans-amount" :class="trans.transaction_type">
-                {{ trans.transaction_type === 'credit' ? '+' : '-' }}${{ trans.amount.toFixed(2) }}
+                {{ (trans.transaction_type === 'credit' || trans.transaction_type === 'transfer_in') ? '+' : '-' }}${{ trans.amount.toFixed(2) }}
               </div>
             </div>
           </div>

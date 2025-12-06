@@ -105,6 +105,9 @@ def create_transfer(
     elif transaction_date:
         transaction_date = to_utc(transaction_date)
 
+    # Generate transfer pair ID to link both transactions
+    transfer_pair_id = str(uuid.uuid4())
+
     # Create 'transfer_out' transaction
     out_transaction = Transaction(
         description=transfer.description,
@@ -114,7 +117,8 @@ def create_transfer(
         note=transfer.note,
         transaction_date=transaction_date,
         account_id=from_account.id,
-        exclude_from_budget=True  # Transfers shouldn't affect budget
+        exclude_from_budget=True,  # Transfers shouldn't affect budget
+        transfer_pair_id=transfer_pair_id
     )
     db.add(out_transaction)
     from_account.balance -= transfer.amount
@@ -128,7 +132,8 @@ def create_transfer(
         note=transfer.note,
         transaction_date=transaction_date,
         account_id=to_account.id,
-        exclude_from_budget=True  # Transfers shouldn't affect budget
+        exclude_from_budget=True,  # Transfers shouldn't affect budget
+        transfer_pair_id=transfer_pair_id
     )
     db.add(in_transaction)
     to_account.balance += transfer.amount
@@ -351,6 +356,38 @@ def update_transaction(
     elif transaction.transaction_type in ["debit", "installment", "transfer_out"]:
         account.balance -= transaction.amount
 
+    # 連動更新配對交易（轉帳）
+    if transaction.transfer_pair_id:
+        pair_transaction = db.query(Transaction).join(Account).filter(
+            Transaction.transfer_pair_id == transaction.transfer_pair_id,
+            Transaction.id != transaction.id,
+            Account.user_id == current_user.id
+        ).first()
+        
+        if pair_transaction:
+            pair_old_amount = pair_transaction.amount
+            pair_old_type = pair_transaction.transaction_type
+            pair_account = pair_transaction.account
+            
+            # Revert old balance on pair account
+            if pair_old_type == "credit" or pair_old_type == "transfer_in":
+                pair_account.balance -= pair_old_amount
+            elif pair_old_type in ["debit", "installment", "transfer_out"]:
+                pair_account.balance += pair_old_amount
+            
+            # Update pair transaction with synced fields
+            pair_transaction.amount = transaction.amount
+            pair_transaction.description = transaction.description
+            pair_transaction.note = transaction.note
+            if 'transaction_date' in update_data:
+                pair_transaction.transaction_date = update_data['transaction_date']
+            
+            # Apply new balance on pair account
+            if pair_transaction.transaction_type == "credit" or pair_transaction.transaction_type == "transfer_in":
+                pair_account.balance += pair_transaction.amount
+            elif pair_transaction.transaction_type in ["debit", "installment", "transfer_out"]:
+                pair_account.balance -= pair_transaction.amount
+
     db.commit()
     db.refresh(transaction)
     return transaction
@@ -375,8 +412,32 @@ def delete_transaction(
     elif transaction.transaction_type in ["debit", "installment", "transfer_out"]:
         account.balance += transaction.amount
 
+    # 連動刪除配對交易（轉帳）
+    deleted_pair = False
+    if transaction.transfer_pair_id:
+        pair_transaction = db.query(Transaction).join(Account).filter(
+            Transaction.transfer_pair_id == transaction.transfer_pair_id,
+            Transaction.id != transaction.id,
+            Account.user_id == current_user.id
+        ).first()
+        
+        if pair_transaction:
+            pair_account = pair_transaction.account
+            
+            # Update pair account balance
+            if pair_transaction.transaction_type == "credit" or pair_transaction.transaction_type == "transfer_in":
+                pair_account.balance -= pair_transaction.amount
+            elif pair_transaction.transaction_type in ["debit", "installment", "transfer_out"]:
+                pair_account.balance += pair_transaction.amount
+            
+            db.delete(pair_transaction)
+            deleted_pair = True
+
     db.delete(transaction)
     db.commit()
+    
+    if deleted_pair:
+        return {"message": "Transfer transactions deleted successfully (both transfer_out and transfer_in)"}
     return {"message": "Transaction deleted successfully"}
 
 

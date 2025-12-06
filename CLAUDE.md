@@ -199,6 +199,7 @@ Enforced on backend via Pydantic validators in `schemas/user.py`:
 - `useBudgetForm.ts`: Budget-specific form logic (date range, range mode)
 - `useDashboard.ts`: Dashboard calculations (totals, budget status, daily spending)
 - `useDateTime.ts`: Wrapper composable that exports date utilities from `utils/dateFormat.ts`
+- `useLoading.ts`: Loading state management for async operations
 
 **Date/Time Utilities:**
 - Location: `frontend/src/utils/dateFormat.ts`
@@ -697,6 +698,16 @@ const handleCalculatorConfirm = (value: number) => {
 - Dedicated modal for category CRUD operations
 - Includes drag-and-drop reordering with Sortable.js
 
+**DailyTransactionsModal** (`frontend/src/components/DailyTransactionsModal.vue`):
+- Displays all transactions for a specific day
+- Shows daily totals and transaction list
+- Allows editing transactions from the calendar view
+
+**TransactionsSearchModal** (`frontend/src/components/TransactionsSearchModal.vue`):
+- Advanced transaction search with filters
+- Filters by date range, category, account, amount range
+- Displays search results with edit capability
+
 **Usage Pattern:**
 All modals follow the same v-model pattern for visibility control:
 
@@ -708,6 +719,24 @@ All modals follow the same v-model pattern for visibility control:
   @confirm="handleConfirm"
 />
 ```
+
+### Utility Components
+
+**LoadingSpinner** (`frontend/src/components/LoadingSpinner.vue`):
+- Displays loading animation during async operations
+- Controlled via `useLoading()` composable
+
+**DateTimeInput** (`frontend/src/components/DateTimeInput.vue`):
+- Standardized datetime input with proper formatting
+- Handles timezone conversion automatically
+
+**DescriptionHistory** (`frontend/src/components/DescriptionHistory.vue`):
+- Dropdown showing historical transaction descriptions
+- Allows quick selection of previously used descriptions
+
+**CategorySelector** (`frontend/src/components/CategorySelector.vue`):
+- Reusable category dropdown with consistent styling
+- Supports category management integration
 
 ## Database Schema
 
@@ -773,6 +802,55 @@ Tables auto-created on backend startup via `Base.metadata.create_all(bind=engine
 - `last_login_at` (DateTime): Tracks last login timestamp
 
 ## Common Development Workflows
+
+### Refactoring Large Components
+
+When a component becomes too large (>1000 lines), follow this refactoring pattern:
+
+**1. Extract Composables for Business Logic:**
+```typescript
+// Before: All logic in component <script setup>
+const handleSubmit = async () => {
+  // Complex validation and API calls
+}
+
+// After: Extract to composable
+// composables/useTransactionForm.ts
+export function useTransactionForm() {
+  const formData = ref({ ... })
+  const validate = () => { ... }
+  const submit = async () => { ... }
+  return { formData, validate, submit }
+}
+```
+
+**2. Extract Child Components for UI:**
+- Modal content → separate modal components
+- Form sections → form field components
+- Repeated UI patterns → reusable components
+
+**3. Critical: Pass Refs Correctly**
+```vue
+<!-- Parent component -->
+<script setup>
+const form = useTransactionForm()  // Returns refs
+</script>
+
+<template>
+  <!-- Pass ref object, not .value -->
+  <ChildComponent :data="form.formData" />  <!-- Vue will unwrap -->
+</template>
+```
+
+**4. Maintain Single Source of Truth:**
+- Don't duplicate state between parent and child
+- Use props for data down, events for actions up
+- Use composables for shared reactive state
+
+**5. Test After Each Extraction:**
+- Extract one piece at a time
+- Test functionality after each extraction
+- Don't batch multiple extractions before testing
 
 ### Adding New API Endpoints
 
@@ -873,6 +951,49 @@ Modals use:
 ```
 
 Global `.modal` and `.modal-content` classes in style.css handle backdrop and positioning.
+
+### Vue 3 Ref Unwrapping in Templates
+
+**CRITICAL PATTERN:** Vue 3 automatically unwraps refs in templates. When using composables that return refs, DO NOT use `.value` in template expressions.
+
+```vue
+<script setup>
+import { useTransactionForm } from '@/composables/useTransactionForm'
+
+const form = useTransactionForm()
+// form.isTransfer is a computed ref
+// form.isRecurring is a ref
+</script>
+
+<template>
+  <!-- CORRECT - refs unwrap automatically in templates -->
+  <div v-if="form.isTransfer">Transfer UI</div>
+  <input v-model="form.isRecurring" type="checkbox" />
+
+  <!-- WRONG - will cause "true is not a function" errors -->
+  <div v-if="form.isTransfer.value">Transfer UI</div>
+  <input v-model="form.isRecurring.value" type="checkbox" />
+</template>
+```
+
+**Common Mistake Patterns:**
+```vue
+<!-- ❌ WRONG - causes TypeError -->
+<div v-if="form.isEditing.value">
+<input v-model="form.formData.value.amount" />
+
+<!-- ✅ CORRECT - Vue unwraps refs automatically -->
+<div v-if="form.isEditing">
+<input v-model="form.formData.value.amount" />  <!-- formData itself needs .value -->
+```
+
+**When to use `.value`:**
+- In `<script setup>` code: Always use `.value` to access/modify refs
+- In templates with composable refs: NEVER use `.value` on the ref itself
+- Exception: Nested reactive objects like `form.formData.value.amount` - the parent ref needs `.value`, but composable refs at the top level don't
+
+**Why this matters:**
+Using `.value` in templates on composable refs causes runtime errors like "TypeError: true is not a function" because Vue's template compiler expects raw refs, not their unwrapped values.
 
 ### Date/Time Formatting
 
@@ -1025,3 +1146,11 @@ await Promise.all([
 - Must compare transaction_date with current date in Taipei timezone
 - Transaction is pending if `transaction_date > now`
 - Once date arrives, display changes from "[未生效]" to "[固定支出]"
+
+**TypeError: "true is not a function" or similar errors:**
+- This occurs when using `.value` on composable refs in Vue templates
+- Vue 3 automatically unwraps refs in templates - DO NOT use `.value`
+- Check v-model bindings: `v-model="form.isRecurring"` NOT `v-model="form.isRecurring.value"`
+- Check v-if conditions: `v-if="form.isTransfer"` NOT `v-if="form.isTransfer.value"`
+- See "Vue 3 Ref Unwrapping in Templates" section for detailed patterns
+- Exception: Nested objects like `form.formData.value.amount` still need parent ref's `.value`
