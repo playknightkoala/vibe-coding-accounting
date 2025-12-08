@@ -328,6 +328,7 @@ def update_transaction(
 
     old_amount = transaction.amount
     old_type = transaction.transaction_type
+    old_account_id = transaction.account_id
 
     update_data = transaction_update.dict(exclude_unset=True)
 
@@ -338,23 +339,54 @@ def update_transaction(
         else:
             update_data['transaction_date'] = to_utc(update_data['transaction_date'])
 
+    # Check if account_id is changing
+    new_account_id = update_data.get('account_id', old_account_id)
+    account_changed = new_account_id != old_account_id
+
+    # If account changed, verify new account exists and belongs to user
+    if account_changed:
+        new_account = db.query(Account).filter(
+            Account.id == new_account_id,
+            Account.user_id == current_user.id
+        ).first()
+        if not new_account:
+            raise HTTPException(status_code=404, detail="New account not found")
+
     for key, value in update_data.items():
         setattr(transaction, key, value)
 
-    # Update account balance if amount changed
-    account = transaction.account
-    
-    # Revert old balance change
-    if old_type == "credit" or old_type == "transfer_in":
-        account.balance -= old_amount
-    elif old_type in ["debit", "installment", "transfer_out"]:
-        account.balance += old_amount
+    # Update account balances
+    if account_changed:
+        # Revert old balance from old account
+        old_account = db.query(Account).filter(Account.id == old_account_id).first()
+        if old_account:
+            if old_type == "credit" or old_type == "transfer_in":
+                old_account.balance -= old_amount
+            elif old_type in ["debit", "installment", "transfer_out"]:
+                old_account.balance += old_amount
 
-    # Apply new balance change
-    if transaction.transaction_type == "credit" or transaction.transaction_type == "transfer_in":
-        account.balance += transaction.amount
-    elif transaction.transaction_type in ["debit", "installment", "transfer_out"]:
-        account.balance -= transaction.amount
+        # Apply new balance to new account
+        new_account = db.query(Account).filter(Account.id == new_account_id).first()
+        if new_account:
+            if transaction.transaction_type == "credit" or transaction.transaction_type == "transfer_in":
+                new_account.balance += transaction.amount
+            elif transaction.transaction_type in ["debit", "installment", "transfer_out"]:
+                new_account.balance -= transaction.amount
+    else:
+        # Same account - just adjust the difference
+        account = transaction.account
+
+        # Revert old balance change
+        if old_type == "credit" or old_type == "transfer_in":
+            account.balance -= old_amount
+        elif old_type in ["debit", "installment", "transfer_out"]:
+            account.balance += old_amount
+
+        # Apply new balance change
+        if transaction.transaction_type == "credit" or transaction.transaction_type == "transfer_in":
+            account.balance += transaction.amount
+        elif transaction.transaction_type in ["debit", "installment", "transfer_out"]:
+            account.balance -= transaction.amount
 
     # 連動更新配對交易（轉帳）
     if transaction.transfer_pair_id:

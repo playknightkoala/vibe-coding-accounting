@@ -31,6 +31,7 @@ class TransferCreate(BaseModel):
     note: Optional[str] = None
 
 class TransactionUpdate(BaseModel):
+    account_id: Optional[int] = None
     description: Optional[str] = None
     amount: Optional[float] = None
     category: Optional[str] = None

@@ -93,8 +93,33 @@
 
       <!-- 帳戶狀況頁籤 -->
       <div v-if="activeTab === 'accounts'" class="tab-content">
+        <!-- 排序選擇器 -->
+        <div v-if="accountsStore.accounts.length > 0" style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <span style="color: #a0aec0; font-size: 0.9rem;">排序方式：</span>
+          <div style="display: flex; gap: 8px; background: rgba(0, 0, 0, 0.2); padding: 4px; border-radius: 20px; border: 1px solid rgba(0, 212, 255, 0.2);">
+            <button
+              @click="accountSortMode = 'type'"
+              :class="['sort-btn', accountSortMode === 'type' ? 'active' : '']"
+            >
+              帳戶類型
+            </button>
+            <button
+              @click="accountSortMode = 'currency'"
+              :class="['sort-btn', accountSortMode === 'currency' ? 'active' : '']"
+            >
+              幣別
+            </button>
+            <button
+              @click="accountSortMode = 'balance'"
+              :class="['sort-btn', accountSortMode === 'balance' ? 'active' : '']"
+            >
+              金額
+            </button>
+          </div>
+        </div>
+
         <div v-if="accountsStore.accounts.length > 0" style="display: grid; gap: 15px;">
-          <div v-for="account in accountsStore.accounts" :key="account.id" class="account-card">
+          <div v-for="account in sortedAccounts" :key="account.id" class="account-card">
             <div class="account-info">
               <h4>{{ account.name }}</h4>
               <p>{{ accountsStore.getAccountTypeText(account.account_type) }} - {{ account.currency }}</p>
@@ -288,7 +313,7 @@
               <!-- Regular Mode: Single Account Selector -->
               <div v-else>
                 <label>帳戶</label>
-                <select v-model="quickForm.form.value.account_id" required>
+                <select v-model="quickForm.form.value.account_id" @change="handleAccountChange" required>
                   <option v-for="account in accountsStore.accounts" :key="account.id" :value="account.id">
                     {{ account.name }}
                   </option>
@@ -821,10 +846,52 @@ const selectedDate = ref(dateTimeUtils.getTodayString())
 const modalDate = ref(dateTimeUtils.getTodayString())
 const monthlyChartRef = ref<InstanceType<typeof MonthlyChart> | null>(null)
 const recurringExpenses = ref<RecurringExpense[]>([])
+const accountSortMode = ref<'type' | 'currency' | 'balance'>('type')
 
 const activeBudgets = computed(() => {
   const today = dateTimeUtils.getTodayString()
   return budgetsStore.budgets.filter(b => b.end_date >= today)
+})
+
+// 帳戶排序邏輯
+const sortedAccounts = computed(() => {
+  const accounts = [...accountsStore.accounts]
+
+  switch (accountSortMode.value) {
+    case 'type':
+      // 依照帳戶類型排序
+      const typeOrder = ['cash', 'bank', 'credit_card', 'stored_value', 'securities', 'other']
+      return accounts.sort((a, b) => {
+        const aIndex = typeOrder.indexOf(a.account_type)
+        const bIndex = typeOrder.indexOf(b.account_type)
+        if (aIndex !== bIndex) {
+          return aIndex - bIndex
+        }
+        // 同類型則依照名稱排序
+        return a.name.localeCompare(b.name)
+      })
+
+    case 'currency':
+      // 依照幣別排序
+      return accounts.sort((a, b) => {
+        if (a.currency !== b.currency) {
+          return a.currency.localeCompare(b.currency)
+        }
+        // 同幣別則依照名稱排序
+        return a.name.localeCompare(b.name)
+      })
+
+    case 'balance':
+      // 依照金額排序（由高到低）
+      return accounts.sort((a, b) => {
+        const aBalance = dashboard.getAccountBalance(a.id)
+        const bBalance = dashboard.getAccountBalance(b.id)
+        return bBalance - aBalance
+      })
+
+    default:
+      return accounts
+  }
 })
 
 // Delete confirmation modal state
@@ -1018,6 +1085,16 @@ const getExchangeRate = (currencyCode: string) => {
 const getBuyingRate = (currencyCode: string) => {
   const rate = exchangeRatesStore.rates.find(r => r.currency_code === currencyCode)
   return rate?.buying_rate || 1
+}
+
+const handleAccountChange = () => {
+  // When account changes, update selected currency to match new account's currency
+  const newAccount = accountsStore.accounts.find(a => a.id == quickForm.form.value.account_id)
+  if (newAccount && quickForm.isEditing()) {
+    // In edit mode, reset to account's currency to avoid confusion
+    quickForm.selectedCurrency.value = newAccount.currency
+    quickForm.foreignAmount.value = null
+  }
 }
 
 const handleCurrencyChange = () => {
@@ -1495,6 +1572,7 @@ const handleQuickTransaction = async () => {
 
     if (quickForm.isEditing()) {
       await transactionsStore.updateTransaction(quickForm.editingId.value!, {
+        account_id: transactionData.account_id,
         description: transactionData.description,
         note: transactionData.note,
         amount: transactionData.amount,
@@ -1705,6 +1783,30 @@ onMounted(async () => {
 }
 
 .time-range-btn:hover:not(.active) {
+  background: rgba(0, 212, 255, 0.1);
+  color: #00d4ff;
+}
+
+/* 排序按鈕樣式（複用時間範圍按鈕樣式） */
+.sort-btn {
+  padding: 6px 16px;
+  border: none;
+  border-radius: 16px;
+  background: transparent;
+  color: #a0aec0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.sort-btn.active {
+  background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3);
+}
+
+.sort-btn:hover:not(.active) {
   background: rgba(0, 212, 255, 0.1);
   color: #00d4ff;
 }
