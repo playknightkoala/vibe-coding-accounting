@@ -345,7 +345,7 @@
                   style="width: 100%; text-overflow: ellipsis;"
                 >
                   <option value="TWD">TWD (台幣)</option>
-                  <template v-for="rate in exchangeRatesStore.rates" :key="rate.currency_code">
+                  <template v-for="rate in uniqueExchangeRates" :key="rate.currency_code">
                     <option 
                       v-if="rate.buying_rate > 0 && rate.selling_rate > 0"
                       :value="rate.currency_code"
@@ -1097,6 +1097,25 @@ const handleAccountChange = () => {
   }
 }
 
+// Unique Exchange Rates (deduplicated by currency_code, prioritize 'bot')
+const uniqueExchangeRates = computed(() => {
+  const uniqueRates = new Map<string, typeof exchangeRatesStore.rates[0]>()
+  
+  exchangeRatesStore.rates.forEach(rate => {
+    const existing = uniqueRates.get(rate.currency_code)
+    if (!existing) {
+      uniqueRates.set(rate.currency_code, rate)
+    } else if (rate.bank === 'bot' && existing.bank !== 'bot') {
+      // Prioritize Bank of Taiwan (bot)
+      uniqueRates.set(rate.currency_code, rate)
+    }
+  })
+  
+  return Array.from(uniqueRates.values()).sort((a, b) => 
+    a.currency_code.localeCompare(b.currency_code)
+  )
+})
+
 const handleCurrencyChange = () => {
   // Reset amount when currency changes to avoid confusion
   quickForm.form.value.amount = 0
@@ -1713,8 +1732,6 @@ onMounted(async () => {
         accountsStore.fetchAccounts(),
         transactionsStore.fetchTransactions(),
         budgetsStore.fetchBudgets(),
-        categoriesStore.fetchCategories(),
-        exchangeRatesStore.fetchRates(),
         categoriesStore.fetchCategories(),
         exchangeRatesStore.fetchRates(),
         fetchDescriptionHistory(),
