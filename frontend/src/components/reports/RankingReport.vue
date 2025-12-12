@@ -4,18 +4,21 @@
     <div v-else-if="error" class="error">{{ error }}</div>
     <div v-else-if="reportData">
       <!-- 切換按鈕 -->
-      <div class="card">
-        <div class="toggle-buttons">
+      <!-- 切換按鈕 -->
+      <div class="ranking-tabs-container">
+        <div class="ranking-tabs">
           <button
-            :class="['toggle-btn', rankingType === 'expense' ? 'active' : '']"
+            :class="['ranking-tab-btn', rankingType === 'expense' ? 'active' : '']"
             @click="rankingType = 'expense'"
           >
+            <span class="tab-icon material-icons">bar_chart</span>
             支出排行
           </button>
           <button
-            :class="['toggle-btn', rankingType === 'income' ? 'active' : '']"
+            :class="['ranking-tab-btn', rankingType === 'income' ? 'active' : '']"
             @click="rankingType = 'income'"
           >
+            <span class="tab-icon material-icons">payments</span>
             收入排行
           </button>
         </div>
@@ -150,34 +153,71 @@ onMounted(() => {
   color: #a0aec0;
 }
 
-.toggle-buttons {
+/* 頁籤容器 - 居中顯示 */
+.ranking-tabs-container {
   display: flex;
-  gap: 10px;
   justify-content: center;
+  margin-bottom: 20px;
 }
 
-.toggle-btn {
-  padding: 12px 30px;
+/* 頁籤切換樣式 */
+.ranking-tabs {
+  display: inline-flex;
+  gap: 15px;
   background: rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  border-radius: 12px;
   border: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+.ranking-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 24px;
+  background: transparent;
+  border: 2px solid transparent;
   border-radius: 8px;
   color: #a0aec0;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-size: 16px;
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
-.toggle-btn:hover {
+.ranking-tab-btn:hover {
   background: rgba(0, 212, 255, 0.1);
-  border-color: rgba(0, 212, 255, 0.4);
   color: #fff;
+  border-color: rgba(0, 212, 255, 0.3);
 }
 
-.toggle-btn.active {
-  background: linear-gradient(135deg, rgba(0, 102, 255, 0.3) 0%, rgba(0, 212, 255, 0.3) 100%);
+.ranking-tab-btn.active {
+  background: linear-gradient(135deg, rgba(0, 102, 255, 0.4) 0%, rgba(0, 212, 255, 0.4) 100%);
   border-color: #00d4ff;
   color: #00d4ff;
-  font-weight: 500;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+}
+
+.tab-icon {
+  font-size: 20px;
+}
+
+@media (max-width: 768px) {
+  .ranking-tabs-container {
+    padding: 0 10px;
+  }
+
+  .ranking-tabs {
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .ranking-tab-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 .ranking-list {

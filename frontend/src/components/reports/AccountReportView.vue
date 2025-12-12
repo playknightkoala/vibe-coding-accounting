@@ -574,38 +574,69 @@ onBeforeUnmount(() => {
 .account-tab-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(0, 212, 255, 0.2);
+  gap: 10px;
+  padding: 12px 24px;
+  background: transparent;
+  border: 2px solid transparent;
   border-radius: 8px;
-  color: #fff;
+  color: #a0aec0;
   cursor: pointer;
-  transition: all 0.3s;
-  font-size: 14px;
+  transition: all 0.3s ease;
+  font-size: 15px;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .account-tab-btn:hover {
   background: rgba(0, 212, 255, 0.1);
-  border-color: rgba(0, 212, 255, 0.4);
-  transform: translateY(-2px);
+  color: #fff;
+  border-color: rgba(0, 212, 255, 0.3);
 }
 
 .account-tab-btn.active {
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.3) 0%, rgba(0, 100, 255, 0.3) 100%);
+  background: linear-gradient(135deg, rgba(0, 102, 255, 0.4) 0%, rgba(0, 212, 255, 0.4) 100%);
   border-color: #00d4ff;
+  color: #00d4ff;
   box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
 }
 
 .tab-icon {
-  font-size: 18px;
+  font-size: 20px;
 }
 
 .tab-amount {
-  color: #00d4ff;
+  margin-left: auto;
+  padding: 4px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  font-size: 14px;
   font-weight: bold;
-  margin-left: 4px;
+}
+
+.account-tab-btn.active .tab-amount {
+  background: rgba(0, 212, 255, 0.2);
+  color: #00d4ff;
+}
+
+@media (max-width: 768px) {
+  .account-tabs-container {
+    padding: 0 10px;
+  }
+
+  .account-tabs {
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .account-tab-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .tab-amount {
+    margin-left: 10px;
+  }
 }
 
 .chart-display {
