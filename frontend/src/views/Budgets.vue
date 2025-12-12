@@ -8,7 +8,7 @@
       <div style="margin-top: 20px;">
         <!-- Active Budgets Section -->
         <div class="section-header" @click="showActive = !showActive" style="display: flex; align-items: center; cursor: pointer; margin-bottom: 15px; user-select: none;">
-          <span style="font-size: 1.2rem; margin-right: 10px; transition: transform 0.3s;" :style="{ transform: showActive ? 'rotate(90deg)' : 'rotate(0deg)' }">▶</span>
+          <span class="material-icons" style="font-size: 1.5rem; margin-right: 10px; transition: transform 0.3s;" :style="{ transform: showActive ? 'rotate(90deg)' : 'rotate(0deg)' }">chevron_right</span>
           <h2 style="margin: 0;">進行中預算 ({{ activeBudgets.length }})</h2>
         </div>
         
@@ -19,20 +19,32 @@
                 <h3 style="margin: 0;">{{ budget.name }}</h3>
                 <span v-if="budget.range_mode === 'recurring'"
                       style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                             color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px;">
-                  🔄 {{ budgetsStore.getPeriodText(budget.period || '') }}
+                             color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; display: flex; align-items: center; gap: 4px;">
+                  <span class="material-icons" style="font-size: 16px;">autorenew</span>
+                  {{ budgetsStore.getPeriodText(budget.period || '') }}
                 </span>
                 <span v-else
                       style="background: rgba(0, 212, 255, 0.2);
-                             color: #00d4ff; padding: 4px 12px; border-radius: 12px; font-size: 12px; border: 1px solid #00d4ff;">
-                  📅 自訂區間
+                             color: #00d4ff; padding: 4px 12px; border-radius: 12px; font-size: 12px; border: 1px solid #00d4ff; display: flex; align-items: center; gap: 4px;">
+                  <span class="material-icons" style="font-size: 16px;">event</span>
+                  自訂區間
                 </span>
               </div>
 
               <p><strong>類別：</strong>{{ budget.category_names.length > 0 ? budget.category_names.join('、') : '全部類別' }}</p>
               <p><strong>綁定帳戶：</strong>{{ budgetsStore.getAccountNames(budget.account_ids) }}</p>
               <p><strong>預算：</strong>${{ budget.amount.toFixed(2) }}</p>
-              <p v-if="budget.daily_limit"><strong>每日預算：</strong>${{ budget.daily_limit.toFixed(2) }}</p>
+              <p v-if="budget.daily_limit">
+                <strong>每日預算：</strong>${{ budget.daily_limit.toFixed(2) }}
+                <span v-if="budget.daily_limit_mode === 'auto'" style="margin-left: 8px; padding: 2px 8px; background: rgba(102, 126, 234, 0.2); color: #a78bfa; border-radius: 4px; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;">
+                  <span class="material-icons" style="font-size: 14px;">smart_toy</span>
+                  自動
+                </span>
+                <span v-else style="margin-left: 8px; padding: 2px 8px; background: rgba(0, 212, 255, 0.2); color: #00d4ff; border-radius: 4px; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;">
+                  <span class="material-icons" style="font-size: 14px;">edit</span>
+                  手動
+                </span>
+              </p>
               <p><strong>已使用：</strong>${{ budget.spent.toFixed(2) }}</p>
               <p><strong>剩餘：</strong>${{ (budget.amount - budget.spent).toFixed(2) }}</p>
 
@@ -50,8 +62,9 @@
               <p><small>{{ dateTimeUtils.formatDateTime(budget.start_date) }} - {{ dateTimeUtils.formatDateTime(budget.end_date) }}</small></p>
 
               <p v-if="budget.range_mode === 'recurring' && budget.is_latest_period"
-                 style="margin: 10px 0 0 0; padding: 8px; background: rgba(102, 126, 234, 0.1); border-left: 3px solid #667eea; font-size: 12px;">
-                ℹ️ 本週期結束後將自動建立下一個週期
+                 style="margin: 10px 0 0 0; padding: 8px; background: rgba(102, 126, 234, 0.1); border-left: 3px solid #667eea; font-size: 12px; display: flex; align-items: center; gap: 6px;">
+                <span class="material-icons" style="font-size: 16px; color: #667eea;">info</span>
+                本週期結束後將自動建立下一個週期
               </p>
 
               <div style="display: flex; gap: 5px; flex-wrap: wrap; margin-top: 10px;">
@@ -69,7 +82,7 @@
 
         <!-- Expired Budgets Section -->
         <div class="section-header" @click="showExpired = !showExpired" style="display: flex; align-items: center; cursor: pointer; margin: 20px 0 15px 0; user-select: none;">
-          <span style="font-size: 1.2rem; margin-right: 10px; transition: transform 0.3s;" :style="{ transform: showExpired ? 'rotate(90deg)' : 'rotate(0deg)' }">▶</span>
+          <span class="material-icons" style="font-size: 1.5rem; margin-right: 10px; transition: transform 0.3s;" :style="{ transform: showExpired ? 'rotate(90deg)' : 'rotate(0deg)' }">chevron_right</span>
           <h2 style="margin: 0; color: #a0aec0;">已過期預算 ({{ expiredBudgets.length }})</h2>
         </div>
         
@@ -79,19 +92,31 @@
               <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
                 <h3 style="margin: 0; color: #a0aec0;">{{ budget.name }}</h3>
                 <span v-if="budget.range_mode === 'recurring'"
-                      style="background: #4a5568; color: #cbd5e0; padding: 4px 12px; border-radius: 12px; font-size: 12px;">
-                  🔄 {{ budgetsStore.getPeriodText(budget.period || '') }}
+                      style="background: #4a5568; color: #cbd5e0; padding: 4px 12px; border-radius: 12px; font-size: 12px; display: flex; align-items: center; gap: 4px;">
+                  <span class="material-icons" style="font-size: 16px;">autorenew</span>
+                  {{ budgetsStore.getPeriodText(budget.period || '') }}
                 </span>
                 <span v-else
-                      style="background: #4a5568; color: #cbd5e0; padding: 4px 12px; border-radius: 12px; font-size: 12px;">
-                  📅 自訂區間
+                      style="background: #4a5568; color: #cbd5e0; padding: 4px 12px; border-radius: 12px; font-size: 12px; display: flex; align-items: center; gap: 4px;">
+                  <span class="material-icons" style="font-size: 16px;">event</span>
+                  自訂區間
                 </span>
               </div>
 
               <p><strong>類別：</strong>{{ budget.category_names.length > 0 ? budget.category_names.join('、') : '全部類別' }}</p>
               <p><strong>綁定帳戶：</strong>{{ budgetsStore.getAccountNames(budget.account_ids) }}</p>
               <p><strong>預算：</strong>${{ budget.amount.toFixed(2) }}</p>
-              <p v-if="budget.daily_limit"><strong>每日預算：</strong>${{ budget.daily_limit.toFixed(2) }}</p>
+              <p v-if="budget.daily_limit">
+                <strong>每日預算：</strong>${{ budget.daily_limit.toFixed(2) }}
+                <span v-if="budget.daily_limit_mode === 'auto'" style="margin-left: 8px; padding: 2px 8px; background: rgba(102, 126, 234, 0.1); color: #9ca3af; border-radius: 4px; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;">
+                  <span class="material-icons" style="font-size: 14px;">smart_toy</span>
+                  自動
+                </span>
+                <span v-else style="margin-left: 8px; padding: 2px 8px; background: rgba(0, 212, 255, 0.1); color: #9ca3af; border-radius: 4px; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;">
+                  <span class="material-icons" style="font-size: 14px;">edit</span>
+                  手動
+                </span>
+              </p>
               <p><strong>已使用：</strong>${{ budget.spent.toFixed(2) }}</p>
               <p><strong>剩餘：</strong>${{ (budget.amount - budget.spent).toFixed(2) }}</p>
 
@@ -175,8 +200,74 @@
           </div>
 
           <div class="form-group">
-            <label>每日預算 (選填)</label>
-            <input type="number" step="0.01" v-model.number="formController.form.value.daily_limit" />
+            <label>每日預算設定</label>
+            <div style="display: flex; gap: 10px; margin-top: 8px; margin-bottom: 12px;">
+              <button
+                type="button"
+                @click="formController.form.value.daily_limit_mode = 'auto'"
+                :style="{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: formController.form.value.daily_limit_mode === 'auto'
+                    ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                    : 'rgba(26, 31, 58, 0.6)',
+                  color: formController.form.value.daily_limit_mode === 'auto' ? 'white' : '#a0aec0',
+                  fontWeight: formController.form.value.daily_limit_mode === 'auto' ? 'bold' : 'normal',
+                  transition: 'all 0.3s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }"
+              >
+                <span class="material-icons" style="font-size: 18px;">smart_toy</span>
+                系統自動計算
+              </button>
+              <button
+                type="button"
+                @click="formController.form.value.daily_limit_mode = 'manual'"
+                :style="{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: formController.form.value.daily_limit_mode === 'manual'
+                    ? 'linear-gradient(135deg, #00d4ff 0%, #0099cc 100%)'
+                    : 'rgba(26, 31, 58, 0.6)',
+                  color: formController.form.value.daily_limit_mode === 'manual' ? 'white' : '#a0aec0',
+                  fontWeight: formController.form.value.daily_limit_mode === 'manual' ? 'bold' : 'normal',
+                  transition: 'all 0.3s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }"
+              >
+                <span class="material-icons" style="font-size: 18px;">edit</span>
+                自填金額
+              </button>
+            </div>
+            <div v-if="formController.form.value.daily_limit_mode === 'auto'" style="padding: 12px; background: rgba(102, 126, 234, 0.1); border-left: 3px solid #667eea; border-radius: 4px; font-size: 13px; color: #cbd5e0;">
+              <p style="margin: 0;">系統將根據以下邏輯自動計算每日預算：</p>
+              <ul style="margin: 8px 0 0 0; padding-left: 20px;">
+                <li>計算預算週期剩餘天數</li>
+                <li>剩餘預算 = 總預算 - 已花費</li>
+                <li>每日預算 = 剩餘預算 ÷ 剩餘天數</li>
+                <li>會根據您的消費狀況動態調整</li>
+              </ul>
+            </div>
+            <div v-if="formController.form.value.daily_limit_mode === 'manual'">
+              <input
+                type="number"
+                step="0.01"
+                v-model.number="formController.form.value.daily_limit"
+                placeholder="輸入每日預算金額（選填）"
+                style="margin-top: 8px;"
+              />
+              <p style="margin: 8px 0 0 0; font-size: 12px; color: #a0aec0;">
+                手動設定每日預算金額，不會隨消費狀況自動調整
+              </p>
+            </div>
           </div>
 
           <!-- 範圍模式選擇 -->
@@ -186,16 +277,18 @@
               <button
                 type="button"
                 @click="selectRangeMode('custom')"
-                :style="getRangeModeButtonStyle('custom')"
+                :style="{...getRangeModeButtonStyle('custom'), display: 'flex', alignItems: 'center', gap: '6px'}"
               >
-                📅 自訂區間
+                <span class="material-icons" style="font-size: 18px;">event</span>
+                自訂區間
               </button>
               <button
                 type="button"
                 @click="selectRangeMode('recurring')"
-                :style="getRangeModeButtonStyle('recurring')"
+                :style="{...getRangeModeButtonStyle('recurring'), display: 'flex', alignItems: 'center', gap: '6px'}"
               >
-                🔄 週期
+                <span class="material-icons" style="font-size: 18px;">autorenew</span>
+                週期
               </button>
             </div>
           </div>
@@ -378,6 +471,7 @@ const handleEdit = (budget: Budget) => {
     category_names: budget.category_names || [],
     amount: budget.amount,
     daily_limit: budget.daily_limit,
+    daily_limit_mode: budget.daily_limit_mode || 'manual',  // 載入原本的模式
     range_mode: budget.range_mode,
     period: budget.period,
     start_date: budget.range_mode === 'custom' ? `${budgetForm.startDateOnly.value}T00:00` : undefined,

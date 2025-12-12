@@ -12,6 +12,8 @@ class Budget(Base):
     category = Column(String, nullable=True)
     amount = Column(Float, nullable=False)
     daily_limit = Column(Float, nullable=True)
+    # 每日預算計算模式: 'auto' (系統自動計算) 或 'manual' (手動填寫)
+    daily_limit_mode = Column(String, nullable=False, default='manual')
     spent = Column(Float, default=0.0)
 
     # 週期模式: 'custom' (自訂區間) 或 'recurring' (週期)

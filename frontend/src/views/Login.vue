@@ -77,7 +77,10 @@
           <h2 id="about-heading">關於本專案</h2>
           
           <section class="section">
-            <h3>📊 專案簡介</h3>
+            <h3 style="display: flex; align-items: center; gap: 8px;">
+              <span class="material-icons">bar_chart</span>
+              專案簡介
+            </h3>
             <p>
               這是一個功能完整的<strong>個人記帳與預算管理系統</strong>，旨在幫助使用者有效管理個人財務、追蹤支出、設定預算目標，並透過視覺化報表深入了解財務狀況。
             </p>
@@ -87,7 +90,10 @@
           </section>
 
           <section class="section">
-            <h3>✨ 主要功能</h3>
+            <h3 style="display: flex; align-items: center; gap: 8px;">
+              <span class="material-icons">star</span>
+              主要功能
+            </h3>
             <ul>
               <li><strong>多幣別支援</strong>：支援 TWD、USD、JPY 等多種貨幣，並提供即時匯率轉換</li>
               <li><strong>交易管理</strong>：快速記帳、交易分類、描述自動完成（支援拼音搜尋）</li>
@@ -99,7 +105,10 @@
           </section>
 
           <section class="section">
-            <h3>🛠️ 技術堆疊</h3>
+            <h3 style="display: flex; align-items: center; gap: 8px;">
+              <span class="material-icons">build</span>
+              技術堆疊
+            </h3>
             <div class="tech-stack">
               <div class="tech-category">
                 <h4>前端</h4>
@@ -133,7 +142,10 @@
           </section>
 
           <section class="section">
-            <h3>👨‍💻 開發者</h3>
+            <h3 style="display: flex; align-items: center; gap: 8px;">
+              <span class="material-icons">code</span>
+              開發者
+            </h3>
             <p>
               <strong>YS Hong</strong> - 全端工程師
             </p>

@@ -176,13 +176,15 @@
             <div style="display: flex; gap: 6px; align-items: center;">
               <span v-if="budget.range_mode === 'recurring'"
                     style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                           color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; white-space: nowrap;">
-                🔄 {{ budgetsStore.getPeriodText(budget.period || '') }}
+                           color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; white-space: nowrap; display: flex; align-items: center; gap: 4px;">
+                <span class="material-icons" style="font-size: 14px;">autorenew</span>
+                {{ budgetsStore.getPeriodText(budget.period || '') }}
               </span>
               <span v-else
                     style="background: rgba(0, 212, 255, 0.2);
-                           color: #00d4ff; padding: 2px 8px; border-radius: 10px; font-size: 11px; border: 1px solid #00d4ff; white-space: nowrap;">
-                📅 自訂
+                           color: #00d4ff; padding: 2px 8px; border-radius: 10px; font-size: 11px; border: 1px solid #00d4ff; white-space: nowrap; display: flex; align-items: center; gap: 4px;">
+                <span class="material-icons" style="font-size: 14px;">event</span>
+                自訂
               </span>
               <span :style="{
                 padding: '2px 8px',
@@ -255,7 +257,7 @@
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
         <h2 style="margin: 0;">交易日曆</h2>
         <button @click="showSearchModal = true" class="btn btn-primary" style="display: flex; align-items: center; gap: 8px;">
-          <span style="font-size: 1.2rem;">🔍</span>
+          <span class="material-icons" style="font-size: 1.2rem;">search</span>
           <span>搜尋交易</span>
         </button>
       </div>
@@ -298,7 +300,7 @@
                   </select>
                 </div>
                 <div style="flex: 0 0 auto; display: flex; align-items: center; padding-top: 20px;">
-                  <span style="font-size: 1.5rem;">➡️</span>
+                  <span class="material-icons" style="font-size: 1.5rem; color: #00d4ff;">arrow_forward</span>
                 </div>
                 <div style="flex: 1;">
                   <label>轉入帳戶</label>
@@ -374,8 +376,8 @@
                     <button
                       type="button"
                       @click="() => { quickForm.activeCalculatorInput.value = 'amount'; showQuickCalculator = true; }"
-                      style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: rgba(0, 212, 255, 0.2); border: 1px solid rgba(0, 212, 255, 0.4); border-radius: 4px; padding: 4px 8px; cursor: pointer; color: #00d4ff; font-size: 18px;"
-                    >🧮</button>
+                      style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: rgba(0, 212, 255, 0.2); border: 1px solid rgba(0, 212, 255, 0.4); border-radius: 4px; padding: 4px 8px; cursor: pointer; color: #00d4ff;"
+                    ><span class="material-icons" style="font-size: 18px;">calculate</span></button>
                   </div>
                 </div>
 
@@ -395,8 +397,8 @@
                     <button
                       type="button"
                       @click="() => { quickForm.activeCalculatorInput.value = 'foreignAmount'; showQuickCalculator = true; }"
-                      style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: rgba(0, 212, 255, 0.2); border: 1px solid rgba(0, 212, 255, 0.4); border-radius: 4px; padding: 4px 8px; cursor: pointer; color: #00d4ff; font-size: 18px;"
-                    >🧮</button>
+                      style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: rgba(0, 212, 255, 0.2); border: 1px solid rgba(0, 212, 255, 0.4); border-radius: 4px; padding: 4px 8px; cursor: pointer; color: #00d4ff;"
+                    ><span class="material-icons" style="font-size: 18px;">calculate</span></button>
                   </div>
                 </div>
               </div>
@@ -415,10 +417,10 @@
                 <button
                   type="button"
                   @click="() => { quickForm.activeCalculatorInput.value = 'amount'; showQuickCalculator = true; }"
-                  style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: rgba(0, 212, 255, 0.2); border: 1px solid rgba(0, 212, 255, 0.4); border-radius: 4px; padding: 4px 8px; cursor: pointer; color: #00d4ff; font-size: 18px;"
+                  style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: rgba(0, 212, 255, 0.2); border: 1px solid rgba(0, 212, 255, 0.4); border-radius: 4px; padding: 4px 8px; cursor: pointer; color: #00d4ff;"
                   title="打開計算機"
                 >
-                  🧮
+                  <span class="material-icons" style="font-size: 18px;">calculate</span>
                 </button>
               </div>
 

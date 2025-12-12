@@ -13,6 +13,7 @@ export function useBudgetForm() {
     category_names: [],
     amount: 0,
     daily_limit: undefined,
+    daily_limit_mode: 'auto',  // 預設為自動計算
     range_mode: 'recurring',
     period: 'monthly',
     start_date: undefined,

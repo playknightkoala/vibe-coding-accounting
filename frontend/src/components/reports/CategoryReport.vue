@@ -10,7 +10,7 @@
             :class="['category-tab-btn', categoryTab === 'debit' ? 'active' : '']"
             @click="categoryTab = 'debit'"
           >
-            <span class="tab-icon">📊</span>
+            <span class="tab-icon material-icons">bar_chart</span>
             支出類別
             <span class="tab-amount">${{ reportData.total_debit.toFixed(2) }}</span>
           </button>
@@ -18,7 +18,7 @@
             :class="['category-tab-btn', categoryTab === 'credit' ? 'active' : '']"
             @click="categoryTab = 'credit'"
           >
-            <span class="tab-icon">💰</span>
+            <span class="tab-icon material-icons">payments</span>
             收入類別
             <span class="tab-amount">${{ reportData.total_credit.toFixed(2) }}</span>
           </button>
@@ -69,7 +69,7 @@
                 </span>
                 <span class="percentage">({{ currentPercentage(category).toFixed(1) }}%)</span>
               </div>
-              <div class="expand-icon">{{ expandedCategory === category.category ? '▼' : '▶' }}</div>
+              <span class="expand-icon material-icons">{{ expandedCategory === category.category ? 'expand_more' : 'chevron_right' }}</span>
             </div>
 
             <!-- 該類別的明細 -->

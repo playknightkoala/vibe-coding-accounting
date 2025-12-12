@@ -7,7 +7,9 @@
       </div>
       <div class="calculator-buttons">
         <button @click="clear" class="calc-btn calc-btn-clear">C</button>
-        <button @click="backspace" class="calc-btn calc-btn-operator">←</button>
+        <button @click="backspace" class="calc-btn calc-btn-operator">
+          <span class="material-icons" style="font-size: 18px;">backspace</span>
+        </button>
         <button @click="appendOperator('/')" class="calc-btn calc-btn-operator">÷</button>
         <button @click="appendOperator('*')" class="calc-btn calc-btn-operator">×</button>
 

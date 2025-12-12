@@ -7,6 +7,7 @@ class BudgetBase(BaseModel):
     category_names: List[str] = []  # 改為類別名稱列表，空列表表示「全部」
     amount: float
     daily_limit: Optional[float] = None
+    daily_limit_mode: str = 'manual'  # 'auto' (系統自動計算) or 'manual' (手動填寫)
     range_mode: str  # 'custom' or 'recurring'
     period: Optional[str] = None  # 'monthly', 'quarterly', 'yearly' (僅在 recurring 時需要)
     start_date: Optional[datetime] = None  # recurring 模式可為空，由系統自動計算
@@ -27,6 +28,13 @@ class BudgetBase(BaseModel):
             raise ValueError('period must be "monthly", "quarterly", or "yearly" when range_mode is "recurring"')
         return v
 
+    @field_validator('daily_limit_mode')
+    @classmethod
+    def validate_daily_limit_mode(cls, v):
+        if v not in ['auto', 'manual']:
+            raise ValueError('daily_limit_mode must be either "auto" or "manual"')
+        return v
+
 class BudgetCreate(BudgetBase):
     pass
 
@@ -35,6 +43,7 @@ class BudgetUpdate(BaseModel):
     category_names: Optional[List[str]] = None  # 改為類別名稱列表
     amount: Optional[float] = None
     daily_limit: Optional[float] = None
+    daily_limit_mode: Optional[str] = None
     spent: Optional[float] = None
     range_mode: Optional[str] = None
     period: Optional[str] = None
@@ -48,6 +57,7 @@ class Budget(BaseModel):
     category_names: List[str] = []  # 改為類別名稱列表
     amount: float
     daily_limit: Optional[float] = None
+    daily_limit_mode: str = 'manual'
     spent: float
     range_mode: str
     period: Optional[str] = None

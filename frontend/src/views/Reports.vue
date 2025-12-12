@@ -32,9 +32,9 @@
         <div class="control-group" v-if="reportType === 'monthly'">
           <label>選擇月份：</label>
           <div class="date-selector">
-            <button @click="previousPeriod" class="nav-btn">◀</button>
+            <button @click="previousPeriod" class="nav-btn"><span class="material-icons">chevron_left</span></button>
             <span class="date-display">{{ currentYear }}年 {{ currentMonth }}月</span>
-            <button @click="nextPeriod" class="nav-btn">▶</button>
+            <button @click="nextPeriod" class="nav-btn"><span class="material-icons">chevron_right</span></button>
           </div>
         </div>
 

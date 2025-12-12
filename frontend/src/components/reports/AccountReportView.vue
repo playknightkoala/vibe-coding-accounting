@@ -10,7 +10,7 @@
             :class="['account-tab-btn', accountTab === 'total' ? 'active' : '']"
             @click="accountTab = 'total'"
           >
-            <span class="tab-icon">📈</span>
+            <span class="tab-icon material-icons">trending_up</span>
             總計
             <span class="tab-amount">${{ totalAmount.toFixed(2) }}</span>
           </button>
@@ -18,7 +18,7 @@
             :class="['account-tab-btn', accountTab === 'debit' ? 'active' : '']"
             @click="accountTab = 'debit'"
           >
-            <span class="tab-icon">📊</span>
+            <span class="tab-icon material-icons">bar_chart</span>
             支出
             <span class="tab-amount">${{ totalDebit.toFixed(2) }}</span>
           </button>
@@ -26,7 +26,7 @@
             :class="['account-tab-btn', accountTab === 'credit' ? 'active' : '']"
             @click="accountTab = 'credit'"
           >
-            <span class="tab-icon">💰</span>
+            <span class="tab-icon material-icons">payments</span>
             收入
             <span class="tab-amount">${{ totalCredit.toFixed(2) }}</span>
           </button>
@@ -91,7 +91,7 @@
                   <span class="percentage">({{ currentPercentage(account).toFixed(1) }}%)</span>
                 </template>
               </div>
-              <div class="expand-icon">{{ expandedAccount === account.account_id ? '▼' : '▶' }}</div>
+              <span class="expand-icon material-icons">{{ expandedAccount === account.account_id ? 'expand_more' : 'chevron_right' }}</span>
             </div>
 
             <!-- 該帳戶的明細 -->

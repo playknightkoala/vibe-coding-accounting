@@ -11,8 +11,9 @@
             <option value="esun">玉山銀行 (網銀/App優惠)</option>
           </select>
         </div>
-        <button @click="handleRefresh" class="btn btn-primary" :disabled="exchangeRatesStore.isLoading">
-          {{ exchangeRatesStore.isLoading ? '載入中...' : '🔄 刷新資料' }}
+        <button @click="handleRefresh" class="btn btn-primary" :disabled="exchangeRatesStore.isLoading" style="display: flex; align-items: center; gap: 6px;">
+          <span class="material-icons" v-if="!exchangeRatesStore.isLoading" style="font-size: 18px;">refresh</span>
+          {{ exchangeRatesStore.isLoading ? '載入中...' : '刷新資料' }}
         </button>
       </div>
 

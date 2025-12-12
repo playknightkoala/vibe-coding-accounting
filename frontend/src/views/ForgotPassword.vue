@@ -2,7 +2,10 @@
   <div class="container">
     <div class="card" style="max-width: 450px; margin: 100px auto;">
       <div style="text-align: center; margin-bottom: 30px;">
-        <h2 style="margin: 0 0 10px 0; color: #00d4ff;">🔐 忘記密碼</h2>
+        <h2 style="margin: 0 0 10px 0; color: #00d4ff; display: flex; align-items: center; gap: 8px; justify-content: center;">
+          <span class="material-icons" style="font-size: 28px;">lock</span>
+          忘記密碼
+        </h2>
         <p style="color: #a0aec0; margin: 0; font-size: 14px;">
           輸入您的註冊郵箱，我們將發送密碼重設連結給您
         </p>
@@ -38,14 +41,17 @@
 
       <!-- 成功訊息 -->
       <div v-if="emailSent" style="text-align: center; padding: 20px;">
-        <div style="font-size: 60px; margin-bottom: 20px;">📧</div>
+        <div style="margin-bottom: 20px;">
+          <span class="material-icons" style="font-size: 60px; color: #51cf66;">mark_email_read</span>
+        </div>
         <h3 style="color: #51cf66; margin: 0 0 15px 0;">郵件已發送！</h3>
         <p style="color: #a0aec0; margin: 0 0 20px 0; line-height: 1.6;">
           如果該郵箱已註冊，您將收到密碼重設郵件。<br>
           請檢查您的收件匣（也請查看垃圾郵件）。
         </p>
-        <p style="color: #00d4ff; font-size: 12px; margin: 0 0 20px 0;">
-          💡 連結將在 30 分鐘後失效
+        <p style="color: #00d4ff; font-size: 12px; margin: 0 0 20px 0; display: flex; align-items: center; gap: 6px; justify-content: center;">
+          <span class="material-icons" style="font-size: 16px;">info</span>
+          連結將在 30 分鐘後失效
         </p>
         <button
           @click="resetForm"
@@ -61,7 +67,7 @@
           to="/login"
           style="color: #00d4ff; text-decoration: none; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 5px;"
         >
-          <span>←</span>
+          <span class="material-icons" style="font-size: 18px;">arrow_back</span>
           <span>返回登入</span>
         </router-link>
       </div>
@@ -70,7 +76,10 @@
     <!-- 錯誤訊息 Modal -->
     <div v-if="showErrorModal" class="modal">
       <div class="modal-content">
-        <h2 style="color: #ff6b6b;">❌ 發送失敗</h2>
+        <h2 style="color: #ff6b6b; display: flex; align-items: center; gap: 8px; justify-content: center;">
+          <span class="material-icons" style="font-size: 32px;">error</span>
+          發送失敗
+        </h2>
         <p style="margin: 20px 0; color: #a0aec0;">{{ errorMessage }}</p>
         <button @click="showErrorModal = false" class="btn btn-primary" style="width: 100%;">
           確定

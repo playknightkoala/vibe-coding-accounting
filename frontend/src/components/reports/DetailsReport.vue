@@ -33,7 +33,7 @@
                 支出: ${{ daily.total_debit.toFixed(2) }}
               </span>
             </div>
-            <span class="toggle-icon">{{ expandedDays.includes(daily.date) ? '▼' : '▶' }}</span>
+            <span class="toggle-icon material-icons">{{ expandedDays.includes(daily.date) ? 'expand_more' : 'chevron_right' }}</span>
           </div>
 
           <div v-if="expandedDays.includes(daily.date)" class="transactions-list">

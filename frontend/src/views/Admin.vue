@@ -30,14 +30,20 @@
                 {{ user.is_blocked ? '已封鎖' : '正常' }}
               </span>
             </td>
-            <td>{{ user.two_factor_enabled ? '✓' : '✗' }}</td>
+            <td>
+              <span class="material-icons" :style="{ color: user.two_factor_enabled ? '#51cf66' : '#ff6b6b', fontSize: '18px' }">
+                {{ user.two_factor_enabled ? 'check' : 'close' }}
+              </span>
+            </td>
             <td>{{ user.transaction_count }} / {{ user.budget_count }} / {{ user.account_count }}</td>
             <td>{{ formatDate(user.last_login_at) }}</td>
             <td>{{ formatDate(user.created_at) }}</td>
             <td>
               <div class="action-buttons">
-                <button @click="editUser(user)" class="btn-edit" title="編輯">✏️</button>
-                
+                <button @click="editUser(user)" class="btn-edit" title="編輯">
+                  <span class="material-icons">edit</span>
+                </button>
+
                 <!-- Self-action restrictions -->
                 <template v-if="user.id !== authStore.user?.id">
                   <button
@@ -45,15 +51,19 @@
                     @click="blockUser(user)"
                     class="btn-block"
                     title="封鎖"
-                  >🚫</button>
+                  ><span class="material-icons">block</span></button>
                   <button
                     v-else
                     @click="unblockUser(user)"
                     class="btn-unblock"
                     title="解除封鎖"
-                  >✓</button>
-                  <button @click="resetUserData(user)" class="btn-reset" title="重置資料">🔄</button>
-                  <button @click="deleteUser(user)" class="btn-delete" title="刪除">🗑️</button>
+                  ><span class="material-icons">check</span></button>
+                  <button @click="resetUserData(user)" class="btn-reset" title="重置資料">
+                    <span class="material-icons">refresh</span>
+                  </button>
+                  <button @click="deleteUser(user)" class="btn-delete" title="刪除">
+                    <span class="material-icons">delete</span>
+                  </button>
                 </template>
               </div>
             </td>

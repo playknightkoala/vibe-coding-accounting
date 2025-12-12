@@ -32,20 +32,25 @@
           />
           <div style="margin-top: 8px;">
             <p style="font-size: 12px; margin-bottom: 5px; color: #a0aec0;">密碼要求：</p>
-            <p :style="{ fontSize: '12px', color: passwordRules.length ? '#51cf66' : '#ff6b6b', marginBottom: '3px' }">
-              {{ passwordRules.length ? '✓' : '✗' }} 至少 8 個字元
+            <p :style="{ fontSize: '12px', color: passwordRules.length ? '#51cf66' : '#ff6b6b', marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '4px' }">
+              <span class="material-icons" style="font-size: 16px;">{{ passwordRules.length ? 'check_circle' : 'cancel' }}</span>
+              至少 8 個字元
             </p>
-            <p :style="{ fontSize: '12px', color: passwordRules.uppercase ? '#51cf66' : '#ff6b6b', marginBottom: '3px' }">
-              {{ passwordRules.uppercase ? '✓' : '✗' }} 至少 1 個大寫字母
+            <p :style="{ fontSize: '12px', color: passwordRules.uppercase ? '#51cf66' : '#ff6b6b', marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '4px' }">
+              <span class="material-icons" style="font-size: 16px;">{{ passwordRules.uppercase ? 'check_circle' : 'cancel' }}</span>
+              至少 1 個大寫字母
             </p>
-            <p :style="{ fontSize: '12px', color: passwordRules.lowercase ? '#51cf66' : '#ff6b6b', marginBottom: '3px' }">
-              {{ passwordRules.lowercase ? '✓' : '✗' }} 至少 1 個小寫字母
+            <p :style="{ fontSize: '12px', color: passwordRules.lowercase ? '#51cf66' : '#ff6b6b', marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '4px' }">
+              <span class="material-icons" style="font-size: 16px;">{{ passwordRules.lowercase ? 'check_circle' : 'cancel' }}</span>
+              至少 1 個小寫字母
             </p>
-            <p :style="{ fontSize: '12px', color: passwordRules.number ? '#51cf66' : '#ff6b6b', marginBottom: '3px' }">
-              {{ passwordRules.number ? '✓' : '✗' }} 至少 1 個數字
+            <p :style="{ fontSize: '12px', color: passwordRules.number ? '#51cf66' : '#ff6b6b', marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '4px' }">
+              <span class="material-icons" style="font-size: 16px;">{{ passwordRules.number ? 'check_circle' : 'cancel' }}</span>
+              至少 1 個數字
             </p>
-            <p :style="{ fontSize: '12px', color: passwordRules.special ? '#51cf66' : '#ff6b6b', marginBottom: '3px' }">
-              {{ passwordRules.special ? '✓' : '✗' }} 至少 1 個特殊字元 (!@#$%^&*(),.?":{}|&lt;&gt;)
+            <p :style="{ fontSize: '12px', color: passwordRules.special ? '#51cf66' : '#ff6b6b', marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '4px' }">
+              <span class="material-icons" style="font-size: 16px;">{{ passwordRules.special ? 'check_circle' : 'cancel' }}</span>
+              至少 1 個特殊字元 (!@#$%^&*(),.?":{}|&lt;&gt;)
             </p>
           </div>
         </div>

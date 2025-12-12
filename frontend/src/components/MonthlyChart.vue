@@ -3,9 +3,9 @@
     <div class="chart-header">
       <h3>收入與支出趨勢</h3>
       <div class="month-selector">
-        <button @click="previousMonth" class="month-btn">◀</button>
+        <button @click="previousMonth" class="month-btn"><span class="material-icons">chevron_left</span></button>
         <span class="current-month">{{ currentYear }}年 {{ currentMonth }}月</span>
-        <button @click="nextMonth" class="month-btn">▶</button>
+        <button @click="nextMonth" class="month-btn"><span class="material-icons">chevron_right</span></button>
       </div>
     </div>
     <div class="chart-wrapper">

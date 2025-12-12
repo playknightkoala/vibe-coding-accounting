@@ -4,21 +4,25 @@
       <div class="calendar-header">
         <div class="calendar-controls">
           <button @click="previousMonth" class="btn btn-secondary calendar-nav-btn">
-            ◄
+            <span class="material-icons">chevron_left</span>
           </button>
 
           <div class="title-container" style="position: relative;">
             <h3 class="calendar-title clickable" @click="toggleDatePicker">
               {{ currentYear }} 年 {{ currentMonth }} 月
-              <span class="dropdown-arrow">▼</span>
+              <span class="dropdown-arrow material-icons">arrow_drop_down</span>
             </h3>
             
             <!-- Date Picker Dropdown -->
             <div v-if="showDatePicker" class="date-picker-dropdown">
               <div class="year-selector">
-                <button @click.stop="tempYear--" class="btn btn-sm">◄</button>
+                <button @click.stop="tempYear--" class="btn btn-sm">
+                  <span class="material-icons">chevron_left</span>
+                </button>
                 <span class="year-display">{{ tempYear }}</span>
-                <button @click.stop="tempYear++" class="btn btn-sm">►</button>
+                <button @click.stop="tempYear++" class="btn btn-sm">
+                  <span class="material-icons">chevron_right</span>
+                </button>
               </div>
               <div class="month-grid">
                 <div 
@@ -33,7 +37,7 @@
             </div>
           </div>
           <button @click="nextMonth" class="btn btn-secondary calendar-nav-btn">
-            ►
+            <span class="material-icons">chevron_right</span>
           </button>
           <button 
             v-if="!isTodayInView"

@@ -82,7 +82,10 @@
 
       <!-- 已啟用 2FA -->
       <div v-if="user?.two_factor_enabled && !showDisable2FA">
-        <p style="color: #51cf66; margin-bottom: 15px;">✓ 雙因素認證已啟用</p>
+        <p style="color: #51cf66; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
+          <span class="material-icons" style="font-size: 20px;">check_circle</span>
+          雙因素認證已啟用
+        </p>
         <button @click="showDisable2FA = true" class="btn btn-danger">停用 2FA</button>
       </div>
 
@@ -117,8 +120,9 @@
         匯出您的所有記帳資料（帳戶、交易、預算），或從備份檔案中還原資料
       </p>
       <div style="padding: 10px; background: rgba(0, 212, 255, 0.1); border-left: 3px solid #00d4ff; border-radius: 4px; margin-bottom: 15px;">
-        <p style="margin: 0; font-size: 14px; color: #00d4ff;">
-          🔒 您的資料已使用應用程式專屬密鑰加密，只能在本應用程式中匯入
+        <p style="margin: 0; font-size: 14px; color: #00d4ff; display: flex; align-items: center; gap: 8px;">
+          <span class="material-icons" style="font-size: 18px;">lock</span>
+          您的資料已使用應用程式專屬密鑰加密，只能在本應用程式中匯入
         </p>
       </div>
 
@@ -171,8 +175,9 @@
     <!-- 危險操作區域 -->
     <div class="card" style="border: 2px solid #ff6b6b;">
       <h2 style="color: #ff6b6b;">危險操作</h2>
-      <p style="margin-bottom: 20px; color: #ff9999;">
-        ⚠️ 以下操作無法復原，請謹慎操作
+      <p style="margin-bottom: 20px; color: #ff9999; display: flex; align-items: center; gap: 8px;">
+        <span class="material-icons" style="font-size: 20px; color: #ff6b6b;">warning</span>
+        以下操作無法復原，請謹慎操作
       </p>
 
       <div style="display: flex; flex-direction: column; gap: 20px;">
@@ -182,8 +187,9 @@
           <p style="margin-bottom: 15px; font-size: 14px; color: #a0aec0;">
             刪除所有帳戶、交易、預算、類別等資料，但<strong>保留您的帳號</strong>。清除後帳號將恢復到剛註冊時的狀態。
           </p>
-          <p style="margin-bottom: 15px; font-size: 13px; color: #ff9999;">
-            💡 建議：清除資料前先匯出備份
+          <p style="margin-bottom: 15px; font-size: 13px; color: #ff9999; display: flex; align-items: center; gap: 8px;">
+            <span class="material-icons" style="font-size: 18px;">lightbulb</span>
+            建議：清除資料前先匯出備份
           </p>
           <button @click="showClearDataConfirm = true" class="btn btn-danger">
             清除所有資料
@@ -196,8 +202,9 @@
           <p style="margin-bottom: 15px; font-size: 14px; color: #a0aec0;">
             <strong>永久刪除</strong>您的帳號及所有相關資料（帳戶、交易、預算、類別等）。此操作無法復原！
           </p>
-          <p style="margin-bottom: 15px; font-size: 13px; color: #ff9999;">
-            ⚠️ 警告：刪除後您將無法登入，且所有資料將永久消失
+          <p style="margin-bottom: 15px; font-size: 13px; color: #ff9999; display: flex; align-items: center; gap: 6px;">
+            <span class="material-icons" style="font-size: 18px; color: #ff6b6b;">warning</span>
+            警告：刪除後您將無法登入，且所有資料將永久消失
           </p>
           <button @click="showDeleteAccountConfirm = true" class="btn btn-danger">
             刪除帳號
@@ -228,7 +235,7 @@
     <ConfirmModal
       v-model="showClearDataConfirm"
       title="確認清除所有資料"
-      :message="`⚠️ 此操作將刪除您的所有資料：\n\n• 所有帳戶及交易記錄\n• 所有預算設定\n• 所有類別設定\n\n但會保留您的帳號，您仍可登入。\n帳號將恢復到初始狀態（含預設帳戶）。\n\n建議：清除前先匯出備份！`"
+      :message="`警告：此操作將刪除您的所有資料：\n\n• 所有帳戶及交易記錄\n• 所有預算設定\n• 所有類別設定\n\n但會保留您的帳號，您仍可登入。\n帳號將恢復到初始狀態（含預設帳戶）。\n\n建議：清除前先匯出備份！`"
       confirm-text="我已經瞭解風險"
       cancel-text="取消"
       confirm-type="danger"
@@ -241,7 +248,7 @@
     <ConfirmModal
       v-model="showDeleteAccountConfirm"
       title="確認刪除帳號"
-      :message="`🚨 此操作無法復原！\n\n刪除帳號將：\n• 永久刪除您的帳號\n• 刪除所有帳戶及交易記錄\n• 刪除所有預算設定\n• 刪除所有類別設定\n• 您將無法再登入此帳號\n\n所有資料將永久消失！`"
+      :message="`警告：此操作無法復原！\n\n刪除帳號將：\n• 永久刪除您的帳號\n• 刪除所有帳戶及交易記錄\n• 刪除所有預算設定\n• 刪除所有類別設定\n• 您將無法再登入此帳號\n\n所有資料將永久消失！`"
       confirm-text="我已經瞭解風險"
       cancel-text="取消"
       confirm-type="danger"

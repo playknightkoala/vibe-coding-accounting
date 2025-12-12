@@ -150,6 +150,7 @@ export interface Budget {
   category_names: string[]  // 改為類別名稱列表
   amount: number
   daily_limit?: number
+  daily_limit_mode: 'auto' | 'manual'  // 每日預算計算模式
   spent: number
   range_mode: 'custom' | 'recurring'
   period?: 'monthly' | 'quarterly' | 'yearly'
@@ -168,6 +169,7 @@ export interface BudgetCreate {
   category_names: string[]  // 改為類別名稱列表
   amount: number
   daily_limit?: number
+  daily_limit_mode: 'auto' | 'manual'  // 每日預算計算模式
   range_mode: 'custom' | 'recurring'
   period?: 'monthly' | 'quarterly' | 'yearly'
   start_date?: string  // recurring模式可為空
@@ -180,6 +182,7 @@ export interface BudgetUpdate {
   category_names?: string[]  // 改為類別名稱列表
   amount?: number
   daily_limit?: number
+  daily_limit_mode?: 'auto' | 'manual'  // 每日預算計算模式
   spent?: number
   range_mode?: 'custom' | 'recurring'
   period?: 'monthly' | 'quarterly' | 'yearly'

@@ -9,7 +9,9 @@
 
       <!-- 連結無效 -->
       <div v-else-if="!isValidToken" style="text-align: center; padding: 40px 20px;">
-        <div style="font-size: 60px; margin-bottom: 20px;">❌</div>
+        <div style="margin-bottom: 20px;">
+          <span class="material-icons" style="font-size: 60px; color: #ff6b6b;">error</span>
+        </div>
         <h2 style="color: #ff6b6b; margin: 0 0 15px 0;">連結無效或已過期</h2>
         <p style="color: #a0aec0; margin: 0 0 30px 0; line-height: 1.6;">
           {{ tokenMessage }}
@@ -24,7 +26,10 @@
       <!-- 重設密碼表單 -->
       <div v-else-if="!resetSuccess">
         <div style="text-align: center; margin-bottom: 30px;">
-          <h2 style="margin: 0 0 10px 0; color: #00d4ff;">🔑 重設密碼</h2>
+          <h2 style="margin: 0 0 10px 0; color: #00d4ff; display: flex; align-items: center; gap: 8px; justify-content: center;">
+            <span class="material-icons" style="font-size: 28px;">vpn_key</span>
+            重設密碼
+          </h2>
           <p style="color: #a0aec0; margin: 0; font-size: 14px;">
             請設定您的新密碼
           </p>
@@ -43,20 +48,25 @@
             />
             <div style="margin-top: 12px;">
               <p style="font-size: 12px; margin-bottom: 6px; color: #a0aec0;">密碼要求：</p>
-              <p :style="{ fontSize: '12px', color: passwordRules.length ? '#51cf66' : '#ff6b6b', marginBottom: '4px' }">
-                {{ passwordRules.length ? '✓' : '✗' }} 至少 8 個字元
+              <p :style="{ fontSize: '12px', color: passwordRules.length ? '#51cf66' : '#ff6b6b', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }">
+                <span class="material-icons" style="font-size: 16px;">{{ passwordRules.length ? 'check_circle' : 'cancel' }}</span>
+                至少 8 個字元
               </p>
-              <p :style="{ fontSize: '12px', color: passwordRules.uppercase ? '#51cf66' : '#ff6b6b', marginBottom: '4px' }">
-                {{ passwordRules.uppercase ? '✓' : '✗' }} 至少 1 個大寫字母
+              <p :style="{ fontSize: '12px', color: passwordRules.uppercase ? '#51cf66' : '#ff6b6b', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }">
+                <span class="material-icons" style="font-size: 16px;">{{ passwordRules.uppercase ? 'check_circle' : 'cancel' }}</span>
+                至少 1 個大寫字母
               </p>
-              <p :style="{ fontSize: '12px', color: passwordRules.lowercase ? '#51cf66' : '#ff6b6b', marginBottom: '4px' }">
-                {{ passwordRules.lowercase ? '✓' : '✗' }} 至少 1 個小寫字母
+              <p :style="{ fontSize: '12px', color: passwordRules.lowercase ? '#51cf66' : '#ff6b6b', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }">
+                <span class="material-icons" style="font-size: 16px;">{{ passwordRules.lowercase ? 'check_circle' : 'cancel' }}</span>
+                至少 1 個小寫字母
               </p>
-              <p :style="{ fontSize: '12px', color: passwordRules.number ? '#51cf66' : '#ff6b6b', marginBottom: '4px' }">
-                {{ passwordRules.number ? '✓' : '✗' }} 至少 1 個數字
+              <p :style="{ fontSize: '12px', color: passwordRules.number ? '#51cf66' : '#ff6b6b', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }">
+                <span class="material-icons" style="font-size: 16px;">{{ passwordRules.number ? 'check_circle' : 'cancel' }}</span>
+                至少 1 個數字
               </p>
-              <p :style="{ fontSize: '12px', color: passwordRules.special ? '#51cf66' : '#ff6b6b', marginBottom: '4px' }">
-                {{ passwordRules.special ? '✓' : '✗' }} 至少 1 個特殊字元 (!@#$%^&*(),.?":{}|&lt;&gt;)
+              <p :style="{ fontSize: '12px', color: passwordRules.special ? '#51cf66' : '#ff6b6b', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }">
+                <span class="material-icons" style="font-size: 16px;">{{ passwordRules.special ? 'check_circle' : 'cancel' }}</span>
+                至少 1 個特殊字元 (!@#$%^&*(),.?":{}|&lt;&gt;)
               </p>
             </div>
           </div>
@@ -89,7 +99,9 @@
 
       <!-- 重設成功 -->
       <div v-else style="text-align: center; padding: 40px 20px;">
-        <div style="font-size: 70px; margin-bottom: 25px;">✅</div>
+        <div style="margin-bottom: 25px;">
+          <span class="material-icons" style="font-size: 70px; color: #51cf66;">check_circle</span>
+        </div>
         <h2 style="color: #51cf66; margin: 0 0 15px 0;">密碼重設成功！</h2>
         <p style="color: #a0aec0; margin: 0 0 30px 0; line-height: 1.6;">
           您的密碼已成功更新，現在可以使用新密碼登入了。
@@ -105,7 +117,10 @@
     <!-- 錯誤訊息 Modal -->
     <div v-if="showErrorModal" class="modal">
       <div class="modal-content">
-        <h2 style="color: #ff6b6b;">❌ 重設失敗</h2>
+        <h2 style="color: #ff6b6b; display: flex; align-items: center; gap: 8px; justify-content: center;">
+          <span class="material-icons" style="font-size: 32px;">error</span>
+          重設失敗
+        </h2>
         <p style="margin: 20px 0; color: #a0aec0; white-space: pre-line;">{{ errorMessage }}</p>
         <button @click="showErrorModal = false" class="btn btn-primary" style="width: 100%;">
           確定
