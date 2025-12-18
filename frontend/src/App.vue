@@ -249,6 +249,7 @@ onMounted(async () => {
     max-height: 0;
     overflow: hidden;
     opacity: 0;
+    pointer-events: none; /* Prevent clicks when hidden */
     transition: all 0.3s ease;
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
     border-bottom: 1px solid rgba(0, 212, 255, 0.2);
@@ -257,6 +258,7 @@ onMounted(async () => {
   .navbar-menu.active {
     max-height: 500px;
     opacity: 1;
+    pointer-events: auto; /* Enable clicks when visible */
   }
 
   .navbar-links,

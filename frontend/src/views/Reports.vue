@@ -3,6 +3,7 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
       <h1 style="margin: 0;">報表</h1>
       <button
+        type="button"
         @click="handleAIReportClick"
         style="padding: 12px 24px; background: linear-gradient(135deg, #00d4ff, #8a2be2); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3); display: flex; align-items: center; gap: 8px;"
       >
