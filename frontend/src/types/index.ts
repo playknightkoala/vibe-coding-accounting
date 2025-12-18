@@ -342,3 +342,79 @@ export interface RecurringExpenseUpdate {
   is_active?: boolean
   end_date?: string
 }
+
+// AI財務報告相關類型
+export interface AIFinancialSummary {
+  // 報告元數據
+  report_generated_at: string
+  report_period_start: string
+  report_period_end: string
+  user_id: number
+
+  // 財務概況
+  total_income: number
+  total_expense: number
+  net_income: number
+  savings_rate: number
+
+  // 帳戶狀況
+  total_assets: number
+  accounts_summary: Array<{
+    name: string
+    type: string
+    balance: number
+    currency: string
+  }>
+
+  // 支出分析
+  top_expense_categories: Array<{
+    category: string
+    amount: number
+    percentage: number
+  }>
+  top_income_categories: Array<{
+    category: string
+    amount: number
+    percentage: number
+  }>
+
+  // 預算執行情況
+  budgets_summary: Array<{
+    name: string
+    amount: number
+    spent: number
+    percentage: number
+    status: string
+  }>
+  total_budget_amount: number
+  total_budget_spent: number
+  budget_utilization: number
+
+  // 交易統計
+  total_transactions: number
+  average_transaction_amount: number
+  largest_expense: {
+    description: string
+    amount: number
+    date: string
+    category: string
+  } | null
+  largest_income: {
+    description: string
+    amount: number
+    date: string
+    category: string
+  } | null
+
+  // 趨勢分析
+  daily_average_expense: number
+  daily_average_income: number
+  expense_trend: string
+
+  // 警示與建議
+  alerts: string[]
+  financial_health_score: number
+
+  // 文本報告
+  text_report: string
+}

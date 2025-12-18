@@ -38,7 +38,9 @@
       "Bash(npm run build:*)",
       "Bash(cat:*)",
       "Bash(find:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(chmod:*)",
+      "Bash(./quick_test_ai_report.sh:*)"
     ],
     "deny": [],
     "ask": []

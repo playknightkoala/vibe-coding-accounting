@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from calendar import monthrange
 from collections import defaultdict
 
@@ -17,6 +17,7 @@ from app.schemas.report import (
 )
 from app.api.deps import get_current_user
 from app.schemas.budget_report import BudgetReport, BudgetStats, BudgetTransaction
+from app.schemas.ai_financial_report import AIFinancialSummary
 from app.models.budget import Budget
 from app.models.budget_category import BudgetCategory
 
@@ -56,23 +57,28 @@ def get_monthly_budget_report(
     budget_categories = set()
     has_global_budget = False
     
-    budget_categories = set()
-    has_global_budget = False
-    
+    # Process budgets to pre-load constraints
+    processed_budgets = []
     for b in budgets:
-        # Fetch categories from BudgetCategory table
+        # Fetch categories
         cats = db.query(BudgetCategory.category_name).filter(BudgetCategory.budget_id == b.id).all()
-        cat_names = [c[0] for c in cats]
-        
-        if cat_names:
-            budget_categories.update(cat_names)
-        elif b.category:
-            # Fallback to legacy field
-            budget_categories.add(b.category)
-        else:
-            # No categories defined = Global budget
-            has_global_budget = True
+        categories = {c[0] for c in cats}
+        if b.category:
+            categories.add(b.category)
             
+        # Fetch accounts (lazy load, but strictly for filtering)
+        # Note: If no accounts linked, it means all accounts
+        linked_accounts = {acc.id for acc in b.accounts} if b.accounts else set()
+        
+        processed_budgets.append({
+            "budget": b,
+            "categories": categories,
+            "accounts": linked_accounts,
+            "has_categories": bool(categories),
+            "start": b.start_date,
+            "end": b.end_date
+        })
+
     transactions = get_user_transactions(db, current_user.id, start_date, end_date)
     
     budget_transactions = []
@@ -87,12 +93,30 @@ def get_monthly_budget_report(
         if t.exclude_from_budget:
             continue
             
-        # Check if transaction matches any budget
+        # Check if transaction matches ANY budget
         is_included = False
-        if has_global_budget:
+        
+        for pb in processed_budgets:
+            # 1. Date Check (Strictly for the budget's range)
+            # Transaction query already filters by report range, but budget might be shorter?
+            # Usually budget covers the month context in get_monthly_budget_report, but let's be safe
+            # Use date() comparison to avoid timezone issues (fixed previously)
+            if t.transaction_date.date() < pb["start"].date() or t.transaction_date.date() > pb["end"].date():
+                continue
+
+            # 2. Account Check
+            if pb["accounts"] and t.account_id not in pb["accounts"]:
+                continue
+                
+            # 3. Category Check
+            if pb["has_categories"]:
+                if t.category not in pb["categories"]:
+                    continue
+            # If has_categories is False, it's a global budget (matches all categories)
+            
+            # If we passed all checks, this transaction is included
             is_included = True
-        elif t.category in budget_categories:
-            is_included = True
+            break
             
         if is_included:
             total_spent += t.amount
@@ -189,22 +213,26 @@ def get_daily_budget_report(
     budget_categories = set()
     has_global_budget = False
     
-    budget_categories = set()
-    has_global_budget = False
-    
+    # Process budgets to pre-load constraints
+    processed_budgets = []
     for b in budgets:
-        # Fetch categories from BudgetCategory table
+        # Fetch categories
         cats = db.query(BudgetCategory.category_name).filter(BudgetCategory.budget_id == b.id).all()
-        cat_names = [c[0] for c in cats]
+        categories = {c[0] for c in cats}
+        if b.category:
+            categories.add(b.category)
+            
+        # Fetch accounts
+        linked_accounts = {acc.id for acc in b.accounts} if b.accounts else set()
         
-        if cat_names:
-            budget_categories.update(cat_names)
-        elif b.category:
-            # Fallback to legacy field
-            budget_categories.add(b.category)
-        else:
-            # No categories defined = Global budget
-            has_global_budget = True
+        processed_budgets.append({
+            "budget": b,
+            "categories": categories,
+            "accounts": linked_accounts,
+            "has_categories": bool(categories),
+            "start": b.start_date,
+            "end": b.end_date
+        })
 
     transactions = get_user_transactions(db, current_user.id, start_date, end_date)
     
@@ -218,11 +246,25 @@ def get_daily_budget_report(
         if t.exclude_from_budget:
             continue
             
+        # Check if transaction matches ANY budget
         is_included = False
-        if has_global_budget:
+        
+        for pb in processed_budgets:
+            # 1. Date Check
+            if t.transaction_date.date() < pb["start"].date() or t.transaction_date.date() > pb["end"].date():
+                continue
+
+            # 2. Account Check
+            if pb["accounts"] and t.account_id not in pb["accounts"]:
+                continue
+                
+            # 3. Category Check
+            if pb["has_categories"]:
+                if t.category not in pb["categories"]:
+                    continue
+            
             is_included = True
-        elif t.category in budget_categories:
-            is_included = True
+            break
             
         if is_included:
             total_spent += t.amount
@@ -1173,20 +1215,26 @@ def get_custom_budget_report(
     
     total_budget_amount = sum(b.amount for b in budgets)
     
-    budget_categories = set()
-    has_global_budget = False
-    
+    processed_budgets = []
     for b in budgets:
+        # Fetch categories
         cats = db.query(BudgetCategory.category_name).filter(BudgetCategory.budget_id == b.id).all()
-        cat_names = [c[0] for c in cats]
+        categories = {c[0] for c in cats}
+        if b.category:
+            categories.add(b.category)
+            
+        # Fetch accounts
+        linked_accounts = {acc.id for acc in b.accounts} if b.accounts else set()
         
-        if cat_names:
-            budget_categories.update(cat_names)
-        elif b.category:
-            budget_categories.add(b.category)
-        else:
-            has_global_budget = True
-    
+        processed_budgets.append({
+            "budget": b,
+            "categories": categories,
+            "accounts": linked_accounts,
+            "has_categories": bool(categories),
+            "start": b.start_date,
+            "end": b.end_date
+        })
+
     transactions = get_user_transactions(db, current_user.id, start, end)
     
     budget_transactions = []
@@ -1197,13 +1245,27 @@ def get_custom_budget_report(
             continue
         if t.exclude_from_budget:
             continue
-        
+            
+        # Check if transaction matches ANY budget
         is_included = False
-        if has_global_budget:
-            is_included = True
-        elif t.category in budget_categories:
-            is_included = True
         
+        for pb in processed_budgets:
+            # 1. Date Check
+            if t.transaction_date.date() < pb["start"].date() or t.transaction_date.date() > pb["end"].date():
+                continue
+
+            # 2. Account Check
+            if pb["accounts"] and t.account_id not in pb["accounts"]:
+                continue
+                
+            # 3. Category Check
+            if pb["has_categories"]:
+                if t.category not in pb["categories"]:
+                    continue
+            
+            is_included = True
+            break
+         
         if is_included:
             total_spent += t.amount
             budget_transactions.append(BudgetTransaction(
@@ -1224,7 +1286,7 @@ def get_custom_budget_report(
     
     # Projected spending (simple linear projection)
     # For custom range, we can project based on current progress through the range
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
     if start <= now <= end:
         days_passed = (now - start).days + 1
         projected_spending = (total_spent / days_passed) * days_diff if days_passed > 0 else 0
@@ -1292,5 +1354,408 @@ def get_custom_account_transactions(
     
     transactions = get_user_transactions(db, current_user.id, start, end)
     filtered = [t for t in transactions if t.account_id == account_id]
-    
+
     return filtered
+
+
+@router.get("/ai-financial-summary", response_model=AIFinancialSummary)
+def get_ai_financial_summary(
+    start_date: str,
+    end_date: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    生成AI可讀的綜合財務報告
+    整合所有財務數據，包括收支概況、帳戶狀況、預算執行、趨勢分析等
+    """
+    try:
+        start = datetime.fromisoformat(start_date)
+        end = datetime.fromisoformat(end_date)
+        end = datetime.combine(end.date(), datetime.max.time())
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+
+    now = datetime.now(timezone.utc)
+
+    # 1. 獲取所有交易
+    transactions = get_user_transactions(db, current_user.id, start, end)
+
+    # 2. 獲取所有帳戶及餘額
+    accounts = db.query(Account).filter(Account.user_id == current_user.id).all()
+    total_assets = sum(acc.balance for acc in accounts)
+    accounts_summary = [
+        {
+            "name": acc.name,
+            "type": acc.account_type,
+            "balance": acc.balance,
+            "currency": acc.currency
+        }
+        for acc in accounts
+    ]
+
+    # 3. 計算收入與支出
+    total_income = 0.0
+    total_expense = 0.0
+    category_income = defaultdict(float)
+    category_expense = defaultdict(float)
+
+    for t in transactions:
+        if t.transaction_type == 'credit':
+            total_income += t.amount
+            category = t.category or "未分類"
+            category_income[category] += t.amount
+        elif t.transaction_type in ['debit', 'installment']:
+            if not t.exclude_from_budget:
+                total_expense += t.amount
+                category = t.category or "未分類"
+                category_expense[category] += t.amount
+
+    net_income = total_income - total_expense
+    savings_rate = (net_income / total_income * 100) if total_income > 0 else 0.0
+
+    # 4. 支出類別排名 (top 5)
+    top_expense_categories = [
+        {
+            "category": cat,
+            "amount": amt,
+            "percentage": round(amt / total_expense * 100, 2) if total_expense > 0 else 0.0
+        }
+        for cat, amt in sorted(category_expense.items(), key=lambda x: x[1], reverse=True)[:5]
+    ]
+
+    # 5. 收入類別排名 (top 5)
+    top_income_categories = [
+        {
+            "category": cat,
+            "amount": amt,
+            "percentage": round(amt / total_income * 100, 2) if total_income > 0 else 0.0
+        }
+        for cat, amt in sorted(category_income.items(), key=lambda x: x[1], reverse=True)[:5]
+    ]
+
+    # 6. 獲取預算執行情況
+    budgets = db.query(Budget).filter(
+        Budget.user_id == current_user.id,
+        Budget.start_date < end,
+        Budget.end_date >= start
+    ).all()
+
+    total_budget_amount = sum(b.amount for b in budgets)
+    total_budget_spent = 0.0
+    budgets_summary = []
+
+    for budget in budgets:
+        # 計算此預算的實際支出
+        budget_categories = set()
+        has_global_budget = False
+
+        cats = db.query(BudgetCategory.category_name).filter(
+            BudgetCategory.budget_id == budget.id
+        ).all()
+        cat_names = [c[0] for c in cats]
+
+        if cat_names:
+            budget_categories.update(cat_names)
+        elif budget.category:
+            budget_categories.add(budget.category)
+        else:
+            has_global_budget = True
+
+        spent = 0.0
+        for t in transactions:
+            if t.transaction_type not in ['debit', 'installment']:
+                continue
+            if t.exclude_from_budget:
+                continue
+
+            # 只計算預算時間段內的交易
+            if t.transaction_date.date() < budget.start_date.date() or t.transaction_date.date() > budget.end_date.date():
+                continue
+
+            # 檢查是否為綁定帳戶的交易
+            # 若預算有綁定帳戶，且此交易不屬於這些帳戶，則排除
+            if budget.accounts:
+                linked_account_ids = {acc.id for acc in budget.accounts}
+                if t.account_id not in linked_account_ids:
+                    continue
+
+            is_included = False
+            if has_global_budget:
+                is_included = True
+            elif t.category in budget_categories:
+                is_included = True
+
+            if is_included:
+                spent += t.amount
+
+        total_budget_spent += spent
+        percentage = round(spent / budget.amount * 100, 2) if budget.amount > 0 else 0.0
+
+        status = "正常"
+        if spent > budget.amount:
+            status = "超支"
+        elif percentage >= 80:
+            status = "警告"
+
+        budgets_summary.append({
+            "name": budget.name,
+            "amount": budget.amount,
+            "spent": spent,
+            "percentage": percentage,
+            "status": status,
+            "start_date": budget.start_date.strftime('%Y-%m-%d'),
+            "end_date": budget.end_date.strftime('%Y-%m-%d'),
+            "period": f"{budget.start_date.strftime('%Y-%m-%d')} ~ {budget.end_date.strftime('%Y-%m-%d')}"
+        })
+
+    budget_utilization = (total_budget_spent / total_budget_amount * 100) if total_budget_amount > 0 else 0.0
+
+    # 7. 交易統計
+    total_transactions = len(transactions)
+    average_transaction_amount = (total_income + total_expense) / total_transactions if total_transactions > 0 else 0.0
+
+    # 找出最大支出和收入
+    expense_transactions = [t for t in transactions if t.transaction_type in ['debit', 'installment']]
+    income_transactions = [t for t in transactions if t.transaction_type == 'credit']
+
+    largest_expense = None
+    if expense_transactions:
+        largest_exp = max(expense_transactions, key=lambda x: x.amount)
+        largest_expense = {
+            "description": largest_exp.description,
+            "amount": largest_exp.amount,
+            "date": largest_exp.transaction_date.strftime('%Y-%m-%d'),
+            "category": largest_exp.category or "未分類"
+        }
+
+    largest_income = None
+    if income_transactions:
+        largest_inc = max(income_transactions, key=lambda x: x.amount)
+        largest_income = {
+            "description": largest_inc.description,
+            "amount": largest_inc.amount,
+            "date": largest_inc.transaction_date.strftime('%Y-%m-%d'),
+            "category": largest_inc.category or "未分類"
+        }
+
+    # 8. 趨勢分析
+    days_in_period = (end.date() - start.date()).days + 1
+    daily_average_expense = total_expense / days_in_period if days_in_period > 0 else 0.0
+    daily_average_income = total_income / days_in_period if days_in_period > 0 else 0.0
+
+    # 簡單的趨勢分析：比較前半段和後半段
+    # 使用日期比較避免時區問題
+    mid_date = start.date() + (end.date() - start.date()) // 2
+    first_half_expense = sum(t.amount for t in transactions
+                             if t.transaction_type in ['debit', 'installment']
+                             and t.transaction_date.date() < mid_date)
+    second_half_expense = sum(t.amount for t in transactions
+                              if t.transaction_type in ['debit', 'installment']
+                              and t.transaction_date.date() >= mid_date)
+
+    if second_half_expense > first_half_expense * 1.1:
+        expense_trend = "遞增"
+    elif second_half_expense < first_half_expense * 0.9:
+        expense_trend = "遞減"
+    else:
+        expense_trend = "穩定"
+
+    # 9. 警示與建議
+    alerts = []
+    for budget in budgets_summary:
+        if budget["status"] == "超支":
+            alerts.append(f"預算「{budget['name']}」已超支 {budget['percentage'] - 100:.1f}%")
+        elif budget["status"] == "警告":
+            alerts.append(f"預算「{budget['name']}」使用率達 {budget['percentage']:.1f}%，接近上限")
+
+    # 檢查異常大額支出（超過平均支出的3倍）
+    if expense_transactions:
+        avg_expense = sum(t.amount for t in expense_transactions) / len(expense_transactions)
+        abnormal_expenses = [t for t in expense_transactions if t.amount > avg_expense * 3]
+        if abnormal_expenses:
+            alerts.append(f"發現 {len(abnormal_expenses)} 筆異常大額支出（超過平均值3倍）")
+
+    # 檢查儲蓄率
+    if savings_rate < 0:
+        alerts.append(f"本期支出大於收入，淨收入為負（{net_income:.2f}）")
+    elif savings_rate < 10:
+        alerts.append(f"儲蓄率偏低（{savings_rate:.1f}%），建議控制支出")
+
+    # 10. 財務健康評分 (0-100)
+    health_score = 100.0
+
+    # 儲蓄率評分 (最多40分)
+    if savings_rate < 0:
+        health_score -= 40
+    elif savings_rate < 10:
+        health_score -= 30
+    elif savings_rate < 20:
+        health_score -= 20
+    elif savings_rate < 30:
+        health_score -= 10
+
+    # 預算執行評分 (最多30分)
+    over_budget_count = sum(1 for b in budgets_summary if b["status"] == "超支")
+    if over_budget_count > 0:
+        health_score -= min(30, over_budget_count * 15)
+
+    # 支出趨勢評分 (最多15分)
+    if expense_trend == "遞增":
+        health_score -= 15
+    elif expense_trend == "穩定":
+        health_score -= 5
+
+    # 異常支出評分 (最多15分)
+    if expense_transactions:
+        avg_expense = sum(t.amount for t in expense_transactions) / len(expense_transactions)
+        abnormal_count = sum(1 for t in expense_transactions if t.amount > avg_expense * 3)
+        if abnormal_count > 0:
+            health_score -= min(15, abnormal_count * 5)
+
+    health_score = max(0, health_score)
+
+    # 11. 生成文本報告 (Prompt格式)
+    text_report = f"""
+你是一位專業的財務顧問，請根據以下財務數據提供詳細的分析與建議。
+
+=== 財務數據報告 ===
+報告期間: {start_date} 至 {end_date}
+數據生成時間: {now.strftime('%Y-%m-%d %H:%M:%S')}
+
+【財務概況】
+總收入: ${total_income:,.2f}
+總支出: ${total_expense:,.2f}
+淨收入: ${net_income:,.2f}
+儲蓄率: {savings_rate:.1f}%
+
+【資產狀況】
+總資產: ${total_assets:,.2f}
+帳戶數量: {len(accounts)}
+
+帳戶明細:
+"""
+
+    for acc in accounts_summary:
+        text_report += f"  - {acc['name']} ({acc['type']}): {acc['currency']} ${acc['balance']:,.2f}\n"
+
+    text_report += f"""
+【支出分析】
+前五大支出類別:
+"""
+    for i, cat in enumerate(top_expense_categories, 1):
+        text_report += f"  {i}. {cat['category']}: ${cat['amount']:,.2f} ({cat['percentage']:.1f}%)\n"
+
+    text_report += f"""
+【收入分析】
+前五大收入類別:
+"""
+    for i, cat in enumerate(top_income_categories, 1):
+        text_report += f"  {i}. {cat['category']}: ${cat['amount']:,.2f} ({cat['percentage']:.1f}%)\n"
+
+    text_report += f"""
+【預算執行】
+總預算金額: ${total_budget_amount:,.2f}
+已使用金額: ${total_budget_spent:,.2f}
+預算使用率: {budget_utilization:.1f}%
+
+預算明細:
+"""
+    for budget in budgets_summary:
+        text_report += f"  - {budget['name']}: ${budget['spent']:,.2f} / ${budget['amount']:,.2f} ({budget['percentage']:.1f}%) [{budget['status']}] ({budget['start_date']} ~ {budget['end_date']})\n"
+
+    text_report += f"""
+【交易統計】
+交易總數: {total_transactions}
+平均交易金額: ${average_transaction_amount:,.2f}
+每日平均支出: ${daily_average_expense:,.2f}
+每日平均收入: ${daily_average_income:,.2f}
+支出趨勢: {expense_trend}
+
+最大單筆支出: {largest_expense['description'] if largest_expense else '無'} - ${largest_expense['amount']:,.2f} ({largest_expense['date']}) [{largest_expense['category']}]
+最大單筆收入: {largest_income['description'] if largest_income else '無'} - ${largest_income['amount']:,.2f} ({largest_income['date']}) [{largest_income['category']}]
+
+【財務健康評分】
+{health_score:.1f} / 100 分
+
+評分說明:
+- 90-100分: 財務狀況優秀
+- 70-89分: 財務狀況良好
+- 50-69分: 財務狀況一般，需要注意
+- 0-49分: 財務狀況較差，需要改善
+
+【警示與建議】
+"""
+
+    if alerts:
+        for alert in alerts:
+            text_report += f"[!] {alert}\n"
+    else:
+        text_report += "[OK] 目前沒有需要特別注意的財務警示\n"
+
+    text_report += """
+=== 分析要求 ===
+
+請基於以上完整的財務數據，提供專業的財務分析報告，包含以下內容：
+
+1. 【支出結構分析】
+   - 分析支出分佈是否合理
+   - 指出可能存在的過度支出領域
+   - 提供具體的優化建議
+
+2. 【預算執行評估】
+   - 評估預算使用情況
+   - 分析預算分配是否合理
+   - 建議如何調整預算策略
+
+3. 【收入狀況分析】
+   - 評估收入來源的穩定性
+   - 分析收入結構的健康度
+   - 提供增加收入的建議
+
+4. 【儲蓄能力評估】
+   - 評估當前儲蓄率是否健康
+   - 分析影響儲蓄的主要因素
+   - 提供提高儲蓄率的具體方法
+
+5. 【財務趨勢預測】
+   - 根據當前趨勢預測未來財務狀況
+   - 指出可能的財務風險
+   - 提供預防措施
+
+6. 【具體改善建議】
+   - 提供至少5條可執行的財務改善建議
+   - 每條建議需包含具體執行步驟
+   - 標明建議的優先級
+
+請以專業、易懂的方式呈現分析結果，並提供可操作的建議。
+"""
+
+    return AIFinancialSummary(
+        report_generated_at=now,
+        report_period_start=start_date,
+        report_period_end=end_date,
+        user_id=current_user.id,
+        total_income=total_income,
+        total_expense=total_expense,
+        net_income=net_income,
+        savings_rate=savings_rate,
+        total_assets=total_assets,
+        accounts_summary=accounts_summary,
+        top_expense_categories=top_expense_categories,
+        top_income_categories=top_income_categories,
+        budgets_summary=budgets_summary,
+        total_budget_amount=total_budget_amount,
+        total_budget_spent=total_budget_spent,
+        budget_utilization=budget_utilization,
+        total_transactions=total_transactions,
+        average_transaction_amount=average_transaction_amount,
+        largest_expense=largest_expense,
+        largest_income=largest_income,
+        daily_average_expense=daily_average_expense,
+        daily_average_income=daily_average_income,
+        expense_trend=expense_trend,
+        alerts=alerts,
+        financial_health_score=health_score,
+        text_report=text_report
+    )

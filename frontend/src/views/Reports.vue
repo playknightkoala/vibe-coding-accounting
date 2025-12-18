@@ -1,6 +1,15 @@
 <template>
   <div class="container">
-    <h1>報表</h1>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h1 style="margin: 0;">報表</h1>
+      <button
+        @click="handleAIReportClick"
+        style="padding: 12px 24px; background: linear-gradient(135deg, #00d4ff, #8a2be2); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3); display: flex; align-items: center; gap: 8px;"
+      >
+        <span class="material-icons">assessment</span>
+        財務分析報告
+      </button>
+    </div>
 
     <!-- 報表類型與日期選擇器 -->
     <div class="card">
@@ -135,6 +144,9 @@
         :transactions="budgetTransactions"
       />
     </div>
+
+    <!-- AI財務報告模態框 -->
+    <AIFinancialReportModal v-model="showAIReport" />
   </div>
 </template>
 
@@ -146,6 +158,7 @@ import CategoryReport from '@/components/reports/CategoryReport.vue'
 import RankingReport from '@/components/reports/RankingReport.vue'
 import AccountReportView from '@/components/reports/AccountReportView.vue'
 import BudgetReport from '@/components/reports/BudgetReport.vue'
+import AIFinancialReportModal from '@/components/AIFinancialReportModal.vue'
 import { useDateTime } from '@/composables/useDateTime'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
@@ -160,6 +173,11 @@ const currentMonth = ref(new Date().getMonth() + 1)
 const selectedDate = ref(getTodayString())
 const customStartDate = ref(getTodayString())
 const customEndDate = ref(getTodayString())
+const showAIReport = ref(false)
+
+const handleAIReportClick = () => {
+  showAIReport.value = true
+}
 
 const budgetStats = ref({
   total_budget: 0,

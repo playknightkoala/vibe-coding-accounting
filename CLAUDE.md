@@ -422,6 +422,66 @@ Comprehensive reporting endpoints at `/api/reports` provide data analytics for s
 - Supports filtering by category and account
 - Data formatted for frontend charts and visualizations
 
+### AI Financial Report System
+
+**Overview:**
+Generates comprehensive AI-readable financial reports that integrate all key financial data for analysis by AI assistants (ChatGPT, Claude, etc.).
+
+**Endpoint:**
+- `GET /api/reports/ai-financial-summary` - Generate AI-readable financial summary report
+
+**Features:**
+- **Comprehensive Analysis**: Income/expense overview, asset status, budget execution, transaction statistics
+- **Financial Health Score**: Automated 0-100 scoring based on savings rate, budget execution, spending trends, and abnormal expenses
+- **Smart Alerts**: Automatic detection of over-budget, high utilization, abnormal expenses, and low savings rate
+- **Trend Analysis**: Spending trend detection (increasing/decreasing/stable) via period comparison
+- **Structured Text Report**: AI-optimized format with clear sections and actionable insights
+
+**Report Sections:**
+1. **Financial Overview**: Total income, expenses, net income, savings rate
+2. **Asset Status**: Total assets, account balances by type and currency
+3. **Top Categories**: Top 5 expense and income categories with percentages
+4. **Budget Execution**: Budget utilization, individual budget status, over-budget alerts
+5. **Transaction Statistics**: Count, averages, largest transactions, daily averages
+6. **Health Score**: 0-100 rating with interpretation (Excellent/Good/Fair/Poor)
+7. **Alerts & Warnings**: Budget overruns, abnormal spending, low savings rate warnings
+
+**Scoring Algorithm:**
+- Savings Rate (max 40 points): Based on net income / total income percentage
+- Budget Execution (max 30 points): Deducts 15 points per over-budget item
+- Spending Trend (max 15 points): Penalizes increasing trends
+- Abnormal Expenses (max 15 points): Deducts points for transactions > 3x average
+
+**Frontend Integration:**
+- Component: `frontend/src/components/AIFinancialReportModal.vue`
+- Access: Reports page → "🤖 AI 財務分析" button
+- Features: Date range selection, one-click copy, download as .txt file
+- UI: Health score display, key metrics cards, alerts section, full text report
+
+**Usage Pattern:**
+```typescript
+// API call
+const response = await api.getAIFinancialSummary('2025-11-01', '2025-11-30')
+const report = response.data
+
+// Copy text report to clipboard for AI analysis
+await navigator.clipboard.writeText(report.text_report)
+```
+
+**Implementation Files:**
+- Backend API: `backend/app/api/reports.py` (line 1300+)
+- Schema: `backend/app/schemas/ai_financial_report.py`
+- Frontend Component: `frontend/src/components/AIFinancialReportModal.vue`
+- Types: `frontend/src/types/index.ts` (AIFinancialSummary interface)
+- Guide: `AI_FINANCIAL_REPORT_GUIDE.md` (detailed user documentation)
+
+**Best Practices:**
+- Generate monthly reports for regular financial health tracking
+- Use quarterly/annual reports for long-term trend analysis
+- Paste report to AI with specific questions (e.g., "How can I improve my savings rate?")
+- Compare reports over time to track improvement in financial health score
+- Combine with other reports (category, budget) for deep-dive analysis
+
 ### Password Reset System
 
 **Overview:**

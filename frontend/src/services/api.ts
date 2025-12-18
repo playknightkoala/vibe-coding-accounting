@@ -34,7 +34,8 @@ import type {
   ExchangeRate,
   RecurringExpense,
   RecurringExpenseCreate,
-  RecurringExpenseUpdate
+  RecurringExpenseUpdate,
+  AIFinancialSummary
 } from '@/types'
 
 // 使用相對路徑，讓 nginx 反向代理處理路由
@@ -382,6 +383,13 @@ export default {
   getAccountTransactionsDaily(accountId: number, date: string) {
     return api.get<TransactionDetail[]>(`/reports/account/${accountId}/transactions/daily`, {
       params: { date_str: date }
+    })
+  },
+
+  // AI財務報告
+  getAIFinancialSummary(startDate: string, endDate: string) {
+    return api.get<AIFinancialSummary>('/reports/ai-financial-summary', {
+      params: { start_date: startDate, end_date: endDate }
     })
   },
 
