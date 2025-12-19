@@ -54,8 +54,12 @@
             <span>有記帳</span>
           </div>
           <div class="legend-item">
+            <span class="legend-dot within-budget"></span>
+            <span>預算內</span>
+          </div>
+          <div class="legend-item">
             <span class="legend-dot over-budget"></span>
-            <span>超出當天預算</span>
+            <span>超出預算</span>
           </div>
         </div>
       </div>
@@ -71,12 +75,13 @@
           :class="['calendar-day', {
             'other-month': !day.isCurrentMonth,
             'today': day.isToday,
-            'has-transactions': day.hasTransactions && day.isCurrentMonth,
+            'has-transactions': day.hasTransactions && day.isCurrentMonth && !day.hasBudgetCheck,
+            'within-budget': day.isWithinBudget && day.isCurrentMonth,
             'selected': day.date === internalSelectedDate,
             'over-budget': day.isOverBudget
           }]"
           @click="selectDate(day)"
-          :title="day.isOverBudget ? '超出預算:\n' + day.overBudgetDetails.join('\n') : ''"
+          :title="day.isOverBudget ? '超出預算:\n' + day.overBudgetDetails.join('\n') : (day.isWithinBudget ? '預算內' : '')"
         >
           <div class="day-number">{{ day.dayNumber }}</div>
         </div>
@@ -288,7 +293,9 @@ interface CalendarDay {
   hasTransactions: boolean
   transactionCount: number
   netAmount: number
+  hasBudgetCheck: boolean  // 是否有進行預算檢查
   isOverBudget: boolean
+  isWithinBudget: boolean  // 是否在預算內
   overBudgetDetails: string[]
 }
 
@@ -326,7 +333,9 @@ const calendarDays = computed<CalendarDay[]>(() => {
       hasTransactions: false,
       transactionCount: 0,
       netAmount: 0,
+      hasBudgetCheck: false,
       isOverBudget: false,
+      isWithinBudget: false,
       overBudgetDetails: []
     })
   }
@@ -350,49 +359,68 @@ const calendarDays = computed<CalendarDay[]>(() => {
       }
     })
 
-    // Check if over budget
+    // Check budget status
+    let hasBudgetCheck = false  // 是否有進行預算檢查
     let isOverBudget = false
+    let isWithinBudget = false
     const overBudgetDetails: string[] = []
-    
-    if (props.budgets && props.budgets.length > 0) {
+
+    if (props.budgets && props.budgets.length > 0 && dayTransactions.length > 0) {
       const currentDate = new Date(dateStr)
+      const today = new Date(todayStr)
+
       // Check each budget
       for (const budget of props.budgets) {
         if (!budget.daily_limit) continue
-        
+
         const startDate = new Date(budget.start_date)
         const endDate = new Date(budget.end_date)
-        
+
         // Reset time part for accurate date comparison
         startDate.setHours(0, 0, 0, 0)
         endDate.setHours(23, 59, 59, 999)
-        
+
         if (currentDate >= startDate && currentDate <= endDate) {
+          // Auto 模式：只標記今天及未來，跳過過去的日期
+          if (budget.daily_limit_mode === 'auto' && currentDate < today) {
+            continue
+          }
+
           // Filter transactions that match this budget
           const budgetTransactions = dayTransactions.filter(t => {
              if (isTransactionPending(t)) return false // Skip pending
              if (t.transaction_type !== 'debit') return false
-             
+
              // Check account filter
              if (budget.account_ids && budget.account_ids.length > 0) {
                if (!budget.account_ids.includes(t.account_id)) return false
              }
-             
+
              // Check category filter
              if (budget.category_names && budget.category_names.length > 0) {
                if (!t.category || !budget.category_names.includes(t.category)) return false
              }
-             
+
              return true
           })
-          
-          const budgetDailySpent = budgetTransactions.reduce((sum, t) => sum + t.amount, 0)
-          
-          if (budgetDailySpent > budget.daily_limit) {
-            isOverBudget = true
-            overBudgetDetails.push(`${budget.name}: 已用 $${budgetDailySpent.toFixed(0)} / 上限 $${budget.daily_limit.toFixed(0)}`)
+
+          // 只要有任何一個預算有匹配的交易，就算有進行預算檢查
+          if (budgetTransactions.length > 0) {
+            hasBudgetCheck = true
+
+            const budgetDailySpent = budgetTransactions.reduce((sum, t) => sum + t.amount, 0)
+
+            if (budgetDailySpent > budget.daily_limit) {
+              isOverBudget = true
+              overBudgetDetails.push(`${budget.name}: 已用 $${budgetDailySpent.toFixed(0)} / 上限 $${budget.daily_limit.toFixed(0)}`)
+            }
           }
         }
+      }
+
+      // 如果有進行預算檢查且沒有超支，則標記為預算內
+      if (hasBudgetCheck && !isOverBudget) {
+        isWithinBudget = true
       }
     }
 
@@ -404,7 +432,9 @@ const calendarDays = computed<CalendarDay[]>(() => {
       hasTransactions: dayTransactions.length > 0,
       transactionCount: dayTransactions.length,
       netAmount: netAmount,
+      hasBudgetCheck,
       isOverBudget,
+      isWithinBudget,
       overBudgetDetails
     })
   }
@@ -424,7 +454,9 @@ const calendarDays = computed<CalendarDay[]>(() => {
       hasTransactions: false,
       transactionCount: 0,
       netAmount: 0,
+      hasBudgetCheck: false,
       isOverBudget: false,
+      isWithinBudget: false,
       overBudgetDetails: []
     })
   }
@@ -692,14 +724,19 @@ watch(() => props.transactions, () => {
   display: inline-block;
 }
 
+.legend-dot.has-transactions {
+  background: rgba(0, 212, 255, 0.1);
+  border: 2px solid #00d4ff;
+}
+
+.legend-dot.within-budget {
+  background: rgba(81, 207, 102, 0.1);
+  border: 2px solid #51cf66;
+}
+
 .legend-dot.over-budget {
   background: rgba(255, 107, 107, 0.1);
   border: 2px solid #ff6b6b;
-}
-
-.legend-dot.has-transactions {
-  background: rgba(81, 207, 102, 0.1);
-  border: 2px solid #51cf66;
 }
 
 .calendar-title {
@@ -858,6 +895,17 @@ watch(() => props.transactions, () => {
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 2px solid #00d4ff;
+  border-radius: 50%;
+  background: rgba(0, 212, 255, 0.1);
+}
+
+.calendar-day.within-budget .day-number {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: 2px solid #51cf66;
   border-radius: 50%;
   background: rgba(81, 207, 102, 0.1);
@@ -870,7 +918,13 @@ watch(() => props.transactions, () => {
 }
 
 .calendar-day.over-budget .day-number {
-  border-color: #ff6b6b;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #ff6b6b;
+  border-radius: 50%;
   background: rgba(255, 107, 107, 0.1);
 }
 
@@ -915,6 +969,16 @@ watch(() => props.transactions, () => {
   }
 
   .calendar-day.has-transactions .day-number {
+    width: 28px;
+    height: 28px;
+  }
+
+  .calendar-day.within-budget .day-number {
+    width: 28px;
+    height: 28px;
+  }
+
+  .calendar-day.over-budget .day-number {
     width: 28px;
     height: 28px;
   }

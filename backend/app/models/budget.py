@@ -32,6 +32,11 @@ class Budget(Base):
     parent_budget_id = Column(Integer, ForeignKey("budgets.id"), nullable=True)  # 上一個週期的預算ID
     is_latest_period = Column(Boolean, default=True)  # 是否為最新週期
 
+    # 預算統計欄位
+    over_budget_days = Column(Integer, default=0)  # 超支天數
+    within_budget_days = Column(Integer, default=0)  # 預算內天數
+    last_stats_update = Column(DateTime(timezone=True), nullable=True)  # 最後統計更新時間
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

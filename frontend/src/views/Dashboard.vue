@@ -245,6 +245,29 @@
             </div>
           </div>
 
+          <!-- 週期統計 -->
+          <div v-if="budget.over_budget_days > 0 || budget.within_budget_days > 0"
+               style="border-top: 1px dashed rgba(0, 212, 255, 0.2); padding-top: 8px; margin-top: 8px;">
+            <div style="font-size: 11px; color: #a0aec0; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;">
+              <span class="material-icons" style="font-size: 14px;">analytics</span>
+              本週期執行狀況
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span class="material-icons" style="font-size: 14px; color: #51cf66;">check_circle</span>
+                <span style="color: white;">預算內：</span>
+                <span style="color: #51cf66; font-weight: bold;">{{ budget.within_budget_days }} 天</span>
+                <span style="color: #a0aec0;">({{ ((budget.within_budget_days / (budget.within_budget_days + budget.over_budget_days)) * 100).toFixed(0) }}%)</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span class="material-icons" style="font-size: 14px; color: #ff6b6b;">error</span>
+                <span style="color: white;">超支：</span>
+                <span style="color: #ff6b6b; font-weight: bold;">{{ budget.over_budget_days }} 天</span>
+                <span style="color: #a0aec0;">({{ ((budget.over_budget_days / (budget.within_budget_days + budget.over_budget_days)) * 100).toFixed(0) }}%)</span>
+              </div>
+            </div>
+          </div>
+
           <p style="margin-top: 8px; font-size: 11px; color: #a0aec0; text-align: right;">
             {{ dateTimeUtils.formatDateTime(budget.start_date).split(' ')[0] }} - {{ dateTimeUtils.formatDateTime(budget.end_date).split(' ')[0] }}
           </p>

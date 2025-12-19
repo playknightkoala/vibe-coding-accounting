@@ -59,6 +59,31 @@
                 ></div>
               </div>
 
+              <!-- 週期統計 -->
+              <div v-if="budget.over_budget_days > 0 || budget.within_budget_days > 0"
+                   style="margin: 10px 0; padding: 12px; background: rgba(0, 212, 255, 0.05); border-radius: 8px; border-left: 3px solid #00d4ff;">
+                <p style="margin: 0 0 10px 0; font-weight: bold; font-size: 13px; color: #00d4ff; display: flex; align-items: center; gap: 6px;">
+                  <span class="material-icons" style="font-size: 16px;">analytics</span>
+                  本週期執行狀況
+                </p>
+                <div style="display: flex; gap: 20px;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="material-icons" style="font-size: 20px; color: #51cf66;">check_circle</span>
+                    <div>
+                      <div style="font-size: 11px; color: #a0aec0;">預算內</div>
+                      <div style="font-size: 16px; color: #51cf66; font-weight: bold;">{{ budget.within_budget_days }} 天 <span style="font-size: 12px; color: #a0aec0;">({{ ((budget.within_budget_days / (budget.within_budget_days + budget.over_budget_days)) * 100).toFixed(0) }}%)</span></div>
+                    </div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="material-icons" style="font-size: 20px; color: #ff6b6b;">error</span>
+                    <div>
+                      <div style="font-size: 11px; color: #a0aec0;">超支</div>
+                      <div style="font-size: 16px; color: #ff6b6b; font-weight: bold;">{{ budget.over_budget_days }} 天 <span style="font-size: 12px; color: #a0aec0;">({{ ((budget.over_budget_days / (budget.within_budget_days + budget.over_budget_days)) * 100).toFixed(0) }}%)</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <p><small>{{ dateTimeUtils.formatDateTime(budget.start_date) }} - {{ dateTimeUtils.formatDateTime(budget.end_date) }}</small></p>
 
               <p v-if="budget.range_mode === 'recurring' && budget.is_latest_period"

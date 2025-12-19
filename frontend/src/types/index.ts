@@ -160,6 +160,9 @@ export interface Budget {
   user_id: number
   parent_budget_id?: number
   is_latest_period: boolean
+  over_budget_days: number  // 超支天數
+  within_budget_days: number  // 預算內天數
+  last_stats_update: string | null  // 最後統計更新時間
   created_at: string
   updated_at: string | null
 }

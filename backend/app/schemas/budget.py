@@ -67,6 +67,9 @@ class Budget(BaseModel):
     user_id: int
     parent_budget_id: Optional[int] = None
     is_latest_period: bool
+    over_budget_days: int = 0
+    within_budget_days: int = 0
+    last_stats_update: Optional[datetime] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 

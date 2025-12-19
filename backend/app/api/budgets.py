@@ -13,6 +13,7 @@ from app.models.transaction import Transaction
 from app.schemas.budget import Budget as BudgetSchema, BudgetCreate, BudgetUpdate
 from app.api.deps import get_current_user
 from app.utils.budget_period import calculate_period_range, calculate_next_period_range
+from app.services.budget_stats import update_budget_stats
 
 router = APIRouter()
 
@@ -149,6 +150,9 @@ def get_budgets(current_user: User = Depends(get_current_user), db: Session = De
             "user_id": budget.user_id,
             "parent_budget_id": budget.parent_budget_id,
             "is_latest_period": budget.is_latest_period,
+            "over_budget_days": budget.over_budget_days,
+            "within_budget_days": budget.within_budget_days,
+            "last_stats_update": budget.last_stats_update,
             "created_at": budget.created_at,
             "updated_at": budget.updated_at
         }
@@ -347,6 +351,16 @@ def update_budget(
     db.commit()
     db.refresh(budget)
 
+    # 如果更新了影響統計的欄位，重新計算統計
+    should_recalculate = (
+        'daily_limit_mode' in update_data or
+        'amount' in update_data or
+        'start_date' in update_data or
+        'end_date' in update_data
+    )
+    if should_recalculate:
+        budget = update_budget_stats(db, budget)
+
     # 獲取更新後的類別名稱列表
     updated_category_names = [bc.category_name for bc in db.query(BudgetCategory).filter(BudgetCategory.budget_id == budget_id).all()]
 
@@ -372,6 +386,9 @@ def update_budget(
         "user_id": budget.user_id,
         "parent_budget_id": budget.parent_budget_id,
         "is_latest_period": budget.is_latest_period,
+        "over_budget_days": budget.over_budget_days,
+        "within_budget_days": budget.within_budget_days,
+        "last_stats_update": budget.last_stats_update,
         "created_at": budget.created_at,
         "updated_at": budget.updated_at
     }
@@ -406,3 +423,48 @@ def delete_budget(
     db.delete(budget)
     db.commit()
     return {"message": "Budget deleted successfully"}
+
+
+@router.post("/{budget_id}/recalculate-stats", response_model=BudgetSchema)
+def recalculate_budget_stats(
+    budget_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """手動觸發預算統計重新計算
+
+    當切換 daily_limit_mode 或修改預算金額/日期時使用
+    """
+    # 查詢預算（使用 joinedload 預載入關聯）
+    budget = db.query(Budget).options(
+        joinedload(Budget.accounts)
+    ).filter(
+        Budget.id == budget_id,
+        Budget.user_id == current_user.id
+    ).first()
+
+    if not budget:
+        raise HTTPException(status_code=404, detail="Budget not found")
+
+    # 更新統計
+    budget = update_budget_stats(db, budget)
+
+    # 獲取類別名稱列表並計算 spent
+    category_names = list(set([
+        bc.category_name
+        for bc in db.query(BudgetCategory).filter(
+            BudgetCategory.budget_id == budget.id
+        ).all()
+    ]))
+    budget.spent = calculate_budget_spent(db, budget, category_names)
+
+    # 計算動態每日預算（如果是 auto 模式）
+    if budget.daily_limit_mode == 'auto':
+        budget.daily_limit = calculate_dynamic_daily_limit(budget, budget.spent)
+
+    # 構建返回數據
+    budget_data = BudgetSchema.from_orm(budget)
+    budget_data.account_ids = [acc.id for acc in budget.accounts]
+    budget_data.category_names = category_names
+
+    return budget_data

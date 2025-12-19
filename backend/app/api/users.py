@@ -9,6 +9,7 @@ from app.models.user import User
 from app.models.account import Account
 from app.models.transaction import Transaction
 from app.models.budget import Budget
+from app.services.budget_stats import update_budget_stats
 from app.models.budget_category import BudgetCategory
 from app.models.budget_account import BudgetAccount
 from app.models.category import Category
@@ -236,6 +237,7 @@ def export_user_data(
                 "category_names": category_names,
                 "amount": float(budget.amount),
                 "daily_limit": float(budget.daily_limit) if budget.daily_limit else None,
+                "daily_limit_mode": budget.daily_limit_mode,
                 "spent": float(budget.spent),
                 "range_mode": budget.range_mode,
                 "period": budget.period,
@@ -457,6 +459,8 @@ async def import_user_data(
                 stats["categories_created"] += 1
 
         # 匯入預算（覆蓋或新增）
+        imported_budgets = []  # 追蹤匯入的預算，用於後續統計計算
+
         for budget_data in import_data.get("budgets", []):
             # 轉換帳戶索引為帳戶 ID
             new_account_ids = [
@@ -468,7 +472,7 @@ async def import_user_data(
             # 查找是否已存在相同名稱和時間範圍的預算（避免週期預算被誤判為重複）
             budget_start = datetime.fromisoformat(budget_data["start_date"]) if budget_data.get("start_date") else None
             budget_end = datetime.fromisoformat(budget_data["end_date"]) if budget_data.get("end_date") else None
-            
+
             existing_budget = db.query(Budget).filter(
                 Budget.user_id == current_user.id,
                 Budget.name == budget_data["name"],
@@ -480,6 +484,7 @@ async def import_user_data(
                 # 覆蓋現有預算
                 existing_budget.amount = budget_data["amount"]
                 existing_budget.daily_limit = budget_data.get("daily_limit")
+                existing_budget.daily_limit_mode = budget_data.get("daily_limit_mode", "manual")
                 existing_budget.spent = budget_data.get("spent", 0)
                 existing_budget.range_mode = budget_data["range_mode"]
                 existing_budget.period = budget_data.get("period")
@@ -508,6 +513,7 @@ async def import_user_data(
                     db.add(budget_account)
 
                 stats["budgets_updated"] += 1
+                imported_budgets.append(existing_budget)
             else:
                 # 新增預算
                 new_budget = Budget(
@@ -515,6 +521,7 @@ async def import_user_data(
                     name=budget_data["name"],
                     amount=budget_data["amount"],
                     daily_limit=budget_data.get("daily_limit"),
+                    daily_limit_mode=budget_data.get("daily_limit_mode", "manual"),
                     spent=budget_data.get("spent", 0),
                     range_mode=budget_data["range_mode"],
                     period=budget_data.get("period"),
@@ -542,6 +549,18 @@ async def import_user_data(
                     db.add(budget_account)
 
                 stats["budgets_created"] += 1
+                imported_budgets.append(new_budget)
+
+        # 確保所有預算及其關聯資料都寫入資料庫
+        db.flush()
+
+        # 匯入完成後，計算匯入預算的統計資料
+        for budget in imported_budgets:
+            try:
+                update_budget_stats(db, budget)
+            except Exception as e:
+                # 統計計算失敗不影響匯入，只記錄錯誤
+                print(f"Failed to update stats for budget {budget.id}: {str(e)}")
 
         db.commit()
 

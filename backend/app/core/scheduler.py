@@ -4,6 +4,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from app.services.crawler import fetch_exchange_rates
 from app.services.crawler_esun import fetch_esun_exchange_rates
 from app.services.recurring_expense_processor import process_recurring_expenses
+from app.services.budget_stats import update_all_active_budgets_stats
 from app.tasks.budget_recurring import create_next_period_budgets
 from app.core.database import SessionLocal
 import logging
@@ -53,6 +54,18 @@ def run_budget_recurring_job():
     except Exception as e:
         logger.error(f"Budget recurring job failed: {e}")
 
+def run_budget_stats_job():
+    """更新預算統計 - 計算超支天數和預算內天數"""
+    logger.info("Starting budget stats update")
+    db = SessionLocal()
+    try:
+        updated_count = update_all_active_budgets_stats(db)
+        logger.info(f"Budget stats job completed. Updated {updated_count} budgets")
+    except Exception as e:
+        logger.error(f"Budget stats job failed: {e}")
+    finally:
+        db.close()
+
 scheduler = BackgroundScheduler()
 
 def start_scheduler():
@@ -72,8 +85,12 @@ def start_scheduler():
     budget_trigger = CronTrigger(hour=0, minute=5)
     scheduler.add_job(run_budget_recurring_job, trigger=budget_trigger, id="budget_recurring_processor", replace_existing=True)
 
+    # 預算統計更新：每天凌晨 00:10 執行
+    budget_stats_trigger = CronTrigger(hour=0, minute=10)
+    scheduler.add_job(run_budget_stats_job, trigger=budget_stats_trigger, id="budget_stats_updater", replace_existing=True)
+
     scheduler.start()
-    logger.info("Scheduler started - BOT (hourly), E.SUN (hourly), Recurring Expenses (daily at 00:01), Budget Recurring (daily at 00:05)")
+    logger.info("Scheduler started - BOT (hourly), E.SUN (hourly), Recurring Expenses (daily at 00:01), Budget Recurring (daily at 00:05), Budget Stats (daily at 00:10)")
 
 def stop_scheduler():
     scheduler.shutdown()
