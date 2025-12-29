@@ -7,15 +7,15 @@
       <div class="stats-grid">
         <div class="stat-card income">
           <h3>收入總額</h3>
-          <p class="amount">${{ reportData.total_credit.toFixed(2) }}</p>
+          <p class="amount">${{ formatAmount(reportData.total_credit) }}</p>
         </div>
         <div class="stat-card expense">
           <h3>支出總額</h3>
-          <p class="amount">${{ reportData.total_debit.toFixed(2) }}</p>
+          <p class="amount">${{ formatAmount(reportData.total_debit) }}</p>
         </div>
         <div class="stat-card net" :class="reportData.net_amount >= 0 ? 'positive' : 'negative'">
           <h3>總計</h3>
-          <p class="amount">${{ reportData.net_amount.toFixed(2) }}</p>
+          <p class="amount">${{ formatAmount(reportData.net_amount) }}</p>
         </div>
       </div>
 
@@ -35,7 +35,7 @@
                 class="net-amount"
                 :class="{ 'positive': getNetAmount(category) >= 0, 'negative': getNetAmount(category) < 0 }"
               >
-                {{ getNetAmount(category) >= 0 ? '+' : '' }}${{ getNetAmount(category).toFixed(2) }}
+                {{ getNetAmount(category) >= 0 ? '+' : '' }}${{ formatAmount(getNetAmount(category)) }}
               </div>
             </div>
           </div>
@@ -84,7 +84,7 @@
               </div>
             </div>
             <div class="trans-amount" :class="trans.transaction_type">
-              ${{ trans.amount.toFixed(2) }}
+              ${{ formatAmount(trans.amount) }}
             </div>
           </div>
         </div>
@@ -98,6 +98,7 @@ import { ref, watch, onMounted, onBeforeUnmount, nextTick, computed } from 'vue'
 import * as echarts from 'echarts'
 import api from '@/services/api'
 import type { OverviewReport as OverviewReportType, CategoryStats } from '@/types'
+import { formatAmount } from '@/utils/format'
 
 interface Props {
   reportType: 'monthly' | 'daily' | 'custom'
@@ -237,7 +238,7 @@ const renderPieCharts = () => {
         trigger: 'item',
         formatter: (params: any) => {
           if (params.name === '其他') return ''
-          return `${params.name}: ${params.value.toFixed(1)}%<br/>收入: $${category.credit.toFixed(2)}<br/>支出: $${category.debit.toFixed(2)}`
+          return `${params.name}: ${params.value.toFixed(1)}%<br/>收入: $${formatAmount(category.credit)}<br/>支出: $${formatAmount(category.debit)}`
         },
         backgroundColor: 'rgba(0, 0, 0, 0.8)',
         borderColor: categoryColor,

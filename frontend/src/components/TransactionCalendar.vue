@@ -124,13 +124,13 @@
                 transaction.transaction_type === 'credit' ? 'credit' : 
                 (transaction.transaction_type === 'transfer_in' ? 'transfer-in' : 
                 (transaction.transaction_type === 'transfer_out' ? 'transfer-out' : 'debit'))]">
-                {{ transaction.transaction_type === 'credit' || transaction.transaction_type === 'transfer_in' ? '+' : '-' }}${{ transaction.amount }}
+                {{ transaction.transaction_type === 'credit' || transaction.transaction_type === 'transfer_in' ? '+' : '-' }}${{ formatAmount(transaction.amount) }}
               </div>
               <div v-if="transaction.is_installment && transaction.total_installments && transaction.installment_number" style="color: #a0aec0; font-size: 0.75rem; margin-top: 2px;">
                 剩 {{ transaction.total_installments - transaction.installment_number }} 期
               </div>
               <div v-if="transaction.is_installment && transaction.remaining_amount" style="color: #a0aec0; font-size: 0.75rem; margin-top: 2px;">
-                剩餘 ${{ Math.floor(transaction.remaining_amount) }}
+                剩餘 ${{ formatInteger(transaction.remaining_amount) }}
               </div>
               <div v-if="transaction.is_installment && transaction.annual_interest_rate" style="color: #ffd43b; font-size: 0.75rem; margin-top: 2px;">
                 利率 {{ transaction.annual_interest_rate }}%
@@ -151,6 +151,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 
 import type { Transaction, Budget, RecurringExpense } from '@/types'
+import { formatAmount, formatInteger } from '@/utils/format'
 
 const props = defineProps<{
   transactions: Transaction[]
@@ -417,7 +418,7 @@ const calendarDays = computed<CalendarDay[]>(() => {
 
             if (budgetDailySpent > budget.daily_limit) {
               isOverBudget = true
-              overBudgetDetails.push(`${budget.name}: 已用 $${budgetDailySpent.toFixed(0)} / 上限 $${budget.daily_limit.toFixed(0)}`)
+              overBudgetDetails.push(`${budget.name}: 已用 $${formatInteger(budgetDailySpent)} / 上限 $${formatInteger(budget.daily_limit)}`)
             }
           }
         }

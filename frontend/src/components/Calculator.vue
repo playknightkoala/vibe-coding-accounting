@@ -76,7 +76,23 @@ const displayValue = ref('0')
 
 watch([expression, currentValue], () => {
   displayExpression.value = expression.value || '0'
-  displayValue.value = currentValue.value || '0'
+  
+  // Format display string with commas
+  const val = currentValue.value || '0'
+  if (val === 'Error') {
+    displayValue.value = 'Error'
+  } else {
+    // Check if there's a decimal point
+    const parts = val.split('.')
+    const integerPart = parts[0]
+    const decimalPart = parts.length > 1 ? '.' + parts[1] : ''
+    
+    // Format integer part
+    const formattedInteger = Number(integerPart).toLocaleString('en-US')
+    
+    // Combine
+    displayValue.value = formattedInteger + decimalPart
+  }
 })
 
 const appendNumber = (num: string) => {

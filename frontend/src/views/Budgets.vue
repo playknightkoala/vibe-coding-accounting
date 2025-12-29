@@ -50,9 +50,9 @@
 
               <p><strong>類別：</strong>{{ budget.category_names.length > 0 ? budget.category_names.join('、') : '全部類別' }}</p>
               <p><strong>綁定帳戶：</strong>{{ budgetsStore.getAccountNames(budget.account_ids) }}</p>
-              <p><strong>預算：</strong>${{ budget.amount.toFixed(2) }}</p>
+              <p><strong>預算：</strong>${{ formatAmount(budget.amount) }}</p>
               <p v-if="budget.daily_limit">
-                <strong>每日預算：</strong>${{ budget.daily_limit.toFixed(2) }}
+                <strong>每日預算：</strong>${{ formatAmount(budget.daily_limit) }}
                 <span v-if="budget.daily_limit_mode === 'auto'" style="margin-left: 8px; padding: 2px 8px; background: rgba(102, 126, 234, 0.2); color: #a78bfa; border-radius: 4px; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;">
                   <span class="material-icons" style="font-size: 14px;">smart_toy</span>
                   自動
@@ -62,8 +62,8 @@
                   手動
                 </span>
               </p>
-              <p><strong>已使用：</strong>${{ budget.spent.toFixed(2) }}</p>
-              <p><strong>剩餘：</strong>${{ (budget.amount - budget.spent).toFixed(2) }}</p>
+              <p><strong>已使用：</strong>${{ formatAmount(budget.spent) }}</p>
+              <p><strong>剩餘：</strong>${{ formatAmount(budget.amount - budget.spent) }}</p>
 
               <div style="background-color: rgba(0, 0, 0, 0.3); height: 20px; border-radius: 10px; overflow: hidden; margin: 10px 0;">
                 <div
@@ -88,14 +88,14 @@
                     <span class="material-icons" style="font-size: 20px; color: #51cf66;">check_circle</span>
                     <div>
                       <div style="font-size: 11px; color: #a0aec0;">預算內</div>
-                      <div style="font-size: 16px; color: #51cf66; font-weight: bold;">{{ budget.within_budget_days }} 天 <span style="font-size: 12px; color: #a0aec0;">({{ ((budget.within_budget_days / (budget.within_budget_days + budget.over_budget_days)) * 100).toFixed(0) }}%)</span></div>
+                      <div style="font-size: 16px; color: #51cf66; font-weight: bold;">{{ budget.within_budget_days }} 天 <span style="font-size: 12px; color: #a0aec0;">({{ formatInteger((budget.within_budget_days / (budget.within_budget_days + budget.over_budget_days)) * 100) }}%)</span></div>
                     </div>
                   </div>
                   <div style="display: flex; align-items: center; gap: 8px;">
                     <span class="material-icons" style="font-size: 20px; color: #ff6b6b;">error</span>
                     <div>
                       <div style="font-size: 11px; color: #a0aec0;">超支</div>
-                      <div style="font-size: 16px; color: #ff6b6b; font-weight: bold;">{{ budget.over_budget_days }} 天 <span style="font-size: 12px; color: #a0aec0;">({{ ((budget.over_budget_days / (budget.within_budget_days + budget.over_budget_days)) * 100).toFixed(0) }}%)</span></div>
+                      <div style="font-size: 16px; color: #ff6b6b; font-weight: bold;">{{ budget.over_budget_days }} 天 <span style="font-size: 12px; color: #a0aec0;">({{ formatInteger((budget.over_budget_days / (budget.within_budget_days + budget.over_budget_days)) * 100) }}%)</span></div>
                     </div>
                   </div>
                 </div>
@@ -147,9 +147,9 @@
 
               <p><strong>類別：</strong>{{ budget.category_names.length > 0 ? budget.category_names.join('、') : '全部類別' }}</p>
               <p><strong>綁定帳戶：</strong>{{ budgetsStore.getAccountNames(budget.account_ids) }}</p>
-              <p><strong>預算：</strong>${{ budget.amount.toFixed(2) }}</p>
+              <p><strong>預算：</strong>${{ formatAmount(budget.amount) }}</p>
               <p v-if="budget.daily_limit">
-                <strong>每日預算：</strong>${{ budget.daily_limit.toFixed(2) }}
+                <strong>每日預算：</strong>${{ formatAmount(budget.daily_limit) }}
                 <span v-if="budget.daily_limit_mode === 'auto'" style="margin-left: 8px; padding: 2px 8px; background: rgba(102, 126, 234, 0.1); color: #9ca3af; border-radius: 4px; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;">
                   <span class="material-icons" style="font-size: 14px;">smart_toy</span>
                   自動
@@ -159,8 +159,8 @@
                   手動
                 </span>
               </p>
-              <p><strong>已使用：</strong>${{ budget.spent.toFixed(2) }}</p>
-              <p><strong>剩餘：</strong>${{ (budget.amount - budget.spent).toFixed(2) }}</p>
+              <p><strong>已使用：</strong>${{ formatAmount(budget.spent) }}</p>
+              <p><strong>剩餘：</strong>${{ formatAmount(budget.amount - budget.spent) }}</p>
 
               <div style="background-color: rgba(0, 0, 0, 0.3); height: 20px; border-radius: 10px; overflow: hidden; margin: 10px 0;">
                 <div
@@ -457,6 +457,7 @@ import { useMessage } from '@/composables/useMessage'
 import { useForm } from '@/composables/useForm'
 import { useDateTime } from '@/composables/useDateTime'
 import { useBudgetForm } from '@/composables/useBudgetForm'
+import { formatAmount, formatInteger } from '@/utils/format'
 
 const accountsStore = useAccountsStore()
 const budgetsStore = useBudgetsStore()

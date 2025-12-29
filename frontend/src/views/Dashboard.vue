@@ -47,7 +47,7 @@
               <template v-if="dashboard.timeRangeMode.value !== 'total'">
                 {{ total >= 0 ? '+' : '' }}
               </template>
-              ${{ total.toFixed(2) }}
+              ${{ formatAmount(total) }}
             </span>
           </div>
         </div>
@@ -58,19 +58,19 @@
         <div style="padding: 15px; background: linear-gradient(135deg, rgba(81, 207, 102, 0.1) 0%, rgba(81, 207, 102, 0.05) 100%); border-radius: 8px; border: 1px solid rgba(81, 207, 102, 0.2);">
           <div style="color: #a0aec0; font-size: 0.9rem; margin-bottom: 5px;">收入</div>
           <div style="color: #51cf66; font-size: 1.8rem; font-weight: bold;">
-            ${{ dashboard.incomeExpenseStats.value.income.toFixed(2) }}
+            ${{ formatAmount(dashboard.incomeExpenseStats.value.income) }}
           </div>
         </div>
         <div style="padding: 15px; background: linear-gradient(135deg, rgba(255, 107, 107, 0.1) 0%, rgba(255, 107, 107, 0.05) 100%); border-radius: 8px; border: 1px solid rgba(255, 107, 107, 0.2);">
           <div style="color: #a0aec0; font-size: 0.9rem; margin-bottom: 5px;">支出</div>
           <div style="color: #ff6b6b; font-size: 1.8rem; font-weight: bold;">
-            ${{ dashboard.incomeExpenseStats.value.expense.toFixed(2) }}
+            ${{ formatAmount(dashboard.incomeExpenseStats.value.expense) }}
           </div>
         </div>
         <div style="padding: 15px; background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 212, 255, 0.05) 100%); border-radius: 8px; border: 1px solid rgba(0, 212, 255, 0.2);">
           <div style="color: #a0aec0; font-size: 0.9rem; margin-bottom: 5px;">淨收支</div>
           <div :style="{ color: dashboard.incomeExpenseStats.value.net >= 0 ? '#51cf66' : '#ff6b6b', fontSize: '1.8rem', fontWeight: 'bold' }">
-            ${{ dashboard.incomeExpenseStats.value.net.toFixed(2) }}
+            ${{ formatAmount(dashboard.incomeExpenseStats.value.net) }}
           </div>
         </div>
       </div>
@@ -129,7 +129,7 @@
               <div class="balance-display">
                 <span class="currency-label">{{ account.currency }}</span>
                 <span class="balance-amount" :style="{ color: dashboard.getAccountBalance(account.id) >= 0 ? '#51cf66' : '#ff6b6b' }">
-                  ${{ dashboard.getAccountBalance(account.id).toFixed(2) }}
+                  ${{ formatAmount(dashboard.getAccountBalance(account.id)) }}
                 </span>
               </div>
             </div>
@@ -218,10 +218,10 @@
           <p style="margin: 0 0 8px 0; font-size: 13px; color: #a0aec0;">{{ budget.category_names.join(', ') || '所有類別' }}</p>
           
           <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px;">
-            <span>預算: ${{ budget.amount.toFixed(0) }}</span>
-            <span>已用: ${{ budget.spent.toFixed(0) }}</span>
+            <span>預算: ${{ formatAmount(budget.amount) }}</span>
+            <span>已用: ${{ formatAmount(budget.spent) }}</span>
             <span :style="{ color: (budget.amount - budget.spent) < 0 ? '#ff6b6b' : '#51cf66' }">
-              剩餘: ${{ (budget.amount - budget.spent).toFixed(0) }}
+              剩餘: ${{ formatAmount(budget.amount - budget.spent) }}
             </span>
           </div>
           
@@ -238,15 +238,15 @@
 
           <div v-if="budget.daily_limit" style="border-top: 1px dashed rgba(0, 212, 255, 0.2); padding-top: 8px; margin-top: 8px;">
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 4px;">
-              <span>今日: ${{ budget.daily_limit.toFixed(0) }}</span>
+              <span>今日: ${{ formatAmount(budget.daily_limit) }}</span>
               <span>
-                已用: <span :style="{ color: dashboard.getDailySpent(budget) > budget.daily_limit ? '#ff6b6b' : '#51cf66' }">${{ dashboard.getDailySpent(budget).toFixed(0) }}</span>
+                已用: <span :style="{ color: dashboard.getDailySpent(budget) > budget.daily_limit ? '#ff6b6b' : '#51cf66' }">${{ formatAmount(dashboard.getDailySpent(budget)) }}</span>
               </span>
               <span v-if="(budget.daily_limit - dashboard.getDailySpent(budget)) < 0">
-                <span style="color: #ff6b6b">已超支: ${{ (dashboard.getDailySpent(budget) - budget.daily_limit).toFixed(0) }}</span>
+                <span style="color: #ff6b6b">已超支: ${{ formatAmount(dashboard.getDailySpent(budget) - budget.daily_limit) }}</span>
               </span>
               <span v-else>
-                剩: <span style="color: #51cf66">${{ (budget.daily_limit - dashboard.getDailySpent(budget)).toFixed(0) }}</span>
+                剩: <span style="color: #51cf66">${{ formatAmount(budget.daily_limit - dashboard.getDailySpent(budget)) }}</span>
               </span>
             </div>
             <div style="background-color: rgba(0, 0, 0, 0.3); height: 6px; border-radius: 3px; overflow: hidden;">
@@ -273,13 +273,13 @@
                 <span class="material-icons" style="font-size: 14px; color: #51cf66;">check_circle</span>
                 <span style="color: white;">預算內：</span>
                 <span style="color: #51cf66; font-weight: bold;">{{ budget.within_budget_days }} 天</span>
-                <span style="color: #a0aec0;">({{ ((budget.within_budget_days / (budget.within_budget_days + budget.over_budget_days)) * 100).toFixed(0) }}%)</span>
+                <span style="color: #a0aec0;">({{ formatInteger((budget.within_budget_days / (budget.within_budget_days + budget.over_budget_days)) * 100) }}%)</span>
               </div>
               <div style="display: flex; align-items: center; gap: 6px;">
                 <span class="material-icons" style="font-size: 14px; color: #ff6b6b;">error</span>
                 <span style="color: white;">超支：</span>
                 <span style="color: #ff6b6b; font-weight: bold;">{{ budget.over_budget_days }} 天</span>
-                <span style="color: #a0aec0;">({{ ((budget.over_budget_days / (budget.within_budget_days + budget.over_budget_days)) * 100).toFixed(0) }}%)</span>
+                <span style="color: #a0aec0;">({{ formatInteger((budget.over_budget_days / (budget.within_budget_days + budget.over_budget_days)) * 100) }}%)</span>
               </div>
             </div>
           </div>
@@ -405,7 +405,7 @@
                   <div style="position: relative;">
                     <input
                       type="text"
-                      :value="quickForm.form.value.amount"
+                      :value="formatAmount(quickForm.form.value.amount)"
                       @click="() => { quickForm.activeCalculatorInput.value = 'amount'; showQuickCalculator = true; }"
                       readonly
                       required
@@ -425,8 +425,8 @@
                   <label style="font-size: 0.8rem; color: #a0aec0;">外幣金額 ({{ quickForm.selectedCurrency.value }})</label>
                   <div style="position: relative;">
                     <input
-                      type="number"
-                      v-model.number="quickForm.foreignAmount.value"
+                      type="text"
+                      :value="formatAmount(quickForm.foreignAmount.value)"
                       @click="() => { quickForm.activeCalculatorInput.value = 'foreignAmount'; showQuickCalculator = true; }"
                       readonly
                       required
@@ -446,7 +446,7 @@
               <div v-else style="position: relative;">
                 <input
                   type="text"
-                  :value="quickForm.form.value.amount"
+                  :value="formatAmount(quickForm.form.value.amount)"
                   @click="() => { quickForm.activeCalculatorInput.value = 'amount'; showQuickCalculator = true; }"
                   readonly
                   required
@@ -465,13 +465,13 @@
 
               <div v-if="quickForm.selectedCurrency.value !== currentAccountCurrency" style="margin-top: 5px; font-size: 0.9rem; color: #a0aec0;">
                 <template v-if="currentAccountCurrency === 'TWD'">
-                  匯率: 1 TWD ≈ {{ (1 / getExchangeRate(quickForm.selectedCurrency.value)).toFixed(4) }} {{ quickForm.selectedCurrency.value }}
+                  匯率: 1 TWD ≈ {{ formatRate(1 / getExchangeRate(quickForm.selectedCurrency.value)) }} {{ quickForm.selectedCurrency.value }}
                 </template>
                 <template v-else-if="quickForm.selectedCurrency.value === 'TWD'">
                   匯率: 1 {{ currentAccountCurrency }} ≈ {{ getBuyingRate(currentAccountCurrency) }} TWD
                 </template>
                 <template v-else>
-                  匯率: 1 {{ currentAccountCurrency }} ≈ {{ (getBuyingRate(currentAccountCurrency) / getExchangeRate(quickForm.selectedCurrency.value)).toFixed(4) }} {{ quickForm.selectedCurrency.value }}
+                  匯率: 1 {{ currentAccountCurrency }} ≈ {{ formatRate(getBuyingRate(currentAccountCurrency) / getExchangeRate(quickForm.selectedCurrency.value)) }} {{ quickForm.selectedCurrency.value }}
                 </template>
               </div>
             </div>
@@ -1556,6 +1556,8 @@ const confirmDelete = async (deleteType: 'single' | 'group' | 'future' | 'all') 
     currentRecurringExpenseId.value = null
   }
 }
+
+import { formatAmount, formatInteger, formatRate } from '@/utils/format'
 
 const handleQuickTransaction = async () => {
   // Handle Transfer

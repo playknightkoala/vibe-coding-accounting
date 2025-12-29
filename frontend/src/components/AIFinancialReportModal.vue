@@ -60,16 +60,16 @@
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
           <div class="metric-card">
             <div class="metric-label">總收入</div>
-            <div class="metric-value" style="color: #4ade80;">${{ report.total_income.toLocaleString('en-US', { minimumFractionDigits: 2 }) }}</div>
+            <div class="metric-value" style="color: #4ade80;">${{ formatAmount(report.total_income) }}</div>
           </div>
           <div class="metric-card">
             <div class="metric-label">總支出</div>
-            <div class="metric-value" style="color: #f87171;">${{ report.total_expense.toLocaleString('en-US', { minimumFractionDigits: 2 }) }}</div>
+            <div class="metric-value" style="color: #f87171;">${{ formatAmount(report.total_expense) }}</div>
           </div>
           <div class="metric-card">
             <div class="metric-label">淨收入</div>
             <div class="metric-value" :style="{ color: report.net_income >= 0 ? '#00d4ff' : '#ff4444' }">
-              ${{ report.net_income.toLocaleString('en-US', { minimumFractionDigits: 2 }) }}
+              ${{ formatAmount(report.net_income) }}
             </div>
           </div>
           <div class="metric-card">
@@ -144,6 +144,7 @@
 import { ref, computed, watch } from 'vue'
 import api from '@/services/api'
 import type { AIFinancialSummary } from '@/types'
+import { formatAmount } from '@/utils/format'
 
 const props = defineProps<{
   modelValue: boolean

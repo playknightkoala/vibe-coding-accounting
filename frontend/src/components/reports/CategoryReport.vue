@@ -12,7 +12,7 @@
           >
             <span class="tab-icon material-icons">bar_chart</span>
             支出類別
-            <span class="tab-amount">${{ reportData.total_debit.toFixed(2) }}</span>
+            <span class="tab-amount">${{ formatAmount(reportData.total_debit) }}</span>
           </button>
           <button
             :class="['category-tab-btn', categoryTab === 'credit' ? 'active' : '']"
@@ -20,7 +20,7 @@
           >
             <span class="tab-icon material-icons">payments</span>
             收入類別
-            <span class="tab-amount">${{ reportData.total_credit.toFixed(2) }}</span>
+            <span class="tab-amount">${{ formatAmount(reportData.total_credit) }}</span>
           </button>
         </div>
       </div>
@@ -65,7 +65,7 @@
               <div class="category-name">{{ category.category }}</div>
               <div class="category-amounts">
                 <span :class="categoryTab === 'debit' ? 'debit' : 'credit'">
-                  {{ categoryTab === 'debit' ? '支出' : '收入' }}: ${{ currentAmount(category).toFixed(2) }}
+                  {{ categoryTab === 'debit' ? '支出' : '收入' }}: ${{ formatAmount(currentAmount(category)) }}
                 </span>
                 <span class="percentage">({{ currentPercentage(category).toFixed(1) }}%)</span>
               </div>
@@ -87,7 +87,7 @@
                     <div class="trans-account">{{ trans.account_name }}</div>
                   </div>
                   <div class="trans-amount" :class="trans.transaction_type">
-                    {{ trans.transaction_type === 'credit' ? '+' : '-' }}${{ trans.amount.toFixed(2) }}
+                    {{ trans.transaction_type === 'credit' ? '+' : '-' }}${{ formatAmount(trans.amount) }}
                   </div>
                 </div>
               </div>
@@ -104,6 +104,7 @@ import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import api from '@/services/api'
 import type { CategoryReport as CategoryReportType, TransactionDetail } from '@/types'
+import { formatAmount } from '@/utils/format'
 
 interface Props {
   reportType: 'monthly' | 'daily' | 'custom'
@@ -284,7 +285,7 @@ const renderChart = (
 
   const option: echarts.EChartsOption = {
     title: {
-      text: `總${label}\n$${totalAmount.toFixed(2)}`,
+      text: `總${label}\n$${formatAmount(totalAmount)}`,
       left: 'center',
       top: 'center',
       textStyle: {
@@ -360,7 +361,7 @@ const renderChart = (
       // Update title
       newChartInstance?.setOption({
         title: {
-          text: `${category}\n$${value.toFixed(2)}`,
+          text: `${category}\n$${formatAmount(value)}`,
           subtext: `${percent}%`
         }
       })
@@ -377,7 +378,7 @@ const renderChart = (
     if (!params.target) {
       newChartInstance?.setOption({
         title: {
-          text: `總${label}\n$${totalAmount.toFixed(2)}`,
+          text: `總${label}\n$${formatAmount(totalAmount)}`,
           subtext: ''
         }
       })

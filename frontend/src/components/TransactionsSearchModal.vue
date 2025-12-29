@@ -55,7 +55,7 @@
                 <td :style="{ color: 
                   transaction.transaction_type === 'credit' || transaction.transaction_type === 'transfer_in' ? '#51cf66' : '#ff6b6b' 
                 }">
-                  {{ transaction.transaction_type === 'credit' || transaction.transaction_type === 'transfer_in' ? '+' : '-' }}${{ transaction.amount.toFixed(2) }}
+                  {{ transaction.transaction_type === 'credit' || transaction.transaction_type === 'transfer_in' ? '+' : '-' }}${{ formatAmount(transaction.amount) }}
                 </td>
               </tr>
             </tbody>
@@ -74,6 +74,7 @@
 import { ref, computed, watch } from 'vue'
 import type { Transaction } from '@/types'
 import { useDateTime } from '@/composables/useDateTime'
+import { formatAmount } from '@/utils/format'
 
 const props = defineProps<{
   modelValue: boolean

@@ -44,8 +44,8 @@
             <tr v-for="rate in exchangeRatesStore.rates" :key="rate.id">
               <td><strong>{{ rate.currency_code }}</strong></td>
               <td>{{ rate.currency_name }}</td>
-              <td>{{ rate.buying_rate !== null ? rate.buying_rate.toFixed(4) : '-' }}</td>
-              <td>{{ rate.selling_rate !== null ? rate.selling_rate.toFixed(4) : '-' }}</td>
+              <td>{{ rate.buying_rate !== null ? formatRate(rate.buying_rate) : '-' }}</td>
+              <td>{{ rate.selling_rate !== null ? formatRate(rate.selling_rate) : '-' }}</td>
               <td>{{ formatDateTimeToTaipei(rate.updated_at) }}</td>
             </tr>
           </tbody>
@@ -76,6 +76,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useExchangeRatesStore } from '@/stores/exchangeRates'
 import { formatDateTimeToTaipei } from '@/utils/dateFormat'
+import { formatRate } from '@/utils/format'
 
 const exchangeRatesStore = useExchangeRatesStore()
 const selectedBank = ref('bot') // 預設臺灣銀行

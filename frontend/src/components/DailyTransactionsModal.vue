@@ -9,15 +9,15 @@
       <div class="summary-section">
         <div class="summary-item income">
           <span class="label">收入</span>
-          <span class="value">${{ totalCredit.toFixed(2) }}</span>
+          <span class="value">${{ formatAmount(totalCredit) }}</span>
         </div>
         <div class="summary-item expense">
           <span class="label">支出</span>
-          <span class="value">${{ totalDebit.toFixed(2) }}</span>
+          <span class="value">${{ formatAmount(totalDebit) }}</span>
         </div>
         <div class="summary-item net" :class="{ positive: netAmount >= 0, negative: netAmount < 0 }">
           <span class="label">淨收入</span>
-          <span class="value">${{ netAmount.toFixed(2) }}</span>
+          <span class="value">${{ formatAmount(netAmount) }}</span>
         </div>
       </div>
 
@@ -49,10 +49,10 @@
               <div class="transaction-amount" :class="transaction.transaction_type">
                 <div v-if="transaction.foreign_amount" class="foreign-amount">
                   {{ transaction.foreign_amount }} {{ transaction.foreign_currency }}
-                  <span class="exchange-rate">≈ {{ transaction.amount.toFixed(0) }} TWD</span>
+                  <span class="exchange-rate">≈ {{ formatAmount(transaction.amount) }} TWD</span>
                 </div>
                 <div v-else>
-                  {{ (transaction.transaction_type === 'credit' || transaction.transaction_type === 'transfer_in') ? '+' : '-' }}${{ transaction.amount.toFixed(2) }}
+                  {{ (transaction.transaction_type === 'credit' || transaction.transaction_type === 'transfer_in') ? '+' : '-' }}${{ formatAmount(transaction.amount) }}
                 </div>
               </div>
             </div>
@@ -72,6 +72,7 @@ import { ref, computed, watch } from 'vue'
 import type { Transaction, Account } from '@/types'
 import api from '@/services/api'
 import { useAccountsStore } from '@/stores/accounts'
+import { formatAmount } from '@/utils/format'
 
 interface Props {
   modelValue: boolean

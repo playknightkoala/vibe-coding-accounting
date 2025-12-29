@@ -89,6 +89,7 @@
 
 <script setup>
 import { defineProps } from 'vue';
+import { formatAmount } from '@/utils/format';
 
 const props = defineProps({
   stats: {
@@ -110,12 +111,7 @@ const props = defineProps({
 });
 
 const formatCurrency = (value) => {
-  return new Intl.NumberFormat('zh-TW', {
-    style: 'currency',
-    currency: 'TWD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(value);
+  return formatAmount(value);
 };
 
 const formatDate = (dateString) => {

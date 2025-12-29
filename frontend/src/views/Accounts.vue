@@ -20,7 +20,7 @@
             <tr v-for="account in accountsStore.accounts" :key="account.id">
               <td>{{ account.name }}</td>
               <td>{{ accountsStore.getAccountTypeText(account.account_type) }}</td>
-              <td>${{ account.balance.toFixed(2) }}</td>
+              <td>${{ formatAmount(account.balance) }}</td>
               <td>{{ account.currency }}</td>
               <td>
                 <div style="display: flex; gap: 5px; flex-wrap: wrap;">
@@ -112,6 +112,7 @@ import { useAccountsStore } from '@/stores/accounts'
 import { useModal } from '@/composables/useModal'
 import { useConfirm } from '@/composables/useConfirm'
 import { useForm } from '@/composables/useForm'
+import { formatAmount } from '@/utils/format'
 
 const accountsStore = useAccountsStore()
 const modal = useModal()

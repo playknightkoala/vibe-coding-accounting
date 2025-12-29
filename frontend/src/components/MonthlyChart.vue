@@ -19,6 +19,7 @@ import { ref, onMounted, watch, onBeforeUnmount } from 'vue'
 import { Chart, registerables } from 'chart.js'
 import type { MonthlyStats, Budget } from '@/types'
 import api from '@/services/api'
+import { formatAmount } from '@/utils/format'
 
 Chart.register(...registerables)
 
@@ -187,7 +188,7 @@ const renderChart = () => {
                 label += ': '
               }
               if (context.parsed.y !== null) {
-                label += '$' + context.parsed.y.toFixed(2)
+                label += '$' + formatAmount(context.parsed.y)
               }
               return label
             },
@@ -196,7 +197,7 @@ const renderChart = () => {
               const credit = creditData[index]
               const debit = debitData[index]
               const net = credit - debit
-              return `淨收入: $${net.toFixed(2)}`
+              return `淨收入: $${formatAmount(net)}`
             }
           }
         }

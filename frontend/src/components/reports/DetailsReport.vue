@@ -14,8 +14,8 @@
           />
         </div>
         <div class="totals">
-          <span>總收入: <strong class="credit">${{ reportData.total_credit.toFixed(2) }}</strong></span>
-          <span>總支出: <strong class="debit">${{ reportData.total_debit.toFixed(2) }}</strong></span>
+          <span>總收入: <strong class="credit">${{ formatAmount(reportData.total_credit) }}</strong></span>
+          <span>總支出: <strong class="debit">${{ formatAmount(reportData.total_debit) }}</strong></span>
         </div>
       </div>
 
@@ -29,8 +29,8 @@
             <div>
               <h3>{{ formatDate(daily.date) }}</h3>
               <span class="daily-summary">
-                收入: ${{ daily.total_credit.toFixed(2) }} |
-                支出: ${{ daily.total_debit.toFixed(2) }}
+                收入: ${{ formatAmount(daily.total_credit) }} |
+                支出: ${{ formatAmount(daily.total_debit) }}
               </span>
             </div>
             <span class="toggle-icon material-icons">{{ expandedDays.includes(daily.date) ? 'expand_more' : 'chevron_right' }}</span>
@@ -51,7 +51,7 @@
                 </div>
               </div>
               <div class="trans-amount" :class="trans.transaction_type">
-                {{ (trans.transaction_type === 'credit' || trans.transaction_type === 'transfer_in') ? '+' : '-' }}${{ trans.amount.toFixed(2) }}
+                {{ (trans.transaction_type === 'credit' || trans.transaction_type === 'transfer_in') ? '+' : '-' }}${{ formatAmount(trans.amount) }}
               </div>
             </div>
           </div>
@@ -65,6 +65,7 @@
 import { ref, watch, onMounted, computed } from 'vue'
 import api from '@/services/api'
 import type { DetailsReport as DetailsReportType } from '@/types'
+import { formatAmount } from '@/utils/format'
 
 interface Props {
   reportType: 'monthly' | 'daily' | 'custom'

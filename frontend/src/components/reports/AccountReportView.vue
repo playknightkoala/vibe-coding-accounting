@@ -12,7 +12,7 @@
           >
             <span class="tab-icon material-icons">trending_up</span>
             總計
-            <span class="tab-amount">${{ totalAmount.toFixed(2) }}</span>
+            <span class="tab-amount">${{ formatAmount(totalAmount) }}</span>
           </button>
           <button
             :class="['account-tab-btn', accountTab === 'debit' ? 'active' : '']"
@@ -20,7 +20,7 @@
           >
             <span class="tab-icon material-icons">bar_chart</span>
             支出
-            <span class="tab-amount">${{ totalDebit.toFixed(2) }}</span>
+            <span class="tab-amount">${{ formatAmount(totalDebit) }}</span>
           </button>
           <button
             :class="['account-tab-btn', accountTab === 'credit' ? 'active' : '']"
@@ -28,7 +28,7 @@
           >
             <span class="tab-icon material-icons">payments</span>
             收入
-            <span class="tab-amount">${{ totalCredit.toFixed(2) }}</span>
+            <span class="tab-amount">${{ formatAmount(totalCredit) }}</span>
           </button>
         </div>
       </div>
@@ -79,14 +79,14 @@
               <div class="account-name">{{ account.account_name }}</div>
               <div class="account-amounts">
                 <template v-if="accountTab === 'total'">
-                  <span class="balance">餘額: ${{ account.balance.toFixed(2) }}</span>
-                  <span class="credit">收入: ${{ account.credit.toFixed(2) }}</span>
-                  <span class="debit">支出: ${{ account.debit.toFixed(2) }}</span>
+                  <span class="balance">餘額: ${{ formatAmount(account.balance) }}</span>
+                  <span class="credit">收入: ${{ formatAmount(account.credit) }}</span>
+                  <span class="debit">支出: ${{ formatAmount(account.debit) }}</span>
                   <span class="percentage">({{ account.percentage.toFixed(1) }}%)</span>
                 </template>
                 <template v-else>
                   <span :class="accountTab === 'debit' ? 'debit' : 'credit'">
-                    {{ accountTab === 'debit' ? '支出' : '收入' }}: ${{ currentAmount(account).toFixed(2) }}
+                    {{ accountTab === 'debit' ? '支出' : '收入' }}: ${{ formatAmount(currentAmount(account)) }}
                   </span>
                   <span class="percentage">({{ currentPercentage(account).toFixed(1) }}%)</span>
                 </template>
@@ -109,7 +109,7 @@
                     <div class="trans-category">{{ trans.category || '未分類' }}</div>
                   </div>
                   <div class="trans-amount" :class="trans.transaction_type">
-                    {{ trans.transaction_type === 'credit' ? '+' : '-' }}${{ trans.amount.toFixed(2) }}
+                    {{ trans.transaction_type === 'credit' ? '+' : '-' }}${{ formatAmount(trans.amount) }}
                   </div>
                 </div>
               </div>
@@ -126,6 +126,7 @@ import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import api from '@/services/api'
 import type { AccountReport, TransactionDetail } from '@/types'
+import { formatAmount } from '@/utils/format'
 
 interface Props {
   reportType: 'monthly' | 'daily' | 'custom'
@@ -346,7 +347,7 @@ const renderChart = (
 
   const option: echarts.EChartsOption = {
     title: {
-      text: `總${label}\n$${totalValue.toFixed(2)}`,
+      text: `總${label}\n$${formatAmount(totalValue)}`,
       left: 'center',
       top: 'center',
       textStyle: {
@@ -424,7 +425,7 @@ const renderChart = (
       // Update title
       newChartInstance?.setOption({
         title: {
-          text: `${accountName}\n$${value.toFixed(2)}`,
+          text: `${accountName}\n$${formatAmount(value)}`,
           subtext: `${percent}%`
         }
       })
@@ -441,7 +442,7 @@ const renderChart = (
     if (!params.target) {
       newChartInstance?.setOption({
         title: {
-          text: `總${label}\n$${totalValue.toFixed(2)}`,
+          text: `總${label}\n$${formatAmount(totalValue)}`,
           subtext: ''
         }
       })

@@ -50,7 +50,7 @@
               </div>
             </div>
             <div class="trans-amount" :class="trans.transaction_type">
-              ${{ trans.amount.toFixed(2) }}
+              ${{ formatAmount(trans.amount) }}
             </div>
           </div>
         </div>
@@ -63,6 +63,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import api from '@/services/api'
 import type { RankingReport as RankingReportType, TransactionDetail } from '@/types'
+import { formatAmount } from '@/utils/format'
 
 interface Props {
   reportType: 'monthly' | 'daily' | 'custom'
