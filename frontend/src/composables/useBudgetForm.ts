@@ -18,7 +18,8 @@ export function useBudgetForm() {
     period: 'monthly',
     start_date: undefined,
     end_date: undefined,
-    account_ids: []
+    account_ids: [],
+    is_primary: false
   }
 
   const onRangeModeChange = (form: BudgetCreate) => {

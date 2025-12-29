@@ -163,6 +163,7 @@ export interface Budget {
   over_budget_days: number  // 超支天數
   within_budget_days: number  // 預算內天數
   last_stats_update: string | null  // 最後統計更新時間
+  is_primary: boolean
   created_at: string
   updated_at: string | null
 }
@@ -178,6 +179,7 @@ export interface BudgetCreate {
   start_date?: string  // recurring模式可為空
   end_date?: string    // recurring模式可為空
   account_ids: number[]  // 改為帳戶ID列表
+  is_primary?: boolean
 }
 
 export interface BudgetUpdate {
@@ -192,6 +194,7 @@ export interface BudgetUpdate {
   start_date?: string
   end_date?: string
   account_ids?: number[]  // 改為帳戶ID列表
+  is_primary?: boolean
 }
 
 export interface Category {

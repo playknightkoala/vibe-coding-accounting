@@ -297,6 +297,7 @@ const showImportConfirm = ref(false)
 // Dangerous operations
 const showClearDataConfirm = ref(false)
 const showDeleteAccountConfirm = ref(false)
+const isImportSuccess = ref(false)
 
 // Message modal
 const showMessageModal = ref(false)
@@ -468,6 +469,7 @@ const confirmImport = async () => {
 
     // 重新載入使用者資料
     await loadUserProfile()
+    isImportSuccess.value = true
   } catch (err: any) {
     importExportError.value = err.response?.data?.detail || '匯入資料失敗'
   } finally {
@@ -514,6 +516,14 @@ const confirmDeleteAccount = async () => {
     showMessageModal.value = true
   }
 }
+
+import { watch } from 'vue'
+
+watch(showMessageModal, (newValue) => {
+  if (!newValue && isImportSuccess.value) {
+    window.location.reload()
+  }
+})
 
 onMounted(loadUserProfile)
 </script>

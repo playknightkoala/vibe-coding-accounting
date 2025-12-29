@@ -154,7 +154,8 @@ def get_budgets(current_user: User = Depends(get_current_user), db: Session = De
             "within_budget_days": budget.within_budget_days,
             "last_stats_update": budget.last_stats_update,
             "created_at": budget.created_at,
-            "updated_at": budget.updated_at
+            "updated_at": budget.updated_at,
+            "is_primary": budget.is_primary
         }
         result.append(budget_dict)
     # db.commit()  # Do not commit changes on GET request
@@ -184,7 +185,11 @@ def create_budget(
         if not budget_data.get('start_date') or not budget_data.get('end_date'):
             raise HTTPException(status_code=400, detail="start_date and end_date are required for custom range budgets")
 
-    # 創建預算（不包含 account_ids 和 category_names）
+    # Create budget (excluding account_ids and category_names)
+    # If is_primary is True, unset other primary budgets
+    if budget_data.get('is_primary'):
+        db.query(Budget).filter(Budget.user_id == current_user.id, Budget.is_primary == True).update({"is_primary": False})
+    
     db_budget = Budget(**budget_data, user_id=current_user.id)
     db.add(db_budget)
     db.commit()
@@ -209,6 +214,7 @@ def create_budget(
             db.add(budget_account)
 
     # 建立預算與類別的關聯
+    unique_category_names = []
     if category_names:
         # 去除重複的類別名稱
         unique_category_names = list(set(category_names))
@@ -242,6 +248,7 @@ def create_budget(
         "user_id": db_budget.user_id,
         "parent_budget_id": db_budget.parent_budget_id,
         "is_latest_period": db_budget.is_latest_period,
+        "is_primary": db_budget.is_primary,
         "created_at": db_budget.created_at,
         "updated_at": db_budget.updated_at
     }
@@ -291,7 +298,8 @@ def get_budget(
         "parent_budget_id": budget.parent_budget_id,
         "is_latest_period": budget.is_latest_period,
         "created_at": budget.created_at,
-        "updated_at": budget.updated_at
+        "updated_at": budget.updated_at,
+        "is_primary": budget.is_primary
     }
 
 @router.put("/{budget_id}", response_model=BudgetSchema)
@@ -312,9 +320,17 @@ def update_budget(
     account_ids = update_data.pop('account_ids', None)  # 提取 account_ids
     category_names = update_data.pop('category_names', None)  # 提取 category_names
 
-    # 更新預算基本資訊
+    # Update basic budget info
     for key, value in update_data.items():
         setattr(budget, key, value)
+        
+    # If is_primary is being set to True, unset other primary budgets
+    if update_data.get('is_primary'):
+        db.query(Budget).filter(
+            Budget.user_id == current_user.id, 
+            Budget.is_primary == True,
+            Budget.id != budget_id
+        ).update({"is_primary": False})
 
     # 如果有更新 account_ids，則更新關聯
     if account_ids is not None:
@@ -390,7 +406,8 @@ def update_budget(
         "within_budget_days": budget.within_budget_days,
         "last_stats_update": budget.last_stats_update,
         "created_at": budget.created_at,
-        "updated_at": budget.updated_at
+        "updated_at": budget.updated_at,
+        "is_primary": budget.is_primary
     }
 
 @router.delete("/{budget_id}")

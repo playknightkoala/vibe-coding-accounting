@@ -174,6 +174,22 @@
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <h3 style="margin: 0; font-size: 1.1rem;">{{ budget.name }}</h3>
             <div style="display: flex; gap: 6px; align-items: center;">
+              <button 
+                @click.stop="togglePrimary(budget)"
+                :style="{
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: budget.is_primary ? '#ffd700' : 'rgba(255, 255, 255, 0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '4px',
+                  transition: 'all 0.3s'
+                }"
+                :title="budget.is_primary ? '取消主要預算' : '設為主要預算'"
+              >
+                <span class="material-icons" style="font-size: 20px;">{{ budget.is_primary ? 'star' : 'star_border' }}</span>
+              </button>
               <span v-if="budget.range_mode === 'recurring'"
                     style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                            color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; white-space: nowrap; display: flex; align-items: center; gap: 4px;">
@@ -824,7 +840,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick } from 'vue'
-import type { Account, TransactionCreate, RecurringExpense } from '@/types'
+import type { Account, TransactionCreate, RecurringExpense, Budget } from '@/types'
 import CategorySelector from '@/components/CategorySelector.vue'
 import CategoryManagementModal from '@/components/CategoryManagementModal.vue'
 import MessageModal from '@/components/MessageModal.vue'
@@ -877,6 +893,28 @@ const activeBudgets = computed(() => {
   const today = dateTimeUtils.getTodayString()
   return budgetsStore.budgets.filter(b => b.end_date >= today)
 })
+
+const togglePrimary = async (budget: Budget) => {
+  try {
+    // Optimistic update
+    const wasPrimary = budget.is_primary
+    budget.is_primary = !wasPrimary
+    
+    // If setting to true, we need to visually uncheck others
+    if (!wasPrimary) {
+      activeBudgets.value.forEach(b => {
+        if (b.id !== budget.id) b.is_primary = false
+      })
+    }
+    
+    await budgetsStore.updateBudget(budget.id, { is_primary: !wasPrimary })
+    await budgetsStore.fetchBudgets() // Refresh to ensure consistency
+  } catch (err) {
+    console.error('更新主要預算失敗:', err)
+    messageModal.show('error', '更新主要預算失敗')
+    budget.is_primary = !budget.is_primary // Revert
+  }
+}
 
 // 帳戶排序邏輯
 const sortedAccounts = computed(() => {

@@ -369,8 +369,13 @@ const calendarDays = computed<CalendarDay[]>(() => {
       const currentDate = new Date(dateStr)
       const today = new Date(todayStr)
 
+      // Determine which budgets to check
+      // If there is a primary budget, only check that one. Otherwise check all.
+      const primaryBudget = props.budgets.find(b => b.is_primary)
+      const budgetsToCheck = primaryBudget ? [primaryBudget] : props.budgets
+
       // Check each budget
-      for (const budget of props.budgets) {
+      for (const budget of budgetsToCheck) {
         if (!budget.daily_limit) continue
 
         const startDate = new Date(budget.start_date)

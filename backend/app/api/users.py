@@ -243,7 +243,9 @@ def export_user_data(
                 "period": budget.period,
                 "start_date": budget.start_date.isoformat() if budget.start_date else None,
                 "end_date": budget.end_date.isoformat() if budget.end_date else None,
+
                 "account_indices": account_indices,
+                "is_primary": budget.is_primary,
                 "created_at": budget.created_at.isoformat() if budget.created_at else None
             })
 
@@ -488,8 +490,10 @@ async def import_user_data(
                 existing_budget.spent = budget_data.get("spent", 0)
                 existing_budget.range_mode = budget_data["range_mode"]
                 existing_budget.period = budget_data.get("period")
+
                 existing_budget.start_date = datetime.fromisoformat(budget_data["start_date"]) if budget_data.get("start_date") else None
                 existing_budget.end_date = datetime.fromisoformat(budget_data["end_date"]) if budget_data.get("end_date") else None
+                existing_budget.is_primary = budget_data.get("is_primary", False)
 
                 # 刪除舊的關聯
                 db.query(BudgetCategory).filter(BudgetCategory.budget_id == existing_budget.id).delete()
@@ -525,8 +529,10 @@ async def import_user_data(
                     spent=budget_data.get("spent", 0),
                     range_mode=budget_data["range_mode"],
                     period=budget_data.get("period"),
+
                     start_date=datetime.fromisoformat(budget_data["start_date"]) if budget_data.get("start_date") else None,
-                    end_date=datetime.fromisoformat(budget_data["end_date"]) if budget_data.get("end_date") else None
+                    end_date=datetime.fromisoformat(budget_data["end_date"]) if budget_data.get("end_date") else None,
+                    is_primary=budget_data.get("is_primary", False)
                 )
                 db.add(new_budget)
                 db.flush()
@@ -576,6 +582,9 @@ async def import_user_data(
         )
     except Exception as e:
         db.rollback()
+        import traceback
+        traceback.print_exc()
+        print(f"Import Error Detail: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"匯入資料失敗: {str(e)}"

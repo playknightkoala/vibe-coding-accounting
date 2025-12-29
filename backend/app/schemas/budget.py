@@ -13,6 +13,7 @@ class BudgetBase(BaseModel):
     start_date: Optional[datetime] = None  # recurring 模式可為空，由系統自動計算
     end_date: Optional[datetime] = None    # recurring 模式可為空，由系統自動計算
     account_ids: List[int] = []  # 改為帳戶ID列表，空列表表示不綁定帳戶
+    is_primary: bool = False  # 是否為主要預算
 
     @field_validator('range_mode')
     @classmethod
@@ -50,6 +51,7 @@ class BudgetUpdate(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     account_ids: Optional[List[int]] = None  # 改為帳戶ID列表
+    is_primary: Optional[bool] = None
 
 class Budget(BaseModel):
     id: int
@@ -70,6 +72,7 @@ class Budget(BaseModel):
     over_budget_days: int = 0
     within_budget_days: int = 0
     last_stats_update: Optional[datetime] = None
+    is_primary: bool
     created_at: datetime
     updated_at: Optional[datetime] = None
 

@@ -29,6 +29,23 @@
                   <span class="material-icons" style="font-size: 16px;">event</span>
                   自訂區間
                 </span>
+                
+                <button 
+                  @click.stop="togglePrimary(budget)"
+                  :style="{
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: budget.is_primary ? '#ffd700' : 'rgba(255, 255, 255, 0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '4px',
+                    transition: 'all 0.3s'
+                  }"
+                  :title="budget.is_primary ? '取消主要預算' : '設為主要預算'"
+                >
+                  <span class="material-icons" style="font-size: 20px;">{{ budget.is_primary ? 'star' : 'star_border' }}</span>
+                </button>
               </div>
 
               <p><strong>類別：</strong>{{ budget.category_names.length > 0 ? budget.category_names.join('、') : '全部類別' }}</p>
@@ -371,6 +388,20 @@
             </p>
           </div>
 
+          <div class="form-group" style="margin-top: 15px;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input
+                type="checkbox"
+                v-model="formController.form.value.is_primary"
+                style="width: 16px; height: 16px; cursor: pointer;"
+              />
+              <span style="font-size: 1rem;">設為主要預算</span>
+            </label>
+            <p style="margin: 4px 0 0 24px; font-size: 12px; color: #a0aec0;">
+              主要預算將在儀表板中優先顯示
+            </p>
+          </div>
+
           <div v-if="modal.error.value" class="error">{{ modal.error.value }}</div>
           <div style="display: flex; gap: 10px; margin-top: 20px;">
             <button type="submit" class="btn btn-primary">{{ formController.isEditing() ? '更新' : '建立' }}</button>
@@ -501,7 +532,8 @@ const handleEdit = (budget: Budget) => {
     period: budget.period,
     start_date: budget.range_mode === 'custom' ? `${budgetForm.startDateOnly.value}T00:00` : undefined,
     end_date: budget.range_mode === 'custom' ? `${budgetForm.endDateOnly.value}T23:59` : undefined,
-    account_ids: budget.account_ids || []
+    account_ids: budget.account_ids || [],
+    is_primary: budget.is_primary
   }, budget.id)
 
   modal.open()
@@ -515,6 +547,28 @@ const handleDelete = (id: number) => {
       console.error('刪除預算時發生錯誤:', err)
     }
   })
+}
+
+const togglePrimary = async (budget: Budget) => {
+  try {
+    // Optimistic update
+    const wasPrimary = budget.is_primary
+    budget.is_primary = !wasPrimary
+    
+    // If setting to true, we need to visually uncheck others (store will update after fetch, but for smoothness)
+    if (!wasPrimary) {
+      activeBudgets.value.forEach(b => {
+        if (b.id !== budget.id) b.is_primary = false
+      })
+    }
+    
+    await budgetsStore.updateBudget(budget.id, { is_primary: !wasPrimary })
+    await budgetsStore.fetchBudgets() // Refresh to ensure consistency
+  } catch (err) {
+    console.error('更新主要預算失敗:', err)
+    modal.setError('更新主要預算失敗')
+    budget.is_primary = !budget.is_primary // Revert
+  }
 }
 
 const handleSubmit = async () => {
