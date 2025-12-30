@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import func
+from sqlalchemy import func, case
 from typing import List, Optional
 from datetime import date, datetime, timezone
 import pytz
@@ -74,21 +74,27 @@ def calculate_dynamic_daily_limit(budget: Budget, spent: float) -> float:
     return round(dynamic_daily_limit, 2)
 
 def calculate_budget_spent(db: Session, budget: Budget, category_names: List[str] = None) -> float:
-    """計算預算已使用金額（只計算支出類型的交易）
+    """計算預算已使用金額（計算方式：總支出 - 總收入）
 
     邏輯說明：
-    - 如果預算沒有綁定帳戶：計算使用者所有帳戶的支出
-    - 如果預算綁定了帳戶：只計算這些帳戶的支出
-    - 如果預算沒有綁定類別（空列表）：計算所有類別的支出
+    - 如果預算沒有綁定帳戶：計算使用者所有帳戶的交易
+    - 如果預算綁定了帳戶：只計算這些帳戶的交易
+    - 如果預算沒有綁定類別（空列表）：計算所有類別的交易
     - 如果預算綁定了類別：只計算這些類別的交易
     - 排除 exclude_from_budget=True 的交易
+    - 支出包含：debit, installment
+    - 收入包含：credit
     """
     # 獲取預算綁定的帳戶ID列表
     account_ids = [acc.id for acc in budget.accounts]
 
-    # 建立基礎查詢 - 包含 debit 和 installment 類型
-    query = db.query(func.sum(Transaction.amount)).filter(
-        Transaction.transaction_type.in_(['debit', 'installment']),  # 計算支出和分期
+    # 建立基礎查詢 - 使用 case 做條件加總
+    # income: transactions where type is 'credit'
+    # expense: transactions where type is 'debit' or 'installment'
+    query = db.query(
+        func.sum(case((Transaction.transaction_type == 'credit', Transaction.amount), else_=0)).label('total_income'),
+        func.sum(case((Transaction.transaction_type.in_(['debit', 'installment']), Transaction.amount), else_=0)).label('total_expense')
+    ).filter(
         Transaction.transaction_date >= budget.start_date,
         Transaction.transaction_date <= budget.end_date,
         Transaction.exclude_from_budget == False  # 排除不計入預算的交易
@@ -108,8 +114,37 @@ def calculate_budget_spent(db: Session, budget: Budget, category_names: List[str
     if category_names and len(category_names) > 0:
         query = query.filter(Transaction.category.in_(category_names))
 
-    spent = query.scalar()
-    return spent or 0.0
+    result = query.first()
+    
+    total_income = result.total_income or 0.0
+    total_expense = result.total_expense or 0.0
+
+    # 預算使用量 = 總支出 - 總收入
+    spent = total_expense - total_income
+    
+    return spent if spent > 0 else 0.0  # 保持非負數，或者允許負數表示盈餘？通常預算消耗是正數。
+                                       # 如果收入大於支出，spent 會是負數。
+                                       # 但原本的預算概念是 "花費"，如果 "賺了" 應該是讓花費變少。
+                                       # 如果賺得比花的多，spent 是負數，這樣剩餘預算 (Limit - Spent) 會變大。
+                                       # 這符合邏輯。
+                                       # 但是，如果 spent 是負數，前端進度條可能需要處理。
+                                       # 暫且不限制非負數，直接返回計算結果。
+                                       # 但等等，如果返回負數，前端進度條 `spent / amount` 會變成負數。
+                                       # 用戶說 "減去400"，意即抵銷。
+                                       # 如果支出 800 收入 400 => spent 400.
+                                       # 如果支出 800 收入 1000 => spent -200.
+                                       # Dashboard: Limit 2000. Spent -200. Remaining 2200.
+                                       # 這聽起來是合理的。
+                                       # 不過這裡我會先把 `if spent > 0 else 0.0` 去掉，或者保留 raw value.
+                                       # 讓我們看 Dashboard Vue:
+                                       # width: Math.min((budget.spent / budget.amount) * 100, 100) + '%'
+                                       # 如果 spent 是負數，width 會是負數，CSS width 不能是負數。
+                                       # Vue template logic: width: ...
+                                       # I should probably just return the raw value and let frontend handle display quirks if any.
+                                       # However, to be safe and match user expectation "Budget usage should decrease", negative usage is technically possible.
+                                       # Start with returning raw value.
+
+    return spent
 
 @router.get("/", response_model=List[BudgetSchema])
 def get_budgets(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):

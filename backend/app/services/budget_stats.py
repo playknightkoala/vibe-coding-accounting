@@ -5,7 +5,7 @@ Budget statistics calculator service
 
 from datetime import datetime, timedelta, date
 from typing import List
-from sqlalchemy import func
+from sqlalchemy import func, case
 from sqlalchemy.orm import Session
 import pytz
 
@@ -24,7 +24,7 @@ def calculate_daily_spent(
     target_date: date,
     category_names: List[str] = None
 ) -> float:
-    """計算指定日期的支出金額
+    """計算指定日期的淨支出金額（支出 - 收入）
 
     Args:
         db: Database session
@@ -33,7 +33,7 @@ def calculate_daily_spent(
         category_names: 類別名稱列表（可選）
 
     Returns:
-        該日的總支出金額
+        該日的淨支出金額
     """
     # 獲取預算綁定的帳戶ID列表
     account_ids = [acc.id for acc in budget.accounts]
@@ -46,9 +46,13 @@ def calculate_daily_spent(
     start_datetime = TAIPEI_TZ.localize(start_datetime).astimezone(pytz.UTC)
     end_datetime = TAIPEI_TZ.localize(end_datetime).astimezone(pytz.UTC)
 
-    # 建立基礎查詢 - 包含 debit 和 installment 類型
-    query = db.query(func.sum(Transaction.amount)).filter(
-        Transaction.transaction_type.in_(['debit', 'installment']),
+    # 建立基礎查詢 - 使用 case 做條件加總
+    # income: transactions where type is 'credit'
+    # expense: transactions where type is 'debit' or 'installment'
+    query = db.query(
+        func.sum(case((Transaction.transaction_type == 'credit', Transaction.amount), else_=0)).label('total_income'),
+        func.sum(case((Transaction.transaction_type.in_(['debit', 'installment']), Transaction.amount), else_=0)).label('total_expense')
+    ).filter(
         Transaction.transaction_date >= start_datetime,
         Transaction.transaction_date <= end_datetime,
         Transaction.exclude_from_budget == False
@@ -69,8 +73,14 @@ def calculate_daily_spent(
     if category_names and len(category_names) > 0:
         query = query.filter(Transaction.category.in_(category_names))
 
-    spent = query.scalar()
-    return spent or 0.0
+    result = query.first()
+    
+    total_income = result.total_income or 0.0
+    total_expense = result.total_expense or 0.0
+    
+    spent = total_expense - total_income
+    
+    return spent
 
 
 def calculate_budget_stats(db: Session, budget: Budget) -> tuple:
