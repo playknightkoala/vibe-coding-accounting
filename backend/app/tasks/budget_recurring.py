@@ -92,6 +92,7 @@ def create_next_period_budgets():
                 category=budget.category,
                 amount=budget.amount,
                 daily_limit=budget.daily_limit,
+                daily_limit_mode=budget.daily_limit_mode,  # 保留每日預算設定模式
                 spent=0.0,  # 新週期重置為0
                 range_mode='recurring',
                 period=budget.period,
@@ -99,7 +100,8 @@ def create_next_period_budgets():
                 end_date=next_end,
                 user_id=budget.user_id,
                 parent_budget_id=budget.id,  # 設定父預算
-                is_latest_period=True  # 新預算是最新週期
+                is_latest_period=True,  # 新預算是最新週期
+                is_primary=budget.is_primary  # 保留主要預算設定
             )
 
             # 將舊預算標記為非最新週期

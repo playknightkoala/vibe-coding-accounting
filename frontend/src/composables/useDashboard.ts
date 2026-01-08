@@ -1,8 +1,8 @@
 import { computed, ref } from 'vue'
 import { useAccountsStore } from '@/stores/accounts'
 import { useTransactionsStore } from '@/stores/transactions'
-import { useBudgetsStore } from '@/stores/budgets'
-import type { Account, Budget } from '@/types'
+
+import type { Budget } from '@/types'
 import { useDateTime } from './useDateTime'
 
 export type TimeRangeMode = 'total' | 'month' | 'day'
@@ -10,7 +10,6 @@ export type TimeRangeMode = 'total' | 'month' | 'day'
 export function useDashboard() {
   const accountsStore = useAccountsStore()
   const transactionsStore = useTransactionsStore()
-  const budgetsStore = useBudgetsStore()
   const { getTodayString } = useDateTime()
 
   const timeRangeMode = ref<TimeRangeMode>('month')
@@ -92,10 +91,19 @@ export function useDashboard() {
         const isSameAccount = !budget.account_ids || budget.account_ids.length === 0 || budget.account_ids.includes(t.account_id)
         // 如果預算沒有綁定類別（空列表），則計算所有類別；否則只計算綁定的類別
         const isSameCategory = !budget.category_names || budget.category_names.length === 0 || (t.category && budget.category_names.includes(t.category))
-        const isExpense = t.transaction_type === 'debit'
-        return isToday && isSameAccount && isSameCategory && isExpense
+
+        // Allow debit, credit (for income offset), and installment
+        const isValidType = ['debit', 'credit', 'installment'].includes(t.transaction_type)
+
+        return isToday && isSameAccount && isSameCategory && isValidType
       })
-      .reduce((sum, t) => sum + t.amount, 0)
+      .reduce((sum, t) => {
+        if (t.transaction_type === 'credit') {
+          return sum - t.amount
+        } else {
+          return sum + t.amount
+        }
+      }, 0)
   }
 
   // 根據時間範圍計算每個帳戶的餘額變化

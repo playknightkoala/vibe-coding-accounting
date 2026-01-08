@@ -84,7 +84,7 @@ export interface Transaction {
   id: number
   description: string
   amount: number
-  transaction_type: 'credit' | 'debit' | 'installment'
+  transaction_type: 'credit' | 'debit' | 'installment' | 'transfer_in' | 'transfer_out'
   category: string | null
   transaction_date: string
   account_id: number

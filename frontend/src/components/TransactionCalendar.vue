@@ -395,7 +395,9 @@ const calendarDays = computed<CalendarDay[]>(() => {
           // Filter transactions that match this budget
           const budgetTransactions = dayTransactions.filter(t => {
              if (isTransactionPending(t)) return false // Skip pending
-             if (t.transaction_type !== 'debit') return false
+             
+             // Allow debit, credit (for income offset), and installment
+             if (!['debit', 'credit', 'installment'].includes(t.transaction_type)) return false
 
              // Check account filter
              if (budget.account_ids && budget.account_ids.length > 0) {
@@ -414,7 +416,15 @@ const calendarDays = computed<CalendarDay[]>(() => {
           if (budgetTransactions.length > 0) {
             hasBudgetCheck = true
 
-            const budgetDailySpent = budgetTransactions.reduce((sum, t) => sum + t.amount, 0)
+            // Calculate net spent: (Debit + Installment) - Credit
+            const budgetDailySpent = budgetTransactions.reduce((sum, t) => {
+              if (t.transaction_type === 'credit') {
+                return sum - t.amount
+              } else {
+                // debit or installment
+                return sum + t.amount
+              }
+            }, 0)
 
             if (budgetDailySpent > budget.daily_limit) {
               isOverBudget = true
